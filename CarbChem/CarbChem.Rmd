@@ -27,13 +27,15 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
     library(lubridate)
 ```
 
-# 2. Import the temperature data
+# 2. Import the carbon chemestry data
 
 ```{r}
+# Get data
 CC.data<-read.csv("Data/NCRMP_carbchem_FLK.csv", header = T)
-summary(CC.data)
-str((CC.data))
+  summary(CC.data)
+  str((CC.data))
 
+# Format variables  
 CC.data$Date<-as.Date(CC.data$ESTDate, "%m/%d/%Y")
 ```
 
