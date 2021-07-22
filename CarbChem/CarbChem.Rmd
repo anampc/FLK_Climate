@@ -1,6 +1,6 @@
 ---
-title: "Carb_Chem"
-author: "Ana Palacio-Castro & Nicole Besemer"
+title: "Carbon Chemestry explore"
+author: "Ana Palacio-Castro"
 date: "`r Sys.Date()`"
 output:
   html_document:
@@ -16,9 +16,9 @@ editor_options:
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 ```
 
-# 1. Libraries and settings
+# Libraries and settings
 
-```{r}
+```{r, include=FALSE}
 # Libraries
     library(plyr)
     library(tidyverse)
@@ -28,9 +28,9 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
     library(knitr)
 ```
 
-# 2. Import the carbon chemestry data
+# Import and format carbon chemestry data
 
-```{r}
+```{r, include=FALSE}
 # Get data
 CC.data<-read.csv("Data/NCRMP_CarbonateChemistryData_All_Atlantic_updated.csv", header = T)
   summary(CC.data)
@@ -43,11 +43,32 @@ CC.data<-read.csv("Data/NCRMP_CarbonateChemistryData_All_Atlantic_updated.csv", 
   CC.data$Date<-as.Date(CC.data$ESTDate, "%m/%d/%Y")
 ```
 
-# 3. Data available
+# Add seasonality
 
-## Number of samples by year and region
+```{r, include=FALSE}
+# Define seasons
+  metseasons <- c(
+    "01" = "Winter", "02" = "Winter",
+    "03" = "Spring", "04" = "Spring", "05" = "Spring",
+    "06" = "Summer", "07" = "Summer", "08" = "Summer",
+    "09" = "Fall", "10" = "Fall", "11" = "Fall",
+    "12" = "Winter"
+  )
 
-```{r}
+Seasons<-as.data.frame(metseasons[format(CC.data$Date, "%m")])
+colnames(Seasons)<-"Season"
+CC.data<-cbind(CC.data, Seasons)
+
+```
+
+
+# 1. Data available
+
+## Number of samples
+
+### By year and region
+
+```{r, echo=FALSE}
 Cases_Reg_Year<-CC.data %>% count(Year, Region, sort = F)
 
 
@@ -57,11 +78,24 @@ Cases_Reg_Year<-Cases_Reg_Year %>%
 kable(head(Cases_Reg_Year, format = "html"))
 ```
 
+
+### By season and region
+
+```{r, echo=FALSE}
+Cases_Reg_season<-CC.data %>% count(Season, Region, sort = F)
+
+Cases_Reg_season<-Cases_Reg_season %>%
+    pivot_wider(names_from = Season, values_from = n)
+
+kable(head(Cases_Reg_season, format = "html"))
+```
+
+
 ## Number of sites per region
 
 Florida Keys 
 
-```{r}
+```{r, echo=FALSE}
 Cases_Site_FLK<-filter(CC.data, Region=="FLK") %>% count(Year, SiteID, sort = F)
 Cases_Site_FLK
 
@@ -75,7 +109,7 @@ kable(head(Cases_Site_FLK, format = "html"))
 
 Puerto Rico 
 
-```{r}
+```{r, echo=FALSE}
 Cases_Site_PR<-filter(CC.data, Region=="PR") %>% count(Year, SiteID, sort = F)
 Cases_Site_PR
 
@@ -87,9 +121,9 @@ kable(head(Cases_Site_PR, format = "html"))
 
 **Note:** Each sample has an unique SiteID? 
 
-## Aragonite
+## Aragonite overview
 
-```{r}
+```{r, echo=FALSE, fig.heigh=8, fig.width=7}
 Aragonite<- ggplot(CC.data) + theme_bw() +
   
   scale_y_continuous(limits = c(0,5.5),
@@ -128,10 +162,10 @@ Aragonite
 ```
 
 
-## Temperature
+## Temperature overview
 
-```{r}
-Temperature<- ggplot(CC.data) + theme_bw() +
+```{r, echo=FALSE}
+Temperature_All<- ggplot(CC.data) + theme_bw() +
   
   scale_y_continuous(limits = c(15,40),
                        name=(expression("Temperature"~(degree*C))),
@@ -159,83 +193,99 @@ theme(legend.position="none",
           legend.box.background = element_rect(),
           panel.background =element_rect(fill = NA, color = "black")
           ) 
-Temperature
+Temperature_All
 #ggsave(file="Outputs/Figure_1_Experiment_design.svg", plot=Design, dpi = 300, width=6, height=4)
-
 
 ```
 
 **Note:** Are the 38+ data points real? 
 
-
-```{r}
-
-
-# Temperature data available from each treatment-replicate-day
-Periods.days <- ddply (Temperature, .(Period, Treatment),summarise,
-                Dmin = min (Day, na.rm = F), 
-                Dmax = max (Day, na.rm = F))
-Periods.days
-Temperature.82<-subset(Temperature, Day=="82")
-Temperature.111<-subset(Temperature, Day=="111")
-Periods.82 <- ddply (Temperature.82, .(Treatment),summarise,
-                Tmean = mean (Temperature, na.rm = F), 
-                Tmin = min (Temperature, na.rm = F), 
-                Tmax = max (Temperature, na.rm = F))
-Periods.82
-Periods.82 <- ddply (Temperature.82, .(Day),summarise,
-                Tmean = mean (Temperature, na.rm = F), 
-                Tmin = min (Temperature, na.rm = F), 
-                Tmax = max (Temperature, na.rm = F))
-Periods.82
-Periods.82 <- ddply (Temperature.82, .(Day),summarise,
-                Tmean = mean (Temperature, na.rm = F), 
-                Tsd = sd (Temperature, na.rm = F))
-Periods.82
-Periods.110 <- ddply (Temperature.111, .(Day),summarise,
-                Tmean = mean (Temperature, na.rm = F), 
-                Tsd = sd (Temperature, na.rm = F))
-Periods.110
-```
-
-# 3. Look at temperature conditions during each period of the experiment:
-* during recovery from collection and fragmentation and 
-* during the experiment (nutrient addition, ramping up, and bleaching)
-* during recovery from bleaching
-
-```{r}
-Temperature_Periods_R<- ggplot(Temperature, aes (Day, Temperature, 
-                                               colour=factor(Period))) +
-  stat_summary(fun.data = "mean_cl_boot",geom = "errorbar", width = 0.2 )+
-  stat_summary(fun.y=mean, geom="line") +   ggthe_bw +
-  xlab("Days in the experiment")  + guides(colour=guide_legend("Period")) +
-  ylab("Temperature (C)") + facet_grid(Replicate~.) 
-Temperature_Periods_R
-Summary_Period <- ddply (Temperature, .(Period),summarise, 
-                              Temp = mean (Temperature, na.rm = T),
-                              Tsd  = sd (Temperature, na.rm = T), 
-                              Tmax = max (Temperature, na.rm = T),
-                              Tmin = min (Temperature, na.rm = T))
-Summary_Period
+```{r, echo=FALSE,  fig.heigh=8, fig.width=7}
+Temperature_Reg_Season<- ggplot(CC.data) + theme_bw() +
   
-Summary_Tanks <- ddply (Temperature, .(Period, Treatment, Replicate),summarise, 
-                             Temp = mean (Temperature, na.rm = T),
-                             Tsd  = sd (Temperature, na.rm = T), 
-                             Tmax = max (Temperature, na.rm = T),
-                             Tmin = min (Temperature, na.rm = T))
-Summary_Tanks
+  scale_y_continuous(limits = c(15,40),
+                       name=(expression("Temperature"~(degree*C))),
+                       breaks = seq(16, 40, 2.5),  
+                       expand = c(0, 0)) +
+  scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+               #expand = c(0, 0),
+               breaks ="6 months")+
+  
+geom_point(aes (Date, Temperature_C, fill=Season), shape=21)+
+#geom_line(aes (Date, Temperature_C, colour=SiteID))+
+ 
+theme(legend.position="none",
+          plot.background=element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5),
+          panel.grid.major.y = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          legend.box.background = element_rect(),
+          panel.background =element_rect(fill = NA, color = "black")
+          ) 
+Temperature_Reg_Season
+#ggsave(file="Outputs/Figure_1_Experiment_design.svg", plot=Design, dpi = 300, width=6, height=4)
+
+Temperature_Reg_Season+facet_grid(Region~.)
 ```
 
-# 4. Get the sample times and merge them with the temperature
+## Correlations to check outliers
 
-```{r}
-Meassurments<-read.csv("Time_data.csv", header = T)
-Meassurments$Date<-as.Date(Meassurments$Date)
-Meassurments$Day<-as.numeric(Meassurments$Date)-17483
-Meassurments$Date<-NULL
-Temperature<-subset(Temperature, Day<114)
-Temperature<-subset(Temperature, Day>-1)
-data<-join(Temperature, Meassurments, by="Day")
+```{r, echo=FALSE}
+Relationships<- ggplot(CC.data) + theme_bw() +
+  
+  scale_y_continuous(limits = c(15,40),
+                       name=(expression("Temperature"~(degree*C))),
+                       breaks = seq(16, 40, 2),
+                       expand = c(0, 0)) +
+  scale_x_continuous(name="Aragonite",
+                 limits = c(0.5,6),
+                 expand = c(0, 0),
+                 breaks = seq(1,6,1))+
+  
+geom_point(aes (Aragonite_Sat_W, Temperature_C, fill=Region), alpha=0.5, shape=21)+
+#geom_line(aes (Date, Temperature_C, colour=SiteID))+
+ 
+theme(legend.position="none",
+          plot.background=element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5),
+          panel.grid.major.y = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          legend.box.background = element_rect(),
+          panel.background =element_rect(fill = NA, color = "black")
+          ) +
+  geom_abline(slope = 0, intercept = 29.5, color="gray", linetype=2)+
+  geom_vline(xintercept = 3, color="gray", linetype=2)
+Relationships
+#ggsave(file="Outputs/Figure_1_Experiment_design.svg", plot=Design, dpi = 300, width=6, height=4)
 ```
 
-# Figure 1: Experimental conditions
+# 2. Basic stats summary
+
+```{r, echo=FALSE}
+# Temperature
+Temp.Season <- ddply (CC.data, .(Region, Season),summarise,
+                Tmin = min (Temperature_C, na.rm = F), 
+                Tmax = max (Temperature_C, na.rm = F),
+                Tmean = mean (Temperature_C, na.rm = F), 
+                Tsd = sd (Temperature_C, na.rm = F))
+
+kable(head(Temp.Season, format = "html"))
+
+# Aragonite
+Aragonite.Season <- ddply (CC.data, .(Region, Season),summarise,
+                Amin = min (Aragonite_Sat_W, na.rm = F), 
+                Amax = max (Aragonite_Sat_W, na.rm = F),
+                Amean = mean (Aragonite_Sat_W, na.rm = F), 
+                Asd = sd (Aragonite_Sat_W, na.rm = F))
+
+kable(head(Aragonite.Season, format = "html"))
+
+```
+
+**Note:** What is limit for the seasons that makes more sense (now jus using months)? 
