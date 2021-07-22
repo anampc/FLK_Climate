@@ -40,6 +40,8 @@ CC.data<-read.csv("Data/NCRMP_CarbonateChemistryData_All_Atlantic_updated.csv", 
   CC.data$Year<-as.numeric(CC.data$Year)
   CC.data$Aragonite_Sat_W<-as.numeric((as.character(CC.data$Aragonite_Sat_W)))
   CC.data$Temperature_C <-as.numeric((as.character(CC.data$Temperature_C)))
+  CC.data$TA <-as.numeric((as.character(CC.data$TA)))
+  CC.data$DIC <-as.numeric((as.character(CC.data$DIC)))
   CC.data$Date<-as.Date(CC.data$ESTDate, "%m/%d/%Y")
 ```
 
@@ -121,9 +123,71 @@ kable(head(Cases_Site_PR, format = "html"))
 
 **Note:** Each sample has an unique SiteID? 
 
+
+# 2. Basic stats summary
+
+## Temperature
+
+```{r, echo=FALSE}
+
+Temp.Season <- ddply (CC.data, .(Region, Season),summarise,
+                Tmin = min (Temperature_C, na.rm = F), 
+                Tmax = max (Temperature_C, na.rm = F),
+                Tmean = mean (Temperature_C, na.rm = F), 
+                Tsd = sd (Temperature_C, na.rm = F))
+
+kable(head(Temp.Season, format = "html"))
+
+
+```
+
+## Aragonite
+
+```{r}
+
+Aragonite.Season <- ddply (CC.data, .(Region, Season),summarise,
+                Amin = min (Aragonite_Sat_W, na.rm = F), 
+                Amax = max (Aragonite_Sat_W, na.rm = F),
+                Amean = mean (Aragonite_Sat_W, na.rm = F), 
+                Asd = sd (Aragonite_Sat_W, na.rm = F))
+
+kable(head(Aragonite.Season, format = "html"))
+```
+
+## TA
+
+```{r}
+TA.Season <- ddply (CC.data, .(Region, Season),summarise,
+                TAmin = min (TA, na.rm = F), 
+                TAmax = max (TA, na.rm = F),
+                TAmean = mean (TA, na.rm = F), 
+                TAsd = sd (TA, na.rm = F))
+
+kable(head(TA.Season, format = "html"))
+```
+
+
+## DIC
+
+```{r}
+DIC.Season <- ddply (CC.data, .(Region, Season),summarise,
+                Amin = min (DIC, na.rm = F), 
+                Amax = max (DIC, na.rm = F),
+                Amean = mean (DIC, na.rm = F), 
+                Asd = sd (DIC, na.rm = F))
+
+kable(head(DIC.Season, format = "html"))
+```
+
+**Note:** What is limit for the seasons that makes more sense (now jus using months)?. Wet vs dry/ temoerature/light 
+
+# Explore plots
+
 ## Aragonite overview
 
-```{r, echo=FALSE, fig.heigh=8, fig.width=7}
+### Sites
+
+```{r, echo=FALSE, fig.heigh=11, fig.width=7}
 Aragonite<- ggplot(CC.data) + theme_bw() +
   
   scale_y_continuous(limits = c(0,5.5),
@@ -161,6 +225,47 @@ Aragonite
 
 ```
 
+What is the meaning of the sites?
+
+### Seasons
+
+```{r, echo=FALSE, fig.heigh=11, fig.width=7}
+AragoniteS<- ggplot(CC.data) + theme_bw() +
+  
+  scale_y_continuous(limits = c(0,5.5),
+                       name=("Aragonite Saturation") ,
+                       breaks = seq(0, 5, 1),  
+                       expand = c(0, 0)) +
+  scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+               expand = c(0, 0),
+               breaks ="6 months")+
+  
+  #scale_shape_manual(values=c(21,2,24))+
+  #scale_colour_manual(values = c("gray35","gray70", "gray70"))+
+
+geom_point(aes (Date, Aragonite_Sat_W, fill=Season), shape=21)+    
+#geom_point(aes (Date, Aragonite_Sat_W, fill=Sample_Depth_m), shape=21)+
+#geom_line(aes (Date, Aragonite_Sat_W, fill=SiteID), alpha=0.3)+
+
+theme(legend.position="top",
+          plot.background=element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5),
+          panel.grid.major.y = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          legend.box.background = element_rect(),
+          panel.background =element_rect(fill = NA, color = "black")
+          ) +
+  geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)+
+  facet_grid(Region~.)
+  
+AragoniteS
+#ggsave(file="Outputs/Aragonite.svg", plot=Aragonite, dpi = 300, width=6, height=4)
+
+```
 
 ## Temperature overview
 
@@ -216,7 +321,7 @@ Temperature_Reg_Season<- ggplot(CC.data) + theme_bw() +
 geom_point(aes (Date, Temperature_C, fill=Season), shape=21)+
 #geom_line(aes (Date, Temperature_C, colour=SiteID))+
  
-theme(legend.position="none",
+theme(legend.position="top",
           plot.background=element_blank(),
           axis.text.x = element_text(angle = 90, vjust = 0.5),
           panel.grid.major.y = element_blank(),
@@ -232,7 +337,77 @@ Temperature_Reg_Season
 Temperature_Reg_Season+facet_grid(Region~.)
 ```
 
+
+## Salinity overview
+
+```{r, echo=FALSE}
+Sal_All<- ggplot(CC.data) + theme_bw() +
+  
+   # scale_y_continuous(#limits = c(15,40),
+   #                      name="Salinity",
+   #                     # breaks = seq(16, 40, 2),  
+   #                      expand = c(0, 0)) +
+  scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+               #expand = c(0, 0),
+               breaks ="6 months")+
+  
+ 
+geom_point(aes (Date, Salinity_Bottle, fill=Region), shape=21)+
+#geom_line(aes (Date, Temperature_C, colour=SiteID))+
+ 
+theme(legend.position="top",
+          plot.background=element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5),
+          panel.grid.major.y = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          legend.box.background = element_rect(),
+          panel.background =element_rect(fill = NA, color = "black")
+          ) 
+Sal_All
+#ggsave(file="Outputs/Figure_1_Experiment_design.svg", plot=Design, dpi = 300, width=6, height=4)
+
+```
+
+**Note:** Are the 38+ data points real? 
+
+```{r, echo=FALSE,  fig.heigh=8, fig.width=7}
+Sal_Reg_Season<- ggplot(CC.data) + theme_bw() +
+  
+  # scale_y_continuous(limits = c(15,40),
+  #                      name=(expression("Temperature"~(degree*C))),
+  #                      breaks = seq(16, 40, 2.5),  
+  #                      expand = c(0, 0)) +
+  scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+               #expand = c(0, 0),
+               breaks ="6 months")+
+  
+geom_point(aes (Date, Salinity_Bottle, fill=Season), shape=21)+
+ 
+theme(legend.position="top",
+          plot.background=element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5),
+          panel.grid.major.y = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          legend.box.background = element_rect(),
+          panel.background =element_rect(fill = NA, color = "black")
+          ) 
+Sal_Reg_Season
+#ggsave(file="Outputs/Figure_1_Experiment_design.svg", plot=Design, dpi = 300, width=6, height=4)
+
+#Sal_Reg_Season+facet_grid(Region~.)
+```
+
 ## Correlations to check outliers
+
+Temperature and Arg
 
 ```{r, echo=FALSE}
 Relationships<- ggplot(CC.data) + theme_bw() +
@@ -265,27 +440,100 @@ Relationships
 #ggsave(file="Outputs/Figure_1_Experiment_design.svg", plot=Design, dpi = 300, width=6, height=4)
 ```
 
-# 2. Basic stats summary
+TA and DIC
 
 ```{r, echo=FALSE}
-# Temperature
-Temp.Season <- ddply (CC.data, .(Region, Season),summarise,
-                Tmin = min (Temperature_C, na.rm = F), 
-                Tmax = max (Temperature_C, na.rm = F),
-                Tmean = mean (Temperature_C, na.rm = F), 
-                Tsd = sd (Temperature_C, na.rm = F))
-
-kable(head(Temp.Season, format = "html"))
-
-# Aragonite
-Aragonite.Season <- ddply (CC.data, .(Region, Season),summarise,
-                Amin = min (Aragonite_Sat_W, na.rm = F), 
-                Amax = max (Aragonite_Sat_W, na.rm = F),
-                Amean = mean (Aragonite_Sat_W, na.rm = F), 
-                Asd = sd (Aragonite_Sat_W, na.rm = F))
-
-kable(head(Aragonite.Season, format = "html"))
-
+Relationships2<- ggplot(CC.data) + theme_bw() +
+  
+  scale_y_continuous(limits = c(1700,2900),
+                       name="TA",
+                       breaks = seq(1800, 2800, 200),
+                       expand = c(0, 0)) +
+  # scale_x_continuous(name="Aragonite",
+  #                limits = c(0.5,6),
+  #                expand = c(0, 0),
+  #                breaks = seq(1,6,1))+
+  
+geom_point(aes (DIC, TA, fill=Season), alpha=0.5, shape=21)+
+#geom_line(aes (Date, Temperature_C, colour=SiteID))+
+ 
+theme(legend.position="top",
+          plot.background=element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5),
+          panel.grid.major.y = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          legend.box.background = element_rect(),
+          panel.background =element_rect(fill = NA, color = "black")
+          )
+  #geom_abline(slope = 0, intercept = 29.5, color="gray", linetype=2)+
+  #geom_vline(xintercept = 3, color="gray", linetype=2)
+Relationships2
+#ggsave(file="Outputs/Figure_1_Experiment_design.svg", plot=Design, dpi = 300, width=6, height=4)
 ```
 
-**Note:** What is limit for the seasons that makes more sense (now jus using months)? 
+```{r}
+Relationships2 + scale_x_continuous(name="DIC",
+                  limits = c(1550, 2500),
+                  expand = c(0, 0),
+                  breaks = seq(1600,2500,200))
+
+Relationships2 + scale_x_continuous(name="DIC",
+                  limits = c(1550, 2500),
+                  expand = c(0, 0),
+                  breaks = seq(1600,2500,200))+
+  facet_wrap(~Region)
+  
+```
+
+# 3. Notes/ideas
+
+* Regional CC
+* local carbonate chemistry: 
+  * Seasonal (light), storms, upwelling, salinity (rain). 
+  *Biological: coral/seagrass/macroalgae cover 
+  * Biological + Seasonal: Photosyntesis, respiration.
+  * Physical: inlets, rivers, upwelling
+
+## Manzello (2012)
+
+* local carbonate chemistry: Variation on CO2, alkalinity, and salinity - Florida Reef Tract (FRT) data.
+
+* Meassure total CO2 (TCO2) - coulometrically and total alkalinity (TA) - gran titration. Other paramethers derived 
+* Predominantly in inshore / upper FRT (higher than modeled). 
+* H Productivity -> net uptake of total CO2 (TCO2) -> H aragonite
+*Offshore reefs: oceanic carbonate chemistries consistent with present day tropical surface ocean conditions.
+* Photosynthetic uptake of TCO2 by seagrasses/macroalgae in the inshore waters of the FRT. Acidification refugia (spatial * time)
+
+## Uthicke (2014)
+
+* GBR - 14 Inshore fringing  reefs
+Meassured: TA and DIC. Derived:pCO2, pH and aragonite
+* TA: 2069 - 2364 mmol kg2
+* DIC:1846 - 2099 mmol kg2
+* pCO2: 340 - 554 matm
+  * Higher wet seasons
+  * Inshore reefs above atmospheric values.
+  * Arg was not further reduced in the wet season (temp effects)
+  *Thermodynamic effects and anthropogenic runoff (P, R and P/R ratios).
+  * Expected slope of  linear regression bw DIC and TA in systems where calcification is dominating is ~ 2.0 
+  
+## Cyronak (2018)
+
+* Net community production; NCP - organic
+* net community calcification; NCC inorganic
+* 23 coral reef locations across the globe - derived from TA and DIC
+* All reefs were net calcifying for the majority of observations (alkalinity depletion relative to offshore)
+* Occasional observations of net dissolution occurred at most locations
+* Influence of organic carbon fluxes on total changes in dissolved inorganic carbon (DIC) (i.e., NCP compared to the sum of NCP and NCC) =  32% to 88% -> biogeochemical differences between reefs. 
+* Reefs with the largest relative percentage of NCP experienced the largest variability in seawater pH for a given change in DIC -> ability to elevate or suppress local pH relative to the open ocean.
+
+## Ian (2019) 
+
+* Reefs and inlets were sampled
+* Reefs: Elevated pCO2 in warmer wet season
+* Inlets: more dynamic -> periodic pulses of acidified water -> more acidification than reefs. 
+  - Negative correlation bw salinity and both TA, and DIC. Elevated TA and DIC in low salinity waters ->  carbonate dissolution as a result of organic matter decomposition?.
+
+
