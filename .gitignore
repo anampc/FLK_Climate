@@ -28,8 +28,6 @@ vignettes/*.pdf
 **/*.DS_Store*
 .Rproj.user
 **/*.docx
-**/*.svg
 **/*.eds
 **/*.xls
 **/*.xlsx
-**/*.csv

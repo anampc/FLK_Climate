@@ -25,43 +25,91 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
     library(reshape2)
     library(ggthemes)
     library(lubridate)
+    library(knitr)
 ```
 
 # 2. Import the carbon chemestry data
 
 ```{r}
 # Get data
-CC.data<-read.csv("Data/NCRMP_carbchem_FLK.csv", header = T)
+CC.data<-read.csv("Data/NCRMP_CarbonateChemistryData_All_Atlantic_updated.csv", header = T)
   summary(CC.data)
   str((CC.data))
 
-# Format variables  
-CC.data$Date<-as.Date(CC.data$ESTDate, "%m/%d/%Y")
+# Format variables     
+  CC.data$Year<-as.numeric(CC.data$Year)
+  CC.data$Aragonite_Sat_W<-as.numeric((as.character(CC.data$Aragonite_Sat_W)))
+  CC.data$Temperature_C <-as.numeric((as.character(CC.data$Temperature_C)))
+  CC.data$Date<-as.Date(CC.data$ESTDate, "%m/%d/%Y")
 ```
 
+# 3. Data available
+
+## Number of samples by year and region
+
+```{r}
+Cases_Reg_Year<-CC.data %>% count(Year, Region, sort = F)
+
+
+Cases_Reg_Year<-Cases_Reg_Year %>%
+    pivot_wider(names_from = Year, values_from = n)
+
+kable(head(Cases_Reg_Year, format = "html"))
+```
+
+## Number of sites per region
+
+Florida Keys 
+
+```{r}
+Cases_Site_FLK<-filter(CC.data, Region=="FLK") %>% count(Year, SiteID, sort = F)
+Cases_Site_FLK
+
+Cases_Site_FLK<-Cases_Site_FLK %>%
+    pivot_wider(names_from = Year, values_from = n)
+
+kable(head(Cases_Site_FLK, format = "html"))
+```
+
+**Note:** This looks like the original data were the SiteIDs are not curated :( 
+
+Puerto Rico 
+
+```{r}
+Cases_Site_PR<-filter(CC.data, Region=="PR") %>% count(Year, SiteID, sort = F)
+Cases_Site_PR
+
+Cases_Site_PR<-Cases_Site_PR %>%
+    pivot_wider(names_from = Year, values_from = n)
+
+kable(head(Cases_Site_PR, format = "html"))
+```
+
+**Note:** Each sample has an unique SiteID? 
 
 ## Aragonite
 
 ```{r}
 Aragonite<- ggplot(CC.data) + theme_bw() +
   
-  #scale_y_continuous(limits = c(24,33.4),
-  #                     name=(expression("Temperature"~(degree*C))),
-  #                     breaks = seq(24, 32, 1),  
-  #                     expand = c(0, 0)) +
+  scale_y_continuous(limits = c(0,5.5),
+                       name=("Aragonite Saturation") ,
+                       breaks = seq(0, 5, 1),  
+                       expand = c(0, 0)) +
   scale_x_date(name="Date",
                #labels = date_format("%M/%Y"),
                #limits = c(-1,114),
-               #expand = c(0, 0),
+               expand = c(0, 0),
                breaks ="6 months")+
   
   #scale_shape_manual(values=c(21,2,24))+
   #scale_colour_manual(values = c("gray35","gray70", "gray70"))+
-  
-geom_point(aes (Date, Aragonite_Sat_W, fill=SiteID), shape=21)+
-geom_line(aes (Date, Aragonite_Sat_W, fill=SiteID), shape=21)+
- 
-theme(legend.position="top",
+
+geom_point(aes (Date, Aragonite_Sat_W, fill=SiteID), shape=21)+    
+#geom_point(aes (Date, Aragonite_Sat_W, fill=Sample_Depth_m), shape=21)+
+#geom_line(aes (Date, Aragonite_Sat_W, fill=SiteID), alpha=0.3)+
+
+theme(legend.position="none",
           plot.background=element_blank(),
           axis.text.x = element_text(angle = 90, vjust = 0.5),
           panel.grid.major.y = element_blank(),
@@ -70,22 +118,25 @@ theme(legend.position="top",
           panel.grid.minor.y = element_blank(),
           legend.box.background = element_rect(),
           panel.background =element_rect(fill = NA, color = "black")
-          ) 
+          ) +
+  geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)+
+  facet_grid(Region~.)
+  
 Aragonite
-#ggsave(file="Outputs/Figure_1_Experiment_design.svg", plot=Design, dpi = 300, width=6, height=4)
+#ggsave(file="Outputs/Aragonite.svg", plot=Aragonite, dpi = 300, width=6, height=4)
 
 ```
 
 
-## Aragonite
+## Temperature
 
 ```{r}
 Temperature<- ggplot(CC.data) + theme_bw() +
   
-  #scale_y_continuous(limits = c(24,33.4),
-  #                     name=(expression("Temperature"~(degree*C))),
-  #                     breaks = seq(24, 32, 1),  
-  #                     expand = c(0, 0)) +
+  scale_y_continuous(limits = c(15,40),
+                       name=(expression("Temperature"~(degree*C))),
+                       breaks = seq(16, 40, 2),  
+                       expand = c(0, 0)) +
   scale_x_date(name="Date",
                #labels = date_format("%M/%Y"),
                #limits = c(-1,114),
@@ -95,10 +146,10 @@ Temperature<- ggplot(CC.data) + theme_bw() +
   #scale_shape_manual(values=c(21,2,24))+
   #scale_colour_manual(values = c("gray35","gray70", "gray70"))+
   
-geom_point(aes (Date, Temperature_C, fill=SiteID), shape=21)+
+geom_point(aes (Date, Temperature_C, fill=Region), shape=21)+
 #geom_line(aes (Date, Temperature_C, colour=SiteID))+
  
-theme(legend.position="null",
+theme(legend.position="none",
           plot.background=element_blank(),
           axis.text.x = element_text(angle = 90, vjust = 0.5),
           panel.grid.major.y = element_blank(),
@@ -113,6 +164,8 @@ Temperature
 
 
 ```
+
+**Note:** Are the 38+ data points real? 
 
 
 ```{r}

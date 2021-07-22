@@ -1,0 +1,25 @@
+ColumnName,DataType,Size,Units,Description
+CTDID,Text,255,,"Unique ID for CTD Cast, if the row is blank this is because there was no unique CTDID given. The water samples were collected from private vessels."
+Region,Text,255,,Unique ID for Region
+Year,Number,,,4 digit Year
+Mission,Text,255,,Cruise ID
+Location,Text,255,,3 Letter Unique Location ID
+Latitude,Number,,decimal degree,Latitude in decimal degree format
+Longitude,Number,,decimal degree,Longitutde in decimal degree format
+UTCDate,Date,8,,UTC Date in format MM/DD/YYYY
+UTCTime,Time,,,UTC Time in 24 hour time format  HH:MM (:SS optional)
+Sample_Depth_m,Number,,meters,Depth sample was taken in meters
+DIC,Number,,痠ol/kg,Dissolved Inorganic Carbon-Analysis value measured in micromoles per kilogram
+TA,Number,,湲q/kg,Total Alkalinity -Analysis value measured in micromoles per kilogram
+pH,Number,,,pH of sample
+pCO2,Number,,琦tm,Partial pressure of CO2 in sample
+Aragonite_Sat,Number,,,Aragonite saturation state value
+Salinity_Bottle,Number,,PSU,Analysis value as Practical Salinity Units
+Conductivity_Sm,Number,,Siemens/m,"Value based on water sample evaluation measured in Siemens per meter, left blank because water sample was not collected using a CTD therefore there is no information to report."
+Salinity_CTD,Number,,PSU,"Value based on water sample evaluation as Practical Salinity Units, left blank because a majority of these water samples were not collected using a CTD, if salinity is reported it was then given in this column. Salinity measurements for USVI/STT are missing because samples were collected from bottles and salinity calculations for these samples are located in the Salinity_Bottle column."
+Temperature_C,Number,,degree C,"Most accurate temperature  value available used to calculate DIC value, measured in degrees Celsius"
+Pressure_db,Number,,decibars,"Most accurate Pressure value available used to calculate DIC value, measured in decibars. This column is blank because it is not recorded as part of our collection methods. "
+Density_Sigmat,Number,,kg/m3,"Density  value calculated from CTD unit readings in kilogram/cubic meter units, left blank because water sample was not collected using a CTD therefore there is no information to report."
+SiteID,Text,10,,"Unique value for site, durived from Climate Station and/or biological Site name if available "
+Survey_design,Text,10,,Values are Permanent/Random based on whether this is a permanent site or a random observation
+Sample_frequency,Text,10,,Values are Single/Diurnal based on wether this is a single measurement or part of a diurnal series
