@@ -26,24 +26,49 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
     library(ggthemes)
     library(lubridate)
     library(knitr)
+
+# Interactive Maps
+library(leaflet)
 ```
 
 # Import and format carbon chemestry data
 
 ```{r, include=FALSE}
-# Get data
+# 1. Get data
 CC.data<-read.csv("Data/NCRMP_CarbonateChemistryData_All_Atlantic_updated.csv", header = T)
   summary(CC.data)
   str((CC.data))
+  #summary(CC.data$Region)
+  #summary(CC.data$Location)
+  Sites<-as.data.frame(unique(CC.data$SiteID))
 
-# Format variables     
+# 2. Format variables
+  # Date/times
   CC.data$Year<-as.numeric(CC.data$Year)
-  CC.data$Aragonite_Sat_W<-as.numeric((as.character(CC.data$Aragonite_Sat_W)))
-  CC.data$Temperature_C <-as.numeric((as.character(CC.data$Temperature_C)))
+  CC.data$Date<-as.Date(CC.data$ESTDate, "%m/%d/%Y")
+ 
+  # Numerical data
+  CC.data$Latitude <- gsub("N/A", "NA", CC.data$Latitude)
+  CC.data$Latitude <-as.numeric((as.character(CC.data$Latitude)))
+  CC.data$Longitude <-as.numeric((as.character(CC.data$Longitude)))
+  
+  CC.data$Temperature_C <-
+    as.numeric((as.character(CC.data$Temperature_C)))
+  
   CC.data$TA <-as.numeric((as.character(CC.data$TA)))
   CC.data$DIC <-as.numeric((as.character(CC.data$DIC)))
-  CC.data$Date<-as.Date(CC.data$ESTDate, "%m/%d/%Y")
+  CC.data$pH <-as.numeric((as.character(CC.data$pH)))
+  CC.data$pCO2 <-as.numeric((as.character(CC.data$pCO2)))
+  CC.data$Aragonite_Sat_W<-
+    as.numeric((as.character(CC.data$Aragonite_Sat_W)))
 ```
+
+Notes:
+* Regions are: DRTO, FGB, FLK, PR, SEFCRI, STX, USVI 
+* Locations are: DRTO  FGB   FL  FLK   PR  STJ  STT  STX
+* How can I get lower, middle and upper keys?
+* Site IDs are still showing duplicates (i.e., lowercase vs capital letters, spaces, etc)
+* Replace all N/As by NAs. It gives scary warnings of NAs introduced by coercion. What else is wrong?
 
 # Add seasonality
 
@@ -66,45 +91,127 @@ CC.data<-cbind(CC.data, Seasons)
 
 # 1. Data available
 
+## Locations
+
+```{r MapINformation, include=FALSE}
+# Map information
+# Add info from the sampling stations
+Locations <- CC.data %>% select(Latitude,
+                                Longitude, 
+                                Location, 
+                                Sample_Depth_m)
+Locations$GPS<-paste(Locations$Latitude,
+                     "-", 
+                     Locations$Longitude)
+
+Locations<-unique(Locations)
+
+#Change color depending on type of data?
+  #stations$Site<-as.numeric(stations$Site)
+  # pal <- colorNumeric(palette = "YlOrRd", 
+                      #domain = stations$Site)
+  
+  #stations$Site<-as.factor(stations$Site)
+  pal.gen <- colorFactor(palette = "Set1",
+                         domain = Locations$Location)
+```
+
+
+```{r makeAmap, echo=FALSE}
+leaflet(Locations, height = '400px') %>% 
+  addTiles() %>%
+  addProviderTiles(providers$Esri.WorldImagery)%>%
+  #addProviderTiles(providers$CartoDB.Positron) %>% 
+  #addMarkers(icon=coral.icon) %>% 
+  addCircleMarkers(lng = ~Longitude, lat = ~Latitude, 
+                   stroke = TRUE, radius = 4, 
+                   fillOpacity = 1,
+                   color = ~pal.gen(Location),
+                   label = ~Sample_Depth_m,
+                   labelOptions = labelOptions(
+                     noHide = T, direction = "bottom",
+                     textOnly = TRUE,
+                     style = list(
+        "color" = "white")))  %>%
+  addLegend(position = "bottomright",
+            pal = pal.gen, 
+            values = ~Location, opacity = 1) %>%
+  fitBounds(lng1=-83.01, lat=24.7, lng2=-82.76, lat2=24.6)
+  
+```
+
+Map of the sites were samples are collected
+
+**Notes:**
+* Multiple dephts: FGB (3x),  DRTO (2x or 3x?), STT(2x), STX(2x)
+
 ## Number of samples
+
+### By depht and location
+
+```{r, echo=FALSE}
+Cases_Loc_Depht<-CC.data %>% count(Location,
+                                  Sample_Depth_m,
+                                  sort = F)
+
+Cases_Loc_Depht<-as.data.frame(Cases_Loc_Depht %>%
+                   pivot_wider(names_from = Sample_Depth_m,
+                   values_from = n))
+
+kable(as.data.frame(Cases_Loc_Depht, format = "markdown"), longtable = TRUE)
+```
+
+**Notes:** 
+* Is DRTO depth = NA equivalent to 0m?
+* Can we pooled STX depht = 15.24 into 15?
 
 ### By year and region
 
 ```{r, echo=FALSE}
 Cases_Reg_Year<-CC.data %>% count(Year, Region, sort = F)
 
+Cases_Reg_Year<-as.data.frame(Cases_Reg_Year %>%
+    pivot_wider(names_from = Year, values_from = n))
 
-Cases_Reg_Year<-Cases_Reg_Year %>%
-    pivot_wider(names_from = Year, values_from = n)
-
-kable(head(Cases_Reg_Year, format = "html"))
+kable(as.data.frame(Cases_Reg_Year, format = "html"))
 ```
-
 
 ### By season and region
 
 ```{r, echo=FALSE}
-Cases_Reg_season<-CC.data %>% count(Season, Region, sort = F)
+Cases_Reg_season<-CC.data %>% count(Season, Region, sort = T)
 
-Cases_Reg_season<-Cases_Reg_season %>%
-    pivot_wider(names_from = Season, values_from = n)
+Cases_Reg_season<-as.data.frame(Cases_Reg_season %>%
+    pivot_wider(names_from = Season, values_from = n))
 
-kable(head(Cases_Reg_season, format = "html"))
+kable(as.data.frame(Cases_Reg_season, format = "html"))
 ```
 
+### By mission, year, region
+
+```{r, echo=FALSE}
+Cases_Mission<-CC.data %>% count(Region,
+                                 Mission,
+                                 Year, sort = F)
+
+Cases_Mission<-as.data.frame(Cases_Mission %>%
+    pivot_wider(names_from = Year, values_from = n))
+
+kable(as.data.frame(Cases_Mission, format = "html"), caption="Samples collected by each mission")
+```
 
 ## Number of sites per region
 
 Florida Keys 
 
 ```{r, echo=FALSE}
-Cases_Site_FLK<-filter(CC.data, Region=="FLK") %>% count(Year, SiteID, sort = F)
+Cases_Site_FLK<-filter(CC.data, Region=="FLK") %>% count(Year, SiteID, sort = T)
 Cases_Site_FLK
 
-Cases_Site_FLK<-Cases_Site_FLK %>%
-    pivot_wider(names_from = Year, values_from = n)
+Cases_Site_FLK<-as.data.frame(Cases_Site_FLK %>%
+    pivot_wider(names_from = Year, values_from = n))
 
-kable(head(Cases_Site_FLK, format = "html"))
+kable(as.data.frame(Cases_Site_FLK, format = "html"))
 ```
 
 **Note:** This looks like the original data were the SiteIDs are not curated :( 
@@ -118,10 +225,12 @@ Cases_Site_PR
 Cases_Site_PR<-Cases_Site_PR %>%
     pivot_wider(names_from = Year, values_from = n)
 
-kable(head(Cases_Site_PR, format = "html"))
+#kable(head(Cases_Site_PR, format = "html"))
 ```
 
 **Note:** Each sample has an unique SiteID? 
+* What do this IDs mean? 
+* 2 SiteID have 5 digits instead 4... are these typos? Can we relate this numbers to coral cover? 
 
 
 # 2. Basic stats summary
@@ -136,7 +245,7 @@ Temp.Season <- ddply (CC.data, .(Region, Season),summarise,
                 Tmean = mean (Temperature_C, na.rm = F), 
                 Tsd = sd (Temperature_C, na.rm = F))
 
-kable(head(Temp.Season, format = "html"))
+kable(as.data.frame(Temp.Season, format = "markdown"))
 
 
 ```
@@ -151,7 +260,7 @@ Aragonite.Season <- ddply (CC.data, .(Region, Season),summarise,
                 Amean = mean (Aragonite_Sat_W, na.rm = F), 
                 Asd = sd (Aragonite_Sat_W, na.rm = F))
 
-kable(head(Aragonite.Season, format = "html"))
+kable(as.data.frame(Aragonite.Season, format = "markdown"))
 ```
 
 ## TA
@@ -163,7 +272,7 @@ TA.Season <- ddply (CC.data, .(Region, Season),summarise,
                 TAmean = mean (TA, na.rm = F), 
                 TAsd = sd (TA, na.rm = F))
 
-kable(head(TA.Season, format = "html"))
+kable(as.data.frame(TA.Season, format = "markdown"))
 ```
 
 
@@ -176,10 +285,10 @@ DIC.Season <- ddply (CC.data, .(Region, Season),summarise,
                 Amean = mean (DIC, na.rm = F), 
                 Asd = sd (DIC, na.rm = F))
 
-kable(head(DIC.Season, format = "html"))
+kable(as.data.frame(DIC.Season, format = "markdown"))
 ```
 
-**Note:** What is limit for the seasons that makes more sense (now jus using months)?. Wet vs dry/ temoerature/light 
+**Note:** What is limit for the seasons that makes more sense (now jus using months)?. Wet vs dry/ temperature/light 
 
 # Explore plots
 
@@ -536,4 +645,68 @@ Meassured: TA and DIC. Derived:pCO2, pH and aragonite
 * Inlets: more dynamic -> periodic pulses of acidified water -> more acidification than reefs. 
   - Negative correlation bw salinity and both TA, and DIC. Elevated TA and DIC in low salinity waters ->  carbonate dissolution as a result of organic matter decomposition?.
 
+# 4. Data analysis 
+
+## Salinity standarizations 
+
+* Total Alcalinity (TA)
+
+```{r}
+TA_Salinty<- ggplot(CC.data) + theme_bw() +
+  
+  scale_y_continuous(#limits = c(1700,2900),
+                    name="Total alkalinity (TA)",
+    #               breaks = seq(1800, 2800, 200),
+                    expand = c(0.1, 0.1)) +
+  scale_x_continuous(name="Salinity (PSU)",
+  #                limits = c(0.5,6),
+  #                breaks = seq(1,6,1),
+                   expand = c(0.1, 0.1))+
+  
+geom_point(aes (Salinity_Bottle, TA, fill=Season), 
+           alpha=0.5, shape=21)+
+ 
+theme(legend.position="top",
+          plot.background=element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5),
+          panel.grid.major.y = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          legend.box.background = element_rect(),
+          panel.background =element_rect(fill = NA,
+                                         color = "black"))
+TA_Salinty+ facet_wrap(~Location, scales = "free")
+#ggsave(file="Outputs/Figure_1_Experiment_design.svg", plot=Design, dpi = 300, width=6, height=4)
+```
+
+* Disolved inorganic Carbon (DIC)
+
+```{r}
+DIC_Salinty<- ggplot(CC.data) + theme_bw() +
+  
+  scale_y_continuous(#limits = c(1700,2900),
+                  name="Disolved Inorganic Carbon (DIC)",
+    #             breaks = seq(1800, 2800, 200),
+                  expand = c(0.1, 0.1)) +
+  scale_x_continuous(name="Salinity (PSU)",
+  #                limits = c(0.5,6),
+  #                breaks = seq(1,6,1),
+                   expand = c(0.1, 0.1))+
+geom_point(aes (Salinity_Bottle, DIC, fill=Season), 
+           alpha=0.5, shape=21)+
+ 
+theme(legend.position="top",
+          plot.background=element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5),
+          panel.grid.major.y = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          legend.box.background = element_rect(),
+          panel.background =element_rect(fill = NA,
+                                         color = "black"))
+DIC_Salinty + facet_wrap(~Location, scales = "free")
+#ggsave(file="Outputs/Figure_1_Experiment_design.svg", plot=Design, dpi = 300, width=6, height=4)
+```
 
