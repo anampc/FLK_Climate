@@ -14,7 +14,7 @@ editor_options:
 ---
 
 ```{r setup, include = FALSE}
-  knitr::opts_chunk$set(echo = FALSE, warning = FALSE, 
+  knitr::opts_chunk$set(warning = FALSE, 
                         message = FALSE,
                         #options(knitr.kable.NA = ''),
                         fig.align = "center")
@@ -441,6 +441,8 @@ TA_DIC +
 
 **Figure 3:** Linear regressions of total alkalinity (nTA) as a function of disolved inorganic carbon (nDIC).
 
+Does this mean anything without offshore / inshore references?
+
 ```{r}
  # Individual LR for each region
     TA_DIC_lm <- CC.data %>%
@@ -457,8 +459,6 @@ TA_DIC +
     kable(as.data.frame(TA_DIC_coef[,1:8], format = "markdown"),
           caption = "Table 3: nTA vs nDIC equations", digits = 3)
 ```
-
-Does this mean anything without offshore / inshore references?
 
 * Higher slopes in TA vs. DIC -> a higher NCC:NCP
 * larger slopes -> calcifying (e.g., corals, sediments, and calcifying algae) relative to non-calcifying communities (e.g., fleshy algae)
