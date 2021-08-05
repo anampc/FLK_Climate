@@ -13,7 +13,7 @@ editor_options:
 ---
 
 ```{r setup, include = FALSE}
-knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, options(knitr.kable.NA = ''))
 ```
 
 # Libraries and settings
@@ -28,7 +28,7 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
     library(knitr)
 
 # Interactive Maps
-library(leaflet)
+    library(leaflet)
 ```
 
 # Import and format carbon chemestry data
@@ -45,30 +45,61 @@ CC.data<-read.csv("Data/NCRMP_CarbonateChemistryData_All_Atlantic_updated.csv", 
 # 2. Format variables
   # Date/times
   CC.data$Year<-as.numeric(CC.data$Year)
-  CC.data$Date<-as.Date(CC.data$ESTDate, "%m/%d/%Y")
+  CC.data$Date<-as.Date(CC.data$ESTDate, "%m/%d/%y")
  
+  
   # Numerical data
   CC.data$Latitude <- gsub("N/A", "NA", CC.data$Latitude)
+  CC.data$Longitude <- gsub("N/A", "NA", CC.data$Longitude)
+  
+  #Latitude_NA<-which(is.na(CC.data$Latitude))
   CC.data$Latitude <-as.numeric((as.character(CC.data$Latitude)))
+  #Latitude_NA2<-which(is.na(CC.data$Latitude))
+  #NewNAs<-setdiff(Latitude_NA2, Latitude_NA)
+  #Row189 is not being recognized-fixed, it had an space
+  
+  #Longitude_NA<-which(is.na(CC.data$Longitude))
   CC.data$Longitude <-as.numeric((as.character(CC.data$Longitude)))
+  #Longitude_NA2<-which(is.na(CC.data$Longitude))
+  #NewNAs<-setdiff(Longitude_NA2, Longitude_NA)
+  
   
   CC.data$Temperature_C <-
     as.numeric((as.character(CC.data$Temperature_C)))
+  Temperature_NA2<-which(is.na(CC.data$Temperature_C))
+  # 4 temp values not available in the original data
   
   CC.data$TA <-as.numeric((as.character(CC.data$TA)))
+  #Row 730 does not have TA, pH, pCO2 or Aragonite 
+  
   CC.data$DIC <-as.numeric((as.character(CC.data$DIC)))
+  
   CC.data$pH <-as.numeric((as.character(CC.data$pH)))
+  TA_NA<-which(is.na(CC.data$pH))
+  # rows 31  32 663 664 730
+  
   CC.data$pCO2 <-as.numeric((as.character(CC.data$pCO2)))
   CC.data$Aragonite_Sat_W<-
     as.numeric((as.character(CC.data$Aragonite_Sat_W)))
+  
+  #Values set to -9 -> Changed to NAs
+  CC.data_Neg9<-subset(CC.data,CC.data$Aragonite_Sat_W==-9 |
+                         CC.data$pH==-9 |
+                         CC.data$pCO2==-9)
+  
+  CC.data[ CC.data == -9 ] <- NA
+  
 ```
 
 Notes:
-* Regions are: DRTO, FGB, FLK, PR, SEFCRI, STX, USVI 
+* Regions are: DRTO, FGB, FLK, PR, SEFCRI, STX, USVI (STJ + STT)
 * Locations are: DRTO  FGB   FL  FLK   PR  STJ  STT  STX
 * How can I get lower, middle and upper keys?
-* Site IDs are still showing duplicates (i.e., lowercase vs capital letters, spaces, etc)
-* Replace all N/As by NAs. It gives scary warnings of NAs introduced by coercion. What else is wrong?
+* Site IDs are still showing duplicates (i.e., lowercase vs capital letters, spaces, etc) -> Fixed what I could
+* Replace all N/As by NAs. It gives scary warnings of NAs introduced by coercion. What else is wrong? - > There was one space, verything else was miising data
+* Changed all -9 in Arg, pH and pCO2 (4 samples, 12 values) to NA
+
+* Row 131: DIC=4574.590
 
 # Add seasonality
 
@@ -91,7 +122,7 @@ CC.data<-cbind(CC.data, Seasons)
 
 # 1. Data available
 
-## Locations
+## Locations(All samples)
 
 ```{r MapINformation, include=FALSE}
 # Map information
@@ -136,7 +167,7 @@ leaflet(Locations, height = '400px') %>%
   addLegend(position = "bottomright",
             pal = pal.gen, 
             values = ~Location, opacity = 1) %>%
-  fitBounds(lng1=-83.01, lat=24.7, lng2=-82.76, lat2=24.6)
+  fitBounds(lng1=-93.83, lat=28, lng2=-64.1, lat2=17.5)
   
 ```
 
@@ -144,6 +175,48 @@ Map of the sites were samples are collected
 
 **Notes:**
 * Multiple dephts: FGB (3x),  DRTO (2x or 3x?), STT(2x), STX(2x)
+* STT abd STJ locations overlap 
+
+
+## Locations (Avergage geolocation for permanent samples)
+
+```{r, echo=FALSE}
+
+GPS.Sites <- ddply (CC.data, .(Location, SiteID),summarise,
+                Lat = mean (Latitude, na.rm = F), 
+                Lon = mean (Longitude, na.rm = F),
+                number = n())
+
+kable(as.data.frame(GPS.Sites, format = "markdown"))
+```
+
+
+```{r makeAmap2, echo=FALSE}
+leaflet(GPS.Sites, height = '400px') %>% 
+  addTiles() %>%
+  addProviderTiles(providers$Esri.WorldImagery)%>%
+  #addProviderTiles(providers$CartoDB.Positron) %>% 
+  #addMarkers(icon=coral.icon) %>% 
+  addCircleMarkers(lng = ~Lon, lat = ~Lat, 
+                   stroke = TRUE, 
+                   radius = sqrt(GPS.Sites$number), 
+                   fillOpacity = 1,
+                   color = ~pal.gen(Location),
+                   label = ~SiteID,
+                   labelOptions = labelOptions(
+                     noHide = F, direction = "bottom",
+                     textOnly = TRUE,
+                     style = list(
+        "color" = "white")))  %>%
+  addLegend(position = "topright",
+            pal = pal.gen, 
+            values = ~Location, opacity = 1) %>%
+  fitBounds(lng1=-93.83, lat=28, lng2=-64.1, lat2=17.5)
+  
+```
+
+Map including the numer of samples collected by SiteID
+
 
 ## Number of samples
 
@@ -176,7 +249,7 @@ Cases_Reg_Year<-as.data.frame(Cases_Reg_Year %>%
 kable(as.data.frame(Cases_Reg_Year, format = "html"))
 ```
 
-### By season and region
+### By climatological season and region
 
 ```{r, echo=FALSE}
 Cases_Reg_season<-CC.data %>% count(Season, Region, sort = T)
@@ -184,7 +257,8 @@ Cases_Reg_season<-CC.data %>% count(Season, Region, sort = T)
 Cases_Reg_season<-as.data.frame(Cases_Reg_season %>%
     pivot_wider(names_from = Season, values_from = n))
 
-kable(as.data.frame(Cases_Reg_season, format = "html"))
+kable(as.data.frame(Cases_Reg_season, format = "html"),
+      caption = "Samples collected in each seson")
 ```
 
 ### By mission, year, region
@@ -197,6 +271,12 @@ Cases_Mission<-CC.data %>% count(Region,
 Cases_Mission<-as.data.frame(Cases_Mission %>%
     pivot_wider(names_from = Year, values_from = n))
 
+# Organize table
+Cases_Mission<-Cases_Mission %>% 
+    select(sort(names(.)))
+Cases_Mission<-Cases_Mission %>%
+  select(c(Region, Mission), everything())
+
 kable(as.data.frame(Cases_Mission, format = "html"), caption="Samples collected by each mission")
 ```
 
@@ -205,16 +285,26 @@ kable(as.data.frame(Cases_Mission, format = "html"), caption="Samples collected 
 Florida Keys 
 
 ```{r, echo=FALSE}
-Cases_Site_FLK<-filter(CC.data, Region=="FLK") %>% count(Year, SiteID, sort = T)
-Cases_Site_FLK
+Cases_Site_FLK<-filter(CC.data, Region=="FLK") %>% count(Year, SiteID, sort = F)
+#Cases_Site_FLK
 
 Cases_Site_FLK<-as.data.frame(Cases_Site_FLK %>%
     pivot_wider(names_from = Year, values_from = n))
 
-kable(as.data.frame(Cases_Site_FLK, format = "html"))
+# Organize table
+Cases_Site_FLK<-Cases_Site_FLK %>% 
+    select(sort(names(.)))
+Cases_Site_FLK<-Cases_Site_FLK %>%
+  select(SiteID, everything())
+
+kable(as.data.frame(Cases_Site_FLK, format = "html"),
+      caption = "Samples collected in SiteIDs")
 ```
 
 **Note:** This looks like the original data were the SiteIDs are not curated :( 
+* Fixed some of these. Need to know which ones are unique / repeated
+* ADCP_N is right?
+* ADCP_SW is right?
 
 Puerto Rico 
 
@@ -231,6 +321,7 @@ Cases_Site_PR<-Cases_Site_PR %>%
 **Note:** Each sample has an unique SiteID? 
 * What do this IDs mean? 
 * 2 SiteID have 5 digits instead 4... are these typos? Can we relate this numbers to coral cover? 
+* Sites 61241 62381
 
 
 # 2. Basic stats summary
@@ -252,7 +343,7 @@ kable(as.data.frame(Temp.Season, format = "markdown"))
 
 ## Aragonite
 
-```{r}
+```{r, echo=FALSE}
 
 Aragonite.Season <- ddply (CC.data, .(Region, Season),summarise,
                 Amin = min (Aragonite_Sat_W, na.rm = F), 
@@ -265,7 +356,7 @@ kable(as.data.frame(Aragonite.Season, format = "markdown"))
 
 ## TA
 
-```{r}
+```{r, echo=FALSE}
 TA.Season <- ddply (CC.data, .(Region, Season),summarise,
                 TAmin = min (TA, na.rm = F), 
                 TAmax = max (TA, na.rm = F),
@@ -278,7 +369,7 @@ kable(as.data.frame(TA.Season, format = "markdown"))
 
 ## DIC
 
-```{r}
+```{r, echo=FALSE}
 DIC.Season <- ddply (CC.data, .(Region, Season),summarise,
                 Amin = min (DIC, na.rm = F), 
                 Amax = max (DIC, na.rm = F),
@@ -326,7 +417,8 @@ theme(legend.position="none",
           legend.box.background = element_rect(),
           panel.background =element_rect(fill = NA, color = "black")
           ) +
-  geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)+
+  geom_abline(slope = 0, intercept = 400,
+              color="gray", linetype=2)+
   facet_grid(Region~.)
   
 Aragonite
@@ -397,7 +489,7 @@ Temperature_All<- ggplot(CC.data) + theme_bw() +
 geom_point(aes (Date, Temperature_C, fill=Region), shape=21)+
 #geom_line(aes (Date, Temperature_C, colour=SiteID))+
  
-theme(legend.position="none",
+theme(legend.position="top",
           plot.background=element_blank(),
           axis.text.x = element_text(angle = 90, vjust = 0.5),
           panel.grid.major.y = element_blank(),
@@ -452,10 +544,11 @@ Temperature_Reg_Season+facet_grid(Region~.)
 ```{r, echo=FALSE}
 Sal_All<- ggplot(CC.data) + theme_bw() +
   
-   # scale_y_continuous(#limits = c(15,40),
-   #                      name="Salinity",
-   #                     # breaks = seq(16, 40, 2),  
-   #                      expand = c(0, 0)) +
+    scale_y_continuous(#limits = c(15,40),
+                       #expand = c(0, 0),
+                        name="Salinity Bottle",
+                        breaks = seq(16, 40, 2)
+                        ) +
   scale_x_date(name="Date",
                #labels = date_format("%M/%Y"),
                #limits = c(-1,114),
@@ -508,7 +601,7 @@ theme(legend.position="top",
           legend.box.background = element_rect(),
           panel.background =element_rect(fill = NA, color = "black")
           ) 
-Sal_Reg_Season
+#Sal_Reg_Season
 #ggsave(file="Outputs/Figure_1_Experiment_design.svg", plot=Design, dpi = 300, width=6, height=4)
 
 #Sal_Reg_Season+facet_grid(Region~.)
@@ -516,7 +609,7 @@ Sal_Reg_Season
 
 ## Correlations to check outliers
 
-Temperature and Arg
+### Temperature and Arg
 
 ```{r, echo=FALSE}
 Relationships<- ggplot(CC.data) + theme_bw() +
@@ -549,21 +642,21 @@ Relationships
 #ggsave(file="Outputs/Figure_1_Experiment_design.svg", plot=Design, dpi = 300, width=6, height=4)
 ```
 
-TA and DIC
+### Salinity + Temperatue 
 
 ```{r, echo=FALSE}
-Relationships2<- ggplot(CC.data) + theme_bw() +
+Sal_Temp<- ggplot(CC.data) + theme_bw() +
   
-  scale_y_continuous(limits = c(1700,2900),
-                       name="TA",
-                       breaks = seq(1800, 2800, 200),
+  scale_y_continuous(limits = c(15,40),
+                       name=(expression("Temperature"~(degree*C))),
+                       breaks = seq(16, 40, 2),
                        expand = c(0, 0)) +
-  # scale_x_continuous(name="Aragonite",
-  #                limits = c(0.5,6),
-  #                expand = c(0, 0),
-  #                breaks = seq(1,6,1))+
+  scale_x_continuous(name="Salinity",
+                 #limits = c(0.5,6),
+                 #expand = c(0, 0),
+                 breaks = seq(1,40,2))+
   
-geom_point(aes (DIC, TA, fill=Season), alpha=0.5, shape=21)+
+geom_point(aes (Salinity_Bottle, Temperature_C, fill=Season), alpha=0.5, shape=21)+
 #geom_line(aes (Date, Temperature_C, colour=SiteID))+
  
 theme(legend.position="top",
@@ -575,33 +668,23 @@ theme(legend.position="top",
           panel.grid.minor.y = element_blank(),
           legend.box.background = element_rect(),
           panel.background =element_rect(fill = NA, color = "black")
-          )
-  #geom_abline(slope = 0, intercept = 29.5, color="gray", linetype=2)+
-  #geom_vline(xintercept = 3, color="gray", linetype=2)
-Relationships2
+          ) +
+  geom_abline(slope = 0, intercept = 29.5, color="gray", linetype=2)+
+  geom_vline(xintercept = 35, color="gray", linetype=2)
+Sal_Temp
+Sal_Temp+facet_wrap(~Region, scales="free")
+
 #ggsave(file="Outputs/Figure_1_Experiment_design.svg", plot=Design, dpi = 300, width=6, height=4)
 ```
 
-```{r}
-Relationships2 + scale_x_continuous(name="DIC",
-                  limits = c(1550, 2500),
-                  expand = c(0, 0),
-                  breaks = seq(1600,2500,200))
 
-Relationships2 + scale_x_continuous(name="DIC",
-                  limits = c(1550, 2500),
-                  expand = c(0, 0),
-                  breaks = seq(1600,2500,200))+
-  facet_wrap(~Region)
-  
-```
 
-# 3. Notes/ideas
+# 4. Notes/ideas
 
-* Regional CC
-* local carbonate chemistry: 
+* Regional CC -> offshore data
+* Local carbonate chemistry: 
   * Seasonal (light), storms, upwelling, salinity (rain). 
-  *Biological: coral/seagrass/macroalgae cover 
+  * Biological: coral/seagrass/macroalgae cover 
   * Biological + Seasonal: Photosyntesis, respiration.
   * Physical: inlets, rivers, upwelling
 
@@ -645,68 +728,5 @@ Meassured: TA and DIC. Derived:pCO2, pH and aragonite
 * Inlets: more dynamic -> periodic pulses of acidified water -> more acidification than reefs. 
   - Negative correlation bw salinity and both TA, and DIC. Elevated TA and DIC in low salinity waters ->  carbonate dissolution as a result of organic matter decomposition?.
 
-# 4. Data analysis 
 
-## Salinity standarizations 
-
-* Total Alcalinity (TA)
-
-```{r}
-TA_Salinty<- ggplot(CC.data) + theme_bw() +
-  
-  scale_y_continuous(#limits = c(1700,2900),
-                    name="Total alkalinity (TA)",
-    #               breaks = seq(1800, 2800, 200),
-                    expand = c(0.1, 0.1)) +
-  scale_x_continuous(name="Salinity (PSU)",
-  #                limits = c(0.5,6),
-  #                breaks = seq(1,6,1),
-                   expand = c(0.1, 0.1))+
-  
-geom_point(aes (Salinity_Bottle, TA, fill=Season), 
-           alpha=0.5, shape=21)+
- 
-theme(legend.position="top",
-          plot.background=element_blank(),
-          axis.text.x = element_text(angle = 90, vjust = 0.5),
-          panel.grid.major.y = element_blank(),
-          panel.grid.major.x = element_blank(),
-          panel.grid.minor.x = element_blank(),
-          panel.grid.minor.y = element_blank(),
-          legend.box.background = element_rect(),
-          panel.background =element_rect(fill = NA,
-                                         color = "black"))
-TA_Salinty+ facet_wrap(~Location, scales = "free")
-#ggsave(file="Outputs/Figure_1_Experiment_design.svg", plot=Design, dpi = 300, width=6, height=4)
-```
-
-* Disolved inorganic Carbon (DIC)
-
-```{r}
-DIC_Salinty<- ggplot(CC.data) + theme_bw() +
-  
-  scale_y_continuous(#limits = c(1700,2900),
-                  name="Disolved Inorganic Carbon (DIC)",
-    #             breaks = seq(1800, 2800, 200),
-                  expand = c(0.1, 0.1)) +
-  scale_x_continuous(name="Salinity (PSU)",
-  #                limits = c(0.5,6),
-  #                breaks = seq(1,6,1),
-                   expand = c(0.1, 0.1))+
-geom_point(aes (Salinity_Bottle, DIC, fill=Season), 
-           alpha=0.5, shape=21)+
- 
-theme(legend.position="top",
-          plot.background=element_blank(),
-          axis.text.x = element_text(angle = 90, vjust = 0.5),
-          panel.grid.major.y = element_blank(),
-          panel.grid.major.x = element_blank(),
-          panel.grid.minor.x = element_blank(),
-          panel.grid.minor.y = element_blank(),
-          legend.box.background = element_rect(),
-          panel.background =element_rect(fill = NA,
-                                         color = "black"))
-DIC_Salinty + facet_wrap(~Location, scales = "free")
-#ggsave(file="Outputs/Figure_1_Experiment_design.svg", plot=Design, dpi = 300, width=6, height=4)
-```
 

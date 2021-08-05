@@ -1,0 +1,997 @@
+---
+title: "Carbon Chemestry explore"
+author: "Ana Palacio-Castro"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: hide
+    fig_height: 8
+    fig_width: 8
+    df_print: paged
+    toc: yes
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include = FALSE}
+  knitr::opts_chunk$set(echo = FALSE, warning = FALSE, 
+                        message = FALSE,
+                        #options(knitr.kable.NA = ''),
+                        fig.align = "center")
+```
+
+# Libraries and settings
+
+```{r, include=FALSE}
+# Libraries
+    library(plyr)
+    library(tidyverse)
+    library(reshape2)
+    library(ggthemes)
+    library(lubridate)
+    library(knitr)
+    library(dplyr)
+    library(broom)
+
+# Interactive Maps
+    library(leaflet)
+```
+
+# Import and format carbon chemestry data
+
+```{r, include=FALSE}
+# 1. Get data
+CC.data<-read.csv("Data/NCRMP_CarbonateChemistryData_All_Atlantic_updated.csv", header = T)
+  summary(CC.data)
+  str((CC.data))
+  #summary(CC.data$Region)
+  #summary(CC.data$Location)
+  Sites<-as.data.frame(unique(CC.data$SiteID))
+
+# 2. Format variables
+  # Date/times
+  CC.data$Year<-as.numeric(CC.data$Year)
+  CC.data$Date<-as.Date(CC.data$ESTDate, "%m/%d/%y")
+ 
+  
+  # Numerical data
+  CC.data$Latitude <- gsub("N/A", "NA", CC.data$Latitude)
+  CC.data$Longitude <- gsub("N/A", "NA", CC.data$Longitude)
+  
+  #Latitude_NA<-which(is.na(CC.data$Latitude))
+  CC.data$Latitude <-as.numeric((as.character(CC.data$Latitude)))
+  #Latitude_NA2<-which(is.na(CC.data$Latitude))
+  #NewNAs<-setdiff(Latitude_NA2, Latitude_NA)
+  #Row189 is not being recognized-fixed, it had an space
+  
+  #Longitude_NA<-which(is.na(CC.data$Longitude))
+  CC.data$Longitude <-as.numeric((as.character(CC.data$Longitude)))
+  #Longitude_NA2<-which(is.na(CC.data$Longitude))
+  #NewNAs<-setdiff(Longitude_NA2, Longitude_NA)
+  
+  
+  CC.data$Temperature_C <-
+    as.numeric((as.character(CC.data$Temperature_C)))
+  Temperature_NA2<-which(is.na(CC.data$Temperature_C))
+  # 4 temp values not available in the original data
+  
+  CC.data$TA <-as.numeric((as.character(CC.data$TA)))
+  #Row 730 does not have TA, pH, pCO2 or Aragonite 
+  
+  CC.data$DIC <-as.numeric((as.character(CC.data$DIC)))
+  
+  CC.data$pH <-as.numeric((as.character(CC.data$pH)))
+  TA_NA<-which(is.na(CC.data$pH))
+  # rows 31  32 663 664 730
+  
+  CC.data$pCO2 <-as.numeric((as.character(CC.data$pCO2)))
+  CC.data$Aragonite_Sat_W<-
+    as.numeric((as.character(CC.data$Aragonite_Sat_W)))
+  
+  #Values set to -9 -> Changed to NAs
+  CC.data_Neg9<-subset(CC.data,CC.data$Aragonite_Sat_W==-9 |
+                         CC.data$pH==-9 |
+                         CC.data$pCO2==-9)
+  
+  CC.data[ CC.data == -9 ] <- NA
+  
+  CC.data$DIC[CC.data$DIC == 4574.590 ] <- NA
+  
+```
+
+# Add seasonality
+
+```{r, include=FALSE}
+# Define seasons
+  metseasons <- c(
+    "01" = "Winter", "02" = "Winter",
+    "03" = "Spring", "04" = "Spring", "05" = "Spring",
+    "06" = "Summer", "07" = "Summer", "08" = "Summer",
+    "09" = "Fall", "10" = "Fall", "11" = "Fall",
+    "12" = "Winter"
+  )
+
+Seasons<-as.data.frame(metseasons[format(CC.data$Date, "%m")])
+colnames(Seasons)<-"Season"
+CC.data<-cbind(CC.data, Seasons)
+
+precipitation<-c(
+    "01" = "Dry", "02" = "Dry", "03" = "Dry", "04" = "Dry",
+    "05" = "Wet", "06" = "Wet", "07" = "Wet",
+    "08" = "Wet", "09" = "Wet", "10" = "Wet",
+    "11" = "Dry",  "12" = "Dry"
+  )
+
+Precipitation<-as.data.frame(precipitation[format(CC.data$Date, "%m")])
+    colnames(Precipitation)<-"Precipitation"
+    CC.data<-cbind(CC.data, Precipitation)
+
+CC.data$Month<-months(CC.data$Date)
+CC.data$Month<-factor(CC.data$Month, levels = month.name)
+
+summary(CC.data$Month)
+
+```
+
+# 1. Data available
+
+## Locations (All samples)
+
+```{r MapINformation, include=FALSE}
+# Map information
+# Add info from the sampling stations
+Locations <- CC.data %>% select(Latitude,
+                                Longitude, 
+                                Location, 
+                                SiteID)
+Locations$GPS<-paste(Locations$Latitude,
+                     "-", 
+                     Locations$Longitude)
+
+Locations<-unique(Locations)
+
+GPS.Sites <- ddply (CC.data, .(Location, SiteID),summarise,
+                Lat = mean (Latitude, na.rm = F), 
+                Lon = mean (Longitude, na.rm = F),
+                number = n())
+
+#Change color depending on type of data?
+  #stations$Site<-as.numeric(stations$Site)
+  # pal <- colorNumeric(palette = "YlOrRd", 
+                      #domain = stations$Site)
+  
+  #stations$Site<-as.factor(stations$Site)
+  #pal.gen <- colorFactor(palette = "Set1",
+  #                       domain = Locations$Location)
+  pal.gen <- colorFactor(palette = "Set1",
+                         domain = GPS.Sites$Location)
+```
+
+
+```{r makeAmap, echo=FALSE}
+leaflet(GPS.Sites, height = '400px') %>% 
+  addTiles() %>%
+  addProviderTiles(providers$Esri.WorldImagery)%>%
+  #addProviderTiles(providers$CartoDB.Positron) %>% 
+  #addMarkers(icon=coral.icon) %>% 
+  addCircleMarkers(lng = ~Lon, lat = ~Lat, 
+                   stroke = TRUE, 
+                   radius = sqrt(GPS.Sites$number), 
+                   fillOpacity = 1,
+                   color = ~pal.gen(Location),
+                   label = ~SiteID,
+                   labelOptions = labelOptions(
+                     noHide = F, direction = "bottom",
+                     textOnly = TRUE,
+                     style = list(
+        "color" = "white")))  %>%
+  addLegend(position = "topright",
+            pal = pal.gen, 
+            values = ~Location, opacity = 1) %>%
+  fitBounds(lng1=-93.80, lat=28, lng2=-64.1, lat2=17.5)
+  
+```
+
+Map of the sites were samples are collected
+
+# 2. Normalization
+
+## Salinity standarizations 
+
+1. Used salinity Bottle first, if not available, salinity CTD
+
+```{r, echo=FALSE}
+# 1. Get the best salinity available. First bottle, if empy CTD
+    CC.data$BestSalinity<-CC.data$Salinity_Bottle
+    
+    CC.data$BestSalinity<-ifelse(is.na(CC.data$Salinity_Bottle),
+                                 CC.data$Salinity_CTD,
+                                 CC.data$Salinity_Bottle)
+    
+# 2. TA and DIC 35 normalization
+    CC.data$n35TA<-(CC.data$TA/CC.data$BestSalinity)*35
+    CC.data$n35DIC<-(CC.data$DIC/CC.data$BestSalinity)*35
+```
+
+2. Calculate TA intercepts
+
+```{r}
+    
+# 3.TA normalization to intercept  
+    # One intercept?
+    TA1<-lm(TA~BestSalinity, data=CC.data)
+    #TA1
+    #summary(TA1)
+    # Intercept for each region
+    TA2<-lm(TA~BestSalinity+Region, data=CC.data)
+    #TA2
+    #summary(TA2)
+    
+    # Individual LR for each region
+    TA_lm <- CC.data %>%
+      group_by(Region) %>%
+      do(mod = lm(TA ~ BestSalinity,data = .))
+
+    TA_coef <- CC.data %>% 
+                group_by(Region) %>%
+                do({model = lm(TA~BestSalinity, data=.)  # model
+                    data.frame(tidy(model), # get coefficient info
+                    glance(model))})        # get model info
+
+     
+```
+
+3. Calculate DIC intercepts 
+
+```{r}
+# 3.DIC normalization to intercept  
+
+    #DIC
+    # One intercept?
+    DIC1<-lm(DIC~BestSalinity, data=CC.data)
+    #DIC1
+    # Intercept for each region
+    DIC2<-lm(DIC~BestSalinity+Region, data=CC.data)
+    #DIC2 
+    
+    # Individual LR for each region
+      #DIC_lm <- CC.data %>%
+      # group_by(Region) %>%
+      # do(mod = lm(DIC ~ BestSalinity,data = .))
+
+    DIC_coef <- CC.data %>% 
+                  group_by(Region) %>%
+                  do({model = lm(DIC~BestSalinity, data=.)  
+                  # create model
+                  data.frame(tidy(model), # get coefficient info
+                  glance(model))})        # get model info
+
+
+```
+
+4. Normalize with Friss equation
+
+```{r}
+# 4. Normalize the data
+
+  TA_TO<-subset(TA_coef, term=="(Intercept)")
+  TA_TO<-as.data.frame(select(TA_TO, c(Region, estimate)))
+  names(TA_TO)[2] <- "TA_0"
+  
+  DIC_TO<-subset(DIC_coef, term=="(Intercept)")
+  DIC_TO<-as.data.frame(select(DIC_TO, c(Region, estimate)))
+  names(DIC_TO)[2] <- "DIC_0"
+    
+    
+  Intercepts<-join(TA_TO, DIC_TO, by="Region", type="full")
+  CC.data<-join(CC.data, Intercepts, by="Region", type="left")
+  
+  CC.data$nTA<-(
+    CC.data$TA-CC.data$TA_0)/CC.data$BestSalinity*35+CC.data$TA_0
+  
+  CC.data$nDIC<-(
+    CC.data$DIC-CC.data$DIC_0)/CC.data$BestSalinity*35+CC.data$DIC_0
+
+```
+
+5. TA parameters to nTA
+
+```{r}
+kable(as.data.frame(TA_coef[,1:8], format = "markdown"), caption = "Table 1: TA parameters for normalization", digits = 3)
+
+```
+    
+```{r, fig.height=8.8, fig.width=8.8}
+# 5. Chech normalization?
+nTA_Sal<- ggplot(CC.data, x=BestSalinity) +
+  
+  theme_bw() +
+  #scale_y_continuous(limits = c(1700,2900),
+  #                     name="TA",
+  #                     breaks = seq(1800, 2800, 200),
+  #                     expand = c(0, 0)) +
+  # scale_x_continuous(name="Aragonite",
+  #                limits = c(0.5,6),
+  #                expand = c(0, 0),
+  #                breaks = seq(1,6,1))+
+  
+geom_point(aes (BestSalinity, TA, fill=Season), alpha=0.5, shape=21)+
+geom_smooth(aes(BestSalinity, TA), linetype=2, method = "lm", color="black")+
+  
+#geom_point(aes (BestSalinity, n35TA, fill=Season), alpha=0.5, shape=25)+
+#geom_smooth(aes(BestSalinity, n35TA), linetype=3, method = "lm", color="red")+  
+ 
+geom_point(aes (BestSalinity, nTA, fill=Season), alpha=0.5, shape=24)+
+geom_smooth(aes(BestSalinity, nTA), linetype=1, method = "lm")+  
+
+theme(legend.position="top",
+          plot.background=element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5),
+          panel.grid.major.y = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          legend.box.background = element_rect(),
+          panel.background =element_rect(fill = NA, color = "black")
+          )
+#nTA_Sal
+nTA_Sal+facet_wrap(~Region, scales = "free")
+#ggsave(file="Outputs/Figure_1_Experiment_design.svg", plot=Design, dpi = 300, width=6, height=4)
+```
+
+**Figure 1:** Linear regressions of total alkalinity (TA, µmol kg−1) as a function of salinity + normalized values.
+
+* Original data: Black line and circles
+* Friis normalization: blue line and triangles
+
+6. DIC parameters to nDIC
+
+```{r}
+    kable(as.data.frame(DIC_coef[,1:8], format = "markdown"), caption = "Table 2: DIC parameters for normalization", digits = 3)
+    
+```
+
+
+```{r, fig.height=8.8, fig.width=8.8}
+nDIC_Sal<- ggplot(CC.data) + theme_bw() +
+  
+  #scale_y_continuous(limits = c(1700,2900),
+  #                     name="TA",
+  #                     breaks = seq(1800, 2800, 200),
+  #                     expand = c(0, 0)) +
+  # scale_x_continuous(name="Aragonite",
+  #                limits = c(0.5,6),
+  #                expand = c(0, 0),
+  #                breaks = seq(1,6,1))+
+  
+geom_point(aes (BestSalinity, DIC, fill=Season), alpha=0.5, shape=21)+
+geom_smooth(aes(BestSalinity, DIC), linetype=2, method = "lm", color="black")+
+  
+#geom_point(aes (BestSalinity, n35DIC, fill=Season), alpha=0.5, shape=25)+
+#geom_smooth(aes(BestSalinity, n35DIC), linetype=3, method = "lm", color="red")+  
+ 
+geom_point(aes (BestSalinity, nDIC, fill=Season), alpha=0.5, shape=24)+
+geom_smooth(aes(BestSalinity, nDIC), linetype=1, method = "lm")+  
+
+ 
+theme(legend.position="top",
+          plot.background=element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5),
+          panel.grid.major.y = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          legend.box.background = element_rect(),
+          panel.background =element_rect(fill = NA, color = "black")
+          )
+#nDIC_Sal
+
+nDIC_Sal+facet_wrap(~Region, scales = "free") 
+#ggsave(file="Outputs/Figure_1_Experiment_design.svg", plot=Design, dpi = 300, width=6, height=4)
+```
+
+**Figure 2:** Linear regressions of disolved inorganic carbon (DIC, µmol kg−1) as a function of salinity + normalized values 
+
+* Original data: Black line and circles
+* Friis normalization: blue line and triangles
+
+# 3. nTA and nDIC realtion
+
+* Removed the DIC>4000
+
+```{r}
+TA_DIC<- ggplot(CC.data, aes (nDIC, nTA)) + 
+  
+  theme_bw() +
+  scale_y_continuous(#limits = c(1700,2900),
+                     #expand = c(0, 0),
+                     #breaks = seq(1800, 2800, 100),
+                    name="nTA") +
+  scale_x_continuous(# limits = c(1600, 2600),
+                     # expand = c(0, 0),
+                     # breaks = seq(1500,2600,100),
+                      name="nDIC")+
+  
+theme(legend.position="top",
+          plot.background=element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5),
+          panel.grid.major.y = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          legend.box.background = element_rect(),
+          panel.background =element_rect(fill = NA, 
+                                         color = "black")
+          )
+
+#TA_DIC+ 
+ #geom_point(aes (fill=Region, shape=Season), alpha=0.5)+
+ #scale_shape_manual(values=c(21, 22, 23, 24))
+
+#ggsave(file="Outputs/Figure_1_Experiment_design.svg", plot=Design, dpi = 300, width=6, height=4)
+```
+
+```{r, fig.height=8.8, fig.width=8.8}
+TA_DIC +
+  geom_point(aes (fill=Season), shape=21, alpha=0.5)+
+  geom_smooth(method = "lm", colour="black")+
+  facet_wrap(~Region, scales = "free")
+ 
+```
+
+**Figure 3:** Linear regressions of total alkalinity (nTA) as a function of disolved inorganic carbon (nDIC).
+
+```{r}
+ # Individual LR for each region
+    TA_DIC_lm <- CC.data %>%
+      group_by(Region) %>%
+      do(mod = lm(nTA ~ nDIC, data = .))
+
+    TA_DIC_coef <- CC.data %>% 
+                    group_by(Region) %>%
+                    do({model = lm(nTA~nDIC, data=.)  
+                    # create model
+                    data.frame(tidy(model), # get coefficient info
+                    glance(model))})        # get model info
+
+    kable(as.data.frame(TA_DIC_coef[,1:8], format = "markdown"),
+          caption = "Table 3: nTA vs nDIC equations", digits = 3)
+```
+
+Does this mean anything without offshore / inshore references?
+
+* Higher slopes in TA vs. DIC -> a higher NCC:NCP
+* larger slopes -> calcifying (e.g., corals, sediments, and calcifying algae) relative to non-calcifying communities (e.g., fleshy algae)
+* Intermediate slopes for mixed communities of calcifiers and non-calcifiers (Anthony et al., 2013; Page et al., 2016; Lantz et al., 2017). 
+
+
+# 4. Basic stats summary for each region
+
+## By season
+
+```{r}
+
+Temp.Season <- ddply (CC.data, .(Region, Season),summarise,
+                #Tmin = min (Temperature_C, na.rm = F), 
+                #Tmax = max (Temperature_C, na.rm = F),
+                Tmean = mean (Temperature_C, na.rm = F), 
+                Tsd = sd (Temperature_C, na.rm = F))
+
+Salinity.Season <- ddply (CC.data, .(Region, Season),summarise,
+                #Smin = min (BestSalinity, na.rm = F), 
+                #Smax = max (BestSalinity, na.rm = F),
+                Smean = mean (BestSalinity, na.rm = F), 
+                Ssd = sd (BestSalinity, na.rm = F))
+
+
+TA.Season <- ddply (CC.data, .(Region, Season),summarise,
+                #TAmin = min (TA, na.rm = F), 
+                #TAmax = max (TA, na.rm = F),
+                TAmean = mean (TA, na.rm = F), 
+                TAsd = sd (TA, na.rm = F))
+
+nTA.Season <- ddply (CC.data, .(Region, Season),summarise,
+                #nTAmin = min (nTA, na.rm = F), 
+                #nTAmax = max (nTA, na.rm = F),
+                nTAmean = mean (nTA, na.rm = F), 
+                nTAsd = sd (nTA, na.rm = F))
+
+
+DIC.Season <- ddply (CC.data, .(Region, Season),summarise,
+                #DICmin = min (DIC, na.rm = F), 
+                #DICmax = max (DIC, na.rm = F),
+                DICmean = mean (DIC, na.rm = F), 
+                DICsd = sd (DIC, na.rm = F))
+
+nDIC.Season <- ddply (CC.data, .(Region, Season),summarise,
+                #nDICmin = min (nDIC, na.rm = F), 
+                #nDICmax = max (nDIC, na.rm = F),
+                nDICmean = mean (nDIC, na.rm = F), 
+                nDICsd = sd (nDIC, na.rm = F))
+
+
+pCO2.Season <- ddply (CC.data, .(Region, Season),summarise,
+                #pCO2min = min (pCO2, na.rm = F), 
+                #pCO2max = max (pCO2, na.rm = F),
+                pCO2mean = mean (pCO2, na.rm = F), 
+                pCO2sd = sd (pCO2, na.rm = F))
+
+pH.Season <- ddply (CC.data, .(Region, Season),summarise,
+                #pHmin = min (pH, na.rm = F), 
+                #pHmax = max (pH, na.rm = F),
+                pHmean = mean (pH, na.rm = F), 
+                pHsd = sd (pH, na.rm = F))
+
+Aragonite.Season <- ddply (CC.data, .(Region, Season),summarise,
+                #Amin = min (Aragonite_Sat_W, na.rm = F), 
+                #Amax = max (Aragonite_Sat_W, na.rm = F),
+                Amean = mean (Aragonite_Sat_W, na.rm = F), 
+                Asd = sd (Aragonite_Sat_W, na.rm = F))
+```
+
+```{r}
+All.Season<-join(Temp.Season,Salinity.Season, 
+                 type = "full", by=c("Region", "Season"))
+#All.Season<-join(All.Season, TA.Season, 
+#                 type = "full", by=c("Region", "Season"))
+All.Season<-join(All.Season,nTA.Season,
+                 type = "full", by=c("Region", "Season"))
+#All.Season<-join(All.Season,DIC.Season,
+#                 type = "full", by=c("Region", "Season"))
+All.Season<-join(All.Season,nDIC.Season,
+                 type = "full", by=c("Region", "Season"))
+All.Season<-join(All.Season,pCO2.Season,
+                 type = "full", by=c("Region", "Season"))
+All.Season<-join(All.Season,pH.Season,
+                 type = "full", by=c("Region", "Season"))
+All.Season<-join(All.Season,Aragonite.Season,
+                 type = "full", by=c("Region", "Season"))
+
+kable(as.data.frame(All.Season, format = "markdown"),
+      caption = "Table 4: Summary of parameters by season", digits=1)
+
+```
+
+**Note:** What is limit for the seasons that makes more sense (now jus using months)?. Wet vs dry/ temperature/light 
+
+
+## By year
+
+```{r}
+
+Temp.Year <- ddply (CC.data, .(Region, Year),summarise,
+                #Tmin = min (Temperature_C, na.rm = F), 
+                #Tmax = max (Temperature_C, na.rm = F),
+                Tmean = mean (Temperature_C, na.rm = F), 
+                Tsd = sd (Temperature_C, na.rm = F))
+
+Salinity.Year <- ddply (CC.data, .(Region, Year),summarise,
+                #Smin = min (BestSalinity, na.rm = F), 
+                #Smax = max (BestSalinity, na.rm = F),
+                Smean = mean (BestSalinity, na.rm = F), 
+                Ssd = sd (BestSalinity, na.rm = F))
+
+
+TA.Year <- ddply (CC.data, .(Region, Year),summarise,
+                #TAmin = min (TA, na.rm = F), 
+                #TAmax = max (TA, na.rm = F),
+                TAmean = mean (TA, na.rm = F), 
+                TAsd = sd (TA, na.rm = F))
+
+nTA.Year <- ddply (CC.data, .(Region, Year),summarise,
+                #nTAmin = min (nTA, na.rm = F), 
+                #nTAmax = max (nTA, na.rm = F),
+                nTAmean = mean (nTA, na.rm = F), 
+                nTAsd = sd (nTA, na.rm = F))
+
+
+DIC.Year <- ddply (CC.data, .(Region, Year),summarise,
+                #DICmin = min (DIC, na.rm = F), 
+                #DICmax = max (DIC, na.rm = F),
+                DICmean = mean (DIC, na.rm = F), 
+                DICsd = sd (DIC, na.rm = F))
+
+nDIC.Year <- ddply (CC.data, .(Region, Year),summarise,
+                #nDICmin = min (nDIC, na.rm = F), 
+                #nDICmax = max (nDIC, na.rm = F),
+                nDICmean = mean (nDIC, na.rm = F), 
+                nDICsd = sd (nDIC, na.rm = F))
+
+
+pCO2.Year <- ddply (CC.data, .(Region, Year),summarise,
+                #pCO2min = min (pCO2, na.rm = F), 
+                #pCO2max = max (pCO2, na.rm = F),
+                pCO2mean = mean (pCO2, na.rm = F), 
+                pCO2sd = sd (pCO2, na.rm = F))
+
+pH.Year <- ddply (CC.data, .(Region, Year),summarise,
+                #pHmin = min (pH, na.rm = F), 
+                #pHmax = max (pH, na.rm = F),
+                pHmean = mean (pH, na.rm = F), 
+                pHsd = sd (pH, na.rm = F))
+
+Aragonite.Year <- ddply (CC.data, .(Region, Year),summarise,
+                #Amin = min (Aragonite_Sat_W, na.rm = F), 
+                #Amax = max (Aragonite_Sat_W, na.rm = F),
+                Amean = mean (Aragonite_Sat_W, na.rm = F), 
+                Asd = sd (Aragonite_Sat_W, na.rm = F))
+```
+
+```{r}
+All.Year<-join(Temp.Year,Salinity.Year, 
+                 type = "full", by=c("Region", "Year"))
+#All.Year<-join(All.Year, TA.Year, 
+#                 type = "full", by=c("Region", "Year"))
+All.Year<-join(All.Year,nTA.Year,
+                 type = "full", by=c("Region", "Year"))
+#All.Year<-join(All.Year,DIC.Year,
+#                 type = "full", by=c("Region", "Year"))
+All.Year<-join(All.Year,nDIC.Year,
+                 type = "full", by=c("Region", "Year"))
+All.Year<-join(All.Year,pCO2.Year,
+                 type = "full", by=c("Region", "Year"))
+All.Year<-join(All.Year,pH.Year,
+                 type = "full", by=c("Region", "Year"))
+All.Year<-join(All.Year,Aragonite.Year,
+                 type = "full", by=c("Region", "Year"))
+
+kable(as.data.frame(All.Year, format = "markdown"),
+      caption = "Table 5: Summary of parameters by year", digits=1)
+```
+
+# 5. Aragonite 
+
+* By months (seasonality)
+
+```{r}
+
+Aragonite_months<- ggplot(CC.data,
+                          aes(x=Month, y=Aragonite_Sat_W)) +
+  
+  theme_bw() +
+  scale_y_continuous(limits = c(0,5.5),
+                       name=("Aragonite Saturation") ,
+                       breaks = seq(0, 5, 1),  
+                       expand = c(0, 0)) +
+  #scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+   #            expand = c(0, 0),
+    #           breaks ="6 months")+
+  
+geom_boxplot()+
+#geom_jitter(aes(fill=Year),
+#           shape=21, alpha=0.5, size=0.8)+ 
+geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)+
+  
+theme(legend.position=c(0.65, 0.1),
+      legend.direction = "horizontal",
+      legend.title = element_blank(),
+          plot.background=element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5),
+          panel.grid.major.y = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          legend.box.background = element_rect(),
+          panel.background =element_rect(fill = NA, color = "black")
+          ) +
+  scale_fill_gradient(low = "red", high = "blue", na.value = NA)+
+  #scale_colour_gradientn(colours = terrain.colors(10))+
+  #scale_fill_gradient2()+
+  
+  facet_wrap(Region~.)
+  
+Aragonite_months
+#ggsave(file="Outputs/Aragonite.svg", plot=Aragonite, dpi = 300, width=6, height=4)
+
+```
+
+* By years (trends) -> need to remove sites not sampled across timepoints
+
+```{r}
+
+Aragonite_year<- ggplot(CC.data,
+                          aes(x=factor(Year), y=Aragonite_Sat_W)) +
+  
+  theme_bw() +
+  scale_y_continuous(limits = c(0,5.5),
+                       name=("Aragonite Saturation") ,
+                       breaks = seq(0, 5, 1),  
+                       expand = c(0, 0)) +
+  ylab("Year")+
+  #scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+   #            expand = c(0, 0),
+    #           breaks ="6 months")+
+  
+geom_boxplot()+
+geom_point(aes(fill=factor(Season)), shape=21, alpha=0.5)+ 
+geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)+
+  
+theme(legend.position=c(0.65, 0.1),
+      legend.direction = "horizontal",
+      legend.title = element_blank(),
+          plot.background=element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5),
+          panel.grid.major.y = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          legend.box.background = element_rect(),
+          panel.background =element_rect(fill = NA, color = "black")
+          ) +
+  #scale_fill_gradient(low = "blue", high = "red", na.value = NA)+
+  #scale_colour_gradientn(colours = terrain.colors(10))+
+  #scale_fill_gradient2()+
+  
+  facet_wrap(Region~.)
+  
+Aragonite_year
+#ggsave(file="Outputs/Aragonite.svg", plot=Aragonite, dpi = 300, width=6, height=4)
+
+```
+
+
+# 6. pCO2 
+
+* By months (seasonality)
+
+```{r}
+
+pCO2_months<- ggplot(CC.data,
+                          aes(x=Month, y=pCO2)) +
+  
+  theme_bw() +
+  #scale_y_continuous(limits = c(0,5.5),
+  #                     name=("Aragonite Saturation") ,
+  #                     breaks = seq(0, 5, 1),  
+   #                    expand = c(0, 0)) +
+  #scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+   #            expand = c(0, 0),
+    #           breaks ="6 months")+
+  
+geom_boxplot()+
+geom_point(aes(fill=factor(Year)), shape=21, alpha=0.5, size=0.5)+ 
+geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)+
+  
+theme(legend.position=c(0.65, 0.05),
+      legend.direction = "horizontal",
+      legend.title = element_blank(),
+          plot.background=element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5),
+          panel.grid.major.y = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          legend.box.background = element_rect(),
+          panel.background =element_rect(fill = NA, color = "black")
+          ) +
+  #scale_fill_gradient(low = "blue", high = "red", na.value = NA)+
+  #scale_colour_gradientn(colours = terrain.colors(10))+
+  #scale_fill_gradient2()+
+  
+  facet_wrap(Region~., scales = "free_y")
+  
+pCO2_months
+```
+
+* By years (trends) -> need to remove sites not sampled across timepoints
+
+```{r}
+
+pCO2_year<- ggplot(CC.data,
+                          aes(x=factor(Year), y=pCO2)) +
+  
+  theme_bw() +
+  ylab("pCO2")+ xlab("Year")+ 
+  #scale_y_continuous(limits = c(0,5.5),
+  #                     name=("Aragonite Saturation") ,
+  #                     breaks = seq(0, 5, 1),  
+  #                     expand = c(0, 0)) +
+
+  #scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+   #            expand = c(0, 0),
+    #           breaks ="6 months")+
+  
+geom_boxplot()+
+geom_point(aes(fill=factor(Season)), shape=21, alpha=0.5)+ 
+geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)+
+  
+theme(legend.position=c(0.65, 0.1),
+      legend.direction = "horizontal",
+      legend.title = element_blank(),
+          plot.background=element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5),
+          panel.grid.major.y = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          legend.box.background = element_rect(),
+          panel.background =element_rect(fill = NA, color = "black")
+          ) +
+  #scale_fill_gradient(low = "blue", high = "red", na.value = NA)+
+  #scale_colour_gradientn(colours = terrain.colors(10))+
+  #scale_fill_gradient2()+
+  
+  facet_wrap(Region~., scales= "free_y")
+  
+pCO2_year
+#ggsave(file="Outputs/Aragonite.svg", plot=Aragonite, dpi = 300, width=6, height=4)
+
+```
+
+
+```{r}
+  HighpCO2<-CC.data[CC.data$pCO2 > 1000, ] 
+```
+
+
+# 8. pH 
+
+* By months (seasonality)
+
+```{r}
+
+pH_months<- ggplot(CC.data,
+                          aes(x=Month, y=pH)) +
+  
+  theme_bw() +
+  #scale_y_continuous(limits = c(0,5.5),
+  #                     name=("Aragonite Saturation") ,
+  #                     breaks = seq(0, 5, 1),  
+   #                    expand = c(0, 0)) +
+  #scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+   #            expand = c(0, 0),
+    #           breaks ="6 months")+
+  
+geom_boxplot()+
+geom_point(aes(fill=factor(Year)), shape=21, 
+           alpha=0.5, size=0.8)+ 
+geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)+
+  
+theme(legend.position=c(0.65, 0.05),
+      legend.direction = "horizontal",
+      legend.title = element_blank(),
+          plot.background=element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5),
+          panel.grid.major.y = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          legend.box.background = element_rect(),
+          panel.background =element_rect(fill = NA, color = "black")
+          ) +
+  #scale_fill_gradient(low = "blue", high = "red", na.value = NA)+
+  #scale_colour_gradientn(colours = terrain.colors(10))+
+  #scale_fill_gradient2()+
+  
+  facet_wrap(Region~., scales = "free_y")
+  
+pH_months
+```
+
+* By years (trends) -> need to remove sites not sampled across timepoints
+
+```{r}
+
+pH_year<- ggplot(CC.data,
+                          aes(x=factor(Year), y=pH)) +
+  
+  theme_bw() +
+  ylab("pH")+ xlab("Year")+ 
+  #scale_y_continuous(limits = c(0,5.5),
+  #                     name=("Aragonite Saturation") ,
+  #                     breaks = seq(0, 5, 1),  
+  #                     expand = c(0, 0)) +
+
+  #scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+   #            expand = c(0, 0),
+    #           breaks ="6 months")+
+  
+geom_boxplot()+
+geom_point(aes(fill=factor(Season)), shape=21, 
+           alpha=0.5, size=0.8)+ 
+geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)+
+  
+theme(legend.position=c(0.65, 0.1),
+      legend.direction = "horizontal",
+      legend.title = element_blank(),
+          plot.background=element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5),
+          panel.grid.major.y = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          legend.box.background = element_rect(),
+          panel.background =element_rect(fill = NA, color = "black")
+          ) +
+  facet_wrap(Region~., scales= "free_y")
+  
+pH_year
+
+```
+
+# Notes on samples
+
+* Get offshore values for analysis (NCP and NCC)
+* Residence time with Heidi
+* Get better location information/metadata
+  - In-shore vs off-shore
+  - Reefs vs no reefs
+  - L, M, and U keys
+* Separate multiple dephts
+* Choose timeframe/seasonality -> question driven
+
+## Number of samples
+
+### By depht and location
+
+```{r, echo=FALSE}
+Cases_Loc_Depht<-CC.data %>% count(Location,
+                                  Sample_Depth_m,
+                                  sort = F)
+
+Cases_Loc_Depht<-as.data.frame(Cases_Loc_Depht %>%
+                   pivot_wider(names_from = Sample_Depth_m,
+                   values_from = n))
+
+kable(as.data.frame(Cases_Loc_Depht, format = "markdown"), 
+      longtable = TRUE)
+```
+
+**Notes:** 
+* Is DRTO depth = NA equivalent to 0m?
+* Can we pooled STX depht = 15.24 into 15?
+
+### By year and region
+
+```{r, echo=FALSE}
+Cases_Reg_Year<-CC.data %>% count(Year, Region, sort = F)
+
+Cases_Reg_Year<-as.data.frame(Cases_Reg_Year %>%
+    pivot_wider(names_from = Year, values_from = n))
+
+kable(as.data.frame(Cases_Reg_Year, format = "html"))
+```
+
+### By climatological season and region
+
+```{r, echo=FALSE}
+Cases_Reg_season<-CC.data %>% count(Season, Region, sort = T)
+
+Cases_Reg_season<-as.data.frame(Cases_Reg_season %>%
+    pivot_wider(names_from = Season, values_from = n))
+
+kable(as.data.frame(Cases_Reg_season, format = "html"),
+      caption = "Samples collected in each seson")
+```
+
+### By mission, year, region
+
+```{r, echo=FALSE}
+Cases_Mission<-CC.data %>% count(Region,
+                                 Mission,
+                                 Year, sort = F)
+
+Cases_Mission<-as.data.frame(Cases_Mission %>%
+    pivot_wider(names_from = Year, values_from = n))
+
+# Organize table
+Cases_Mission<-Cases_Mission %>% 
+    select(sort(names(.)))
+Cases_Mission<-Cases_Mission %>%
+  select(c(Region, Mission), everything())
+
+kable(as.data.frame(Cases_Mission, format = "html"), caption="Samples collected by each mission")
+```
+
