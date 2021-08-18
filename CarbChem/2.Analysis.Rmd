@@ -164,21 +164,21 @@ GPS.Sites <- ddply (CC.data, .(Location, SiteID),summarise,
   #pal.gen <- colorFactor(palette = "Set1",
   #                       domain = Locations$Location)
   pal.gen <- colorFactor(palette = "Set1",
-                         domain = GPS.Sites$Location)
+                         domain = CC.data$Year)
 ```
 
 
 ```{r makeAmap, echo=FALSE}
-leaflet(GPS.Sites, height = '400px') %>% 
+leaflet(CC.data, height = '400px') %>% 
   addTiles() %>%
-  addProviderTiles(providers$Esri.WorldImagery)%>%
-  #addProviderTiles(providers$CartoDB.Positron) %>% 
+  #addProviderTiles(providers$Esri.WorldImagery)%>%
+  addProviderTiles(providers$OpenStreetMap) %>% 
   #addMarkers(icon=coral.icon) %>% 
-  addCircleMarkers(lng = ~Lon, lat = ~Lat, 
+  addCircleMarkers(lng = ~Longitude, lat = ~Latitude, 
                    stroke = TRUE, 
                    radius = sqrt(GPS.Sites$number), 
                    fillOpacity = 1,
-                   color = ~pal.gen(Location),
+                   color = ~pal.gen(Year),
                    label = ~SiteID,
                    labelOptions = labelOptions(
                      noHide = F, direction = "bottom",
@@ -187,7 +187,7 @@ leaflet(GPS.Sites, height = '400px') %>%
         "color" = "white")))  %>%
   addLegend(position = "topright",
             pal = pal.gen, 
-            values = ~Location, opacity = 1) %>%
+            values = ~Year, opacity = 1) %>%
   fitBounds(lng1=-93.80, lat=28, lng2=-64.1, lat2=17.5)
   
 ```
@@ -209,8 +209,8 @@ Map of the sites were samples are collected
                                  CC.data$Salinity_Bottle)
     
 # 2. TA and DIC 35 normalization
-    CC.data$n35TA<-(CC.data$TA/CC.data$BestSalinity)*35
-    CC.data$n35DIC<-(CC.data$DIC/CC.data$BestSalinity)*35
+    #CC.data$n35TA<-(CC.data$TA/CC.data$BestSalinity)*35
+    #CC.data$n35DIC<-(CC.data$DIC/CC.data$BestSalinity)*35
 ```
 
 2. Calculate TA intercepts
@@ -219,11 +219,11 @@ Map of the sites were samples are collected
     
 # 3.TA normalization to intercept  
     # One intercept?
-    TA1<-lm(TA~BestSalinity, data=CC.data)
+    #TA1<-lm(TA~BestSalinity, data=CC.data)
     #TA1
     #summary(TA1)
     # Intercept for each region
-    TA2<-lm(TA~BestSalinity+Region, data=CC.data)
+    #TA2<-lm(TA~BestSalinity+Region, data=CC.data)
     #TA2
     #summary(TA2)
     
@@ -248,10 +248,10 @@ Map of the sites were samples are collected
 
     #DIC
     # One intercept?
-    DIC1<-lm(DIC~BestSalinity, data=CC.data)
+    #DIC1<-lm(DIC~BestSalinity, data=CC.data)
     #DIC1
     # Intercept for each region
-    DIC2<-lm(DIC~BestSalinity+Region, data=CC.data)
+    #DIC2<-lm(DIC~BestSalinity+Region, data=CC.data)
     #DIC2 
     
     # Individual LR for each region
@@ -291,6 +291,8 @@ Map of the sites were samples are collected
   
   CC.data$nDIC<-(
     CC.data$DIC-CC.data$DIC_0)/CC.data$BestSalinity*35+CC.data$DIC_0
+  
+  write.csv(CC.data, "CC.data_normalized.csv", row.names = F)
 
 ```
 
@@ -439,6 +441,15 @@ TA_DIC +
  
 ```
 
+```{r, fig.height=8.8, fig.width=8.8}
+TA_DIC +
+  geom_point(aes (fill=Precipitation), shape=21, alpha=0.5)+
+  geom_smooth(method = "lm", colour="black")+
+  facet_wrap(~Region, scales = "free")
+ 
+```
+
+
 **Figure 3:** Linear regressions of total alkalinity (nTA) as a function of disolved inorganic carbon (nDIC).
 
 Does this mean anything without offshore / inshore references?
@@ -550,6 +561,8 @@ All.Season<-join(All.Season,Aragonite.Season,
 kable(as.data.frame(All.Season, format = "markdown"),
       caption = "Table 4: Summary of parameters by season", digits=1)
 
+write.csv(All.Season, "Summary_All.Season", row.names = F)
+
 ```
 
 **Note:** What is limit for the seasons that makes more sense (now jus using months)?. Wet vs dry/ temperature/light 
@@ -637,6 +650,8 @@ All.Year<-join(All.Year,Aragonite.Year,
 
 kable(as.data.frame(All.Year, format = "markdown"),
       caption = "Table 5: Summary of parameters by year", digits=1)
+
+write.csv(All.Year, "Summary_All.Year", row.names = F)
 ```
 
 # 5. Aragonite 
