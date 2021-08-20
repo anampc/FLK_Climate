@@ -233,7 +233,7 @@ Use this map to find and correct werid data
 ## Only using Walthon Smith data for spatial comparison
 
 ```{r}
-TA_DIC<- ggplot(WS.data, aes (nDIC, nTA)) + 
+TA_DIC<- ggplot(CalVal.data, aes (nDIC, nTA)) + 
   
   theme_bw() +
   scale_y_continuous(#limits = c(1700,2900),
@@ -256,7 +256,7 @@ theme(legend.position="top",
           panel.background =element_rect(fill = NA, 
                                          color = "black")
           )+
-  geom_point(aes (fill=Precipitation, shape=Zone),
+  geom_point(aes (fill=factor(Year), shape=Zone),
              size=3, alpha=0.5)+
   scale_shape_manual(values=c(21, 21, 24, 25))+
   geom_smooth(method = "lm", colour="black")
@@ -309,7 +309,7 @@ Reference$Aragonite_Sat_W[Reference$Aragonite_Sat_W <2 ] <- NA
 ## Oceanic-Offshore trends in FLK
 
 ```{r}
-Aragonite_Reference<- ggplot(Reference,
+Aragonite_Reference<- ggplot(CalVal.data,
                           aes(x=Date, y=Aragonite_Sat_W)) +
   
   theme_bw() +

@@ -979,6 +979,17 @@ Cases_Reg_Year<-as.data.frame(Cases_Reg_Year %>%
 kable(as.data.frame(Cases_Reg_Year, format = "html"))
 ```
 
+### By year and location
+
+```{r, echo=FALSE}
+Cases_Loc_Year<-CC.data %>% count(Year, Location, sort = F)
+
+Cases_Loc_Year<-as.data.frame(Cases_Loc_Year %>%
+    pivot_wider(names_from = Year, values_from = n))
+
+kable(as.data.frame(Cases_Loc_Year, format = "html"))
+```
+
 ### By climatological season and region
 
 ```{r, echo=FALSE}
