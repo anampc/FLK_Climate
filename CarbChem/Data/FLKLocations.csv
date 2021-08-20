@@ -1,55 +1,55 @@
-﻿SiteID,dec lon,dec lat,Zone,Sub_region
-1,-80.12666667,25.645,Inshore,Miami
-2,-80.105,25.64166667,Middel channel,Miami
-3,-80.08333333,25.645,Off-shore,Miami
-EK_IN,-80.227501,25.336306,Inshore,Miami
-EK_MID,-80.1946,25.314483,Middel channel,Miami
-EK_OFF,-80.162604,25.294251,Off-shore,Miami
-4,-80.38,25.10833333,Inshore,UK
-5,-80.355,25.09333333,Inshore,UK
-5.5,-80.33416667,25.07966667,Middel channel,UK
-6,-80.315,25.065,Off-shore,UK
-6.5,-80.28766667,25.04833333,Oceanic,UK
-MR,-80.38,25.01,Off-shore,UK
-UK_IN,-80.569852,24.939806,Inshore,UK
-UK_MID,-80.546176,24.920702,Middel channel,UK
-UK_OFF,-80.529497,24.898193,Off-shore,UK
-Transect 1,,,Inshore,UK
-H2O_1,,,Inshore,UK
-H2O_2,,,Inshore,UK
-H2O_3,,,Inshore,UK
-H2O_4,,,Inshore,UK
-CalVal_N,,,Inshore,UK
-CalVal_S,,,Inshore,UK
-CalVal_SE,,,Inshore,UK
-ADCP_N,,,Inshore,UK
-ADCP_NE,,,Inshore,UK
-ADCP_S,,,Inshore,UK
-ADCP_SW,,,Inshore,UK
-MapCO2_Buoy,,,Inshore,UK
-Transect 2,,,Middel channel,UK
-Transect 3,,,Off-shore,UK
-Transect 4,,,Oceanic,UK
-7,-80.75666667,24.82083333,Inshore,MK
-8,-80.74166667,24.7925,Middel channel,MK
-9,-80.72333333,24.76333333,Off-shore,MK
-9.5,-80.69,24.71666667,Oceanic,MK
-10,-80.86,24.78833333,Inshore,MK
-11,-80.84666667,24.75333333,Middel channel,MK
-12,-80.83166667,24.71333333,Off-shore,MK
-13,-81.03,24.70166667,Inshore,MK
-14,-81.02333333,24.675,Middel channel,MK
-15,-81.01666667,24.64333333,Off-shore,MK
-15.5,-80.99166667,24.59166667,Oceanic,MK
-16,-81.205,24.675,Inshore,LK
-17,-81.19333333,24.635,Middel channel,LK
-18,-81.18333333,24.59833333,Off-shore,LK
-19,-81.42166667,24.61,Inshore,LK
-20,-81.41833333,24.575,Middel channel,LK
-21LK,-81.42,24.54,Off-shore,LK
-21.5,-81.39166667,24.48333333,Oceanic,LK
-WS,-81.717,24.478,Off-shore,LK
-22,-81.82833333,24.455,Off-shore,LK
-22.5,-81.82833333,24.39666667,Oceanic,LK
-23,-81.82833333,24.48666667,Middel channel,LK
-24,-81.82833333,24.53666667,Inshore,LK
+SiteID,dec lon,dec lat,Zone,Sub_region,Reference
+1,-80.12666667,25.645,Inshore,Miami,1
+2,-80.105,25.64166667,Middel channel,Miami,1
+3,-80.08333333,25.645,Off-shore,Miami,1
+EK_IN,-80.227501,25.336306,Inshore,Miami,2
+EK_MID,-80.1946,25.314483,Middel channel,Miami,2
+EK_OFF,-80.162604,25.294251,Off-shore,Miami,2
+4,-80.38,25.10833333,Inshore,UK,3
+5,-80.355,25.09333333,Inshore,UK,3
+5.5,-80.33416667,25.07966667,Middel channel,UK,3
+6,-80.315,25.065,Off-shore,UK,3
+6.5,-80.28766667,25.04833333,Oceanic,UK,3
+MR,-80.38,25.01,Off-shore,UK,3
+UK_IN,-80.569852,24.939806,Inshore,UK,4
+UK_MID,-80.546176,24.920702,Middel channel,UK,4
+UK_OFF,-80.529497,24.898193,Off-shore,UK,4
+Transect 1,,,Inshore,UK,5
+H2O_1,,,Inshore,UK,5
+H2O_2,,,Inshore,UK,5
+H2O_3,,,Inshore,UK,5
+H2O_4,,,Inshore,UK,5
+CalVal_N,,,Inshore,UK,5
+CalVal_S,,,Inshore,UK,5
+CalVal_SE,,,Inshore,UK,5
+ADCP_N,,,Inshore,UK,5
+ADCP_NE,,,Inshore,UK,5
+ADCP_S,,,Inshore,UK,5
+ADCP_SW,,,Inshore,UK,5
+MapCO2_Buoy,,,Inshore,UK,5
+Transect 2,,,Middel channel,UK,5
+Transect 3,,,Off-shore,UK,5
+Transect 4,,,Oceanic,UK,5
+7,-80.75666667,24.82083333,Inshore,MK,6
+8,-80.74166667,24.7925,Middel channel,MK,6
+9,-80.72333333,24.76333333,Off-shore,MK,6
+9.5,-80.69,24.71666667,Oceanic,MK,6
+10,-80.86,24.78833333,Inshore,MK,7
+11,-80.84666667,24.75333333,Middel channel,MK,7
+12,-80.83166667,24.71333333,Off-shore,MK,7
+13,-81.03,24.70166667,Inshore,MK,8
+14,-81.02333333,24.675,Middel channel,MK,8
+15,-81.01666667,24.64333333,Off-shore,MK,8
+15.5,-80.99166667,24.59166667,Oceanic,MK,8
+16,-81.205,24.675,Inshore,LK,9
+17,-81.19333333,24.635,Middel channel,LK,9
+18,-81.18333333,24.59833333,Off-shore,LK,9
+19,-81.42166667,24.61,Inshore,LK,10
+20,-81.41833333,24.575,Middel channel,LK,10
+21LK,-81.42,24.54,Off-shore,LK,10
+21.5,-81.39166667,24.48333333,Oceanic,LK,10
+WS,-81.717,24.478,Off-shore,LK,11
+22,-81.82833333,24.455,Off-shore,LK,11
+22.5,-81.82833333,24.39666667,Oceanic,LK,11
+23,-81.82833333,24.48666667,Middel channel,LK,11
+24,-81.82833333,24.53666667,Inshore,LK,11

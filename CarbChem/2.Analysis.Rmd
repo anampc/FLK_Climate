@@ -397,7 +397,7 @@ nDIC_Sal+facet_wrap(~Region, scales = "free")
 * Original data: Black line and circles
 * Friis normalization: blue line and triangles
 
-# 3. nTA and nDIC realtion
+# 3. nTA and nDIC relation
 
 * Removed the DIC>4000
 
