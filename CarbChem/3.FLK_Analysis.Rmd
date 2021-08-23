@@ -89,7 +89,9 @@ CC.data<-read.csv("CC.data_normalized.csv", header = T)
   CC.data$Aragonite_Sat_W<-
     as.numeric((as.character(CC.data$Aragonite_Sat_W)))
   
-  CC.data$DIC[CC.data$DIC == 4574.590 ] <- NA
+  CC.data$DIC[CC.data$DIC == 4574.590 ] <- 2043.1832
+  
+   CC.data$ID<-paste(CC.data$SiteID, "_", CC.data$CTDID )
   
   #Remove Miami data
   #CC.data<-subset(CC.data,CC.data$Region!="SEFCRI")
@@ -124,10 +126,10 @@ CC.data$Month<-factor(CC.data$Month, levels = month.name)
   FLK.data<-subset(FLK.data, FLK.data$Sub_region!="NA")
   
   FLK.data$Sub_region<-factor(FLK.data$Sub_region, levels = c(
-                        "Miami", "UK", "MK", "LK"))
-  
+                        "Biscayne", "UK", "MK", "LK"))
+
   FLK.data$Zone<-factor(FLK.data$Zone, levels = c(
-                        "Inshore", "Middel channel", 
+                        "Inshore", "Middle channel", 
                         "Off-shore", "Oceanic"))
   
   summary(FLK.data$Mission)
@@ -136,7 +138,7 @@ CC.data$Month<-factor(CC.data$Month, levels = month.name)
   CalVal.data<-subset(FLK.data, FLK.data$Mission=="CalVal")
   WS.data<-subset(FLK.data, FLK.data$Mission=="WaltonSmith")
   QC.data<-subset(FLK.data, FLK.data$Aragonite_Sat_W<2)
-  write.csv(QC.data, "QC.data.csv")
+  #write.csv(QC.data, "QC.data.csv")
 
 ```
 
@@ -176,6 +178,7 @@ GPS.Sites <- ddply (FLK.data, .(Sub_region, SiteID),summarise,
 
 
 ```{r makeAmap, echo=FALSE}
+
 leaflet(FLK.data, height = '400px') %>% 
   addTiles() %>%
   addProviderTiles(providers$Esri.WorldImagery)%>%
@@ -186,7 +189,7 @@ leaflet(FLK.data, height = '400px') %>%
                    radius = sqrt(GPS.Sites$number), 
                    fillOpacity = 1,
                    color = ~pal.gen(Zone),
-                   label = ~SiteID,
+                   label = ~ID,
                    labelOptions = labelOptions(
                      noHide = F, direction = "bottom",
                      textOnly = TRUE,
