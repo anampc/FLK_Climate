@@ -204,33 +204,6 @@ leaflet(FLK.data, height = '400px') %>%
 Map of the sites were samples are collected
 
 
-```{r makeAmap2, echo=FALSE}
-leaflet(FLK.data, height = '400px') %>% 
-  addTiles() %>%
-  addProviderTiles(providers$Esri.WorldImagery)%>%
-  #addProviderTiles(providers$OpenStreetMap) %>% 
-  #addMarkers(icon=coral.icon) %>% 
-  addCircleMarkers(lng = ~Longitude, lat = ~Latitude, 
-                   stroke = TRUE, 
-                   radius = sqrt(GPS.Sites$number), 
-                   fillOpacity = 1,
-                   color = ~pal.gen(Zone),
-                   label = ~Date,
-                   labelOptions = labelOptions(
-                     noHide = F, direction = "bottom",
-                     textOnly = TRUE,
-                     style = list(
-        "color" = "white")))  %>%
-  addLegend(position = "topright",
-            pal = pal.gen, 
-            values = ~Zone, opacity = 1) %>%
-  fitBounds(lng1=-81.20, lat=26, lng2=-80.5, lat2=24)
-  
-```
-
-Use this map to find and correct werid data
-
-
 # 2. nTA and nDIC relation
 
 ## Only using Walthon Smith data for spatial comparison
