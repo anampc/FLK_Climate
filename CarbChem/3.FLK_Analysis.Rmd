@@ -209,7 +209,7 @@ Map of the sites were samples are collected
 ## Only using Walthon Smith data for spatial comparison
 
 ```{r}
-TA_DIC<- ggplot(CalVal.data, aes (nDIC, nTA)) + 
+TA_DIC<- ggplot(FLK.data, aes (nDIC, nTA)) + 
   
   theme_bw() +
   scale_y_continuous(#limits = c(1700,2900),
@@ -232,7 +232,7 @@ theme(legend.position="top",
           panel.background =element_rect(fill = NA, 
                                          color = "black")
           )+
-  geom_point(aes (fill=factor(Year), shape=Zone),
+  geom_point(aes (fill=Precipitation, shape=Zone),
              size=3, alpha=0.5)+
   scale_shape_manual(values=c(21, 21, 24, 25))+
   geom_smooth(method = "lm", colour="black")
@@ -244,11 +244,13 @@ theme(legend.position="top",
 ```{r, fig.height=8.8, fig.width=8.8}
 
 TA_DIC +
-  facet_wrap(~Sub_region)
+  facet_wrap(~Mission)
 
 TA_DIC +
   facet_grid(Zone~Sub_region)
 
+TA_DIC +
+  facet_grid(Sub_region~Mission)
 ```
 
 
@@ -258,8 +260,8 @@ TA_DIC +
 ```{r}
  # Individual LR for each region
     
-    TA_DIC_lm_Subreg <- WS.data %>% 
-                    group_by(Sub_region) %>%
+    TA_DIC_lm_Subreg <- FLK.data %>% 
+                    group_by(Mission, Sub_region) %>%
                     do({model = lm(nTA~nDIC, data=.)  
                     # create model
                     data.frame(tidy(model), # get coefficient info
@@ -285,7 +287,7 @@ Reference$Aragonite_Sat_W[Reference$Aragonite_Sat_W <2 ] <- NA
 ## Oceanic-Offshore trends in FLK
 
 ```{r}
-Aragonite_Reference<- ggplot(CalVal.data,
+Aragonite_Reference<- ggplot(FLK.data,
                           aes(x=Date, y=Aragonite_Sat_W)) +
   
   theme_bw() +
@@ -317,9 +319,9 @@ theme(legend.position="top",
           )
 Aragonite_Reference  
 
-Aragonite_Reference + facet_wrap(Month~.)
-Aragonite_Reference + facet_wrap(Season~.)
-Aragonite_Reference + facet_grid(Precipitation~.)
+Aragonite_Reference + facet_grid(Month~Mission)
+Aragonite_Reference + facet_grid(Season~~Mission)
+Aragonite_Reference + facet_grid(Precipitation~Mission)
 ```
 
 NOTE: Only month is significant (no region (UK, MK, LK), no Zone (oof-shore vs oceanic))
