@@ -89,9 +89,9 @@ CC.data<-read.csv("CC.data_normalized.csv", header = T)
   CC.data$Aragonite_Sat_W<-
     as.numeric((as.character(CC.data$Aragonite_Sat_W)))
   
-  CC.data$DIC[CC.data$DIC == 4574.590 ] <- 2043.1832
+ # CC.data$DIC[CC.data$DIC == 4574.590 ] <- 2043.1832
   
-   CC.data$ID<-paste(CC.data$SiteID, "_", CC.data$CTDID )
+  CC.data$ID<-paste(CC.data$SiteID, "_", CC.data$CTDID )
   
   #Remove Miami data
   #CC.data<-subset(CC.data,CC.data$Region!="SEFCRI")
@@ -132,14 +132,18 @@ CC.data$Month<-factor(CC.data$Month, levels = month.name)
                         "Inshore", "Middle channel", 
                         "Off-shore", "Oceanic"))
   
-  summary(FLK.data$Mission)
   
-  # Separate CalVal and Walton Smith data
-  CalVal.data<-subset(FLK.data, FLK.data$Mission=="CalVal")
-  WS.data<-subset(FLK.data, FLK.data$Mission=="WaltonSmith")
-  QC.data<-subset(FLK.data, FLK.data$Aragonite_Sat_W<2)
+  ## FOR NOW: remove weird 2019 values 
+  FLK.data<-FLK.data[!(FLK.data$ID  %in% QC.data$ID),]
+  #QC.data<-subset(FLK.data, FLK.data$Aragonite_Sat_W<2)
   #write.csv(QC.data, "QC.data.csv")
 
+  
+  # Separate CalVal and Walton Smith data
+  summary(FLK.data$Mission)
+  CalVal.data<-subset(FLK.data, FLK.data$Mission=="CalVal")
+  WS.data<-subset(FLK.data, FLK.data$Mission=="WaltonSmith")
+  
 ```
 
 # 1. Data available
@@ -239,12 +243,11 @@ theme(legend.position="top",
 
 ```
 
-* Removed the DIC>4000
 
 ```{r, fig.height=8.8, fig.width=8.8}
 
 TA_DIC +
-  facet_wrap(~Mission)
+  facet_grid(Zone~Mission)
 
 TA_DIC +
   facet_grid(Zone~Sub_region)
@@ -261,7 +264,7 @@ TA_DIC +
  # Individual LR for each region
     
     TA_DIC_lm_Subreg <- FLK.data %>% 
-                    group_by(Mission, Sub_region) %>%
+                    group_by(Mission, Sub_region, Zone) %>%
                     do({model = lm(nTA~nDIC, data=.)  
                     # create model
                     data.frame(tidy(model), # get coefficient info
@@ -273,7 +276,141 @@ TA_DIC +
 
 * Higher slopes -> a higher NCC:NCP? = Lower and Middle keys, then Miami, then Upper keys
 
+
+# Offsshore + Oceanic vs Inshore + Middle channel
+
+```{r}
+
+```
+
 # 3. Aragonite 
+
+## Walton smith
+
+* By months (seasonality)
+
+```{r}
+Aragonite_months<- ggplot(WS.data,
+                          aes(x=Month, y=Aragonite_Sat_W)) +
+  
+  theme_bw() +
+  scale_y_continuous(limits = c(0,5.5),
+                       name=("Aragonite Saturation") ,
+                       breaks = seq(0, 5, 1),  
+                       expand = c(0, 0)) +
+  #scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+   #            expand = c(0, 0),
+    #           breaks ="6 months")+
+  
+geom_boxplot()+
+#geom_jitter(aes(fill=factor(Year)),
+ #          shape=21, alpha=0.8)+ 
+geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)+
+  
+theme(legend.position="top",
+      legend.direction = "horizontal",
+      legend.title = element_blank(),
+          plot.background=element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5),
+          panel.grid.major.y = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          legend.box.background = element_rect(),
+          panel.background =element_rect(fill = NA, color = "black")
+          ) #+
+  #scale_fill_gradient(low = "red", high = "blue", na.value = NA)
+  
+Aragonite_months+facet_grid(Zone~Sub_region)
+```
+
+Data available
+
+```{r, echo=FALSE}
+Cases_WS<-WS.data %>% count(Month,
+                            Sub_region,
+                            Zone,
+                            sort = F)
+
+Cases_WS<-as.data.frame(Cases_WS %>%
+                   pivot_wider(names_from = Month,
+                   values_from = n))
+
+kable(as.data.frame(Cases_WS, format = "markdown"), 
+      longtable = TRUE)
+```
+
+
+```{r, echo=FALSE}
+Aragonite.month <- ddply (WS.data, .(Month, Sub_region, Zone),
+                          summarise,
+                #Amin = min (Aragonite_Sat_W, na.rm = F), 
+                #Amax = max (Aragonite_Sat_W, na.rm = F),
+                Amean = mean (Aragonite_Sat_W, na.rm = F)#, 
+                #Asd = sd (Aragonite_Sat_W, na.rm = F)
+                )
+Aragonite.month
+
+Aragonite.month<-as.data.frame(Aragonite.month %>%
+                   pivot_wider(names_from = Month,
+                   values_from = c(Amean)))
+
+kable(as.data.frame(Aragonite.month, format = "markdown"), 
+      longtable = TRUE, digits=2 )
+```
+
+
+* By years (trends) -> need to remove sites not sampled across timepoints
+
+```{r}
+
+Aragonite_year<- ggplot(WS.data,
+                          aes(x=factor(Year), y=Aragonite_Sat_W)) +
+  
+  theme_bw() +
+  scale_y_continuous(limits = c(0,5.5),
+                       name=("Aragonite Saturation") ,
+                       breaks = seq(0, 5, 1),  
+                       expand = c(0, 0)) +
+  ylab("Year")+
+  #scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+   #            expand = c(0, 0),
+    #           breaks ="6 months")+
+  
+geom_boxplot()+
+geom_point(aes(fill=factor(Season)), shape=21, alpha=0.5)+ 
+geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)+
+  
+theme(legend.position="top",
+      legend.direction = "horizontal",
+      legend.title = element_blank(),
+          plot.background=element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5),
+          panel.grid.major.y = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          legend.box.background = element_rect(),
+          panel.background =element_rect(fill = NA, color = "black")
+          ) +
+  #scale_fill_gradient(low = "blue", high = "red", na.value = NA)+
+  #scale_colour_gradientn(colours = terrain.colors(10))+
+  #scale_fill_gradient2()+
+  
+  facet_grid(Zone~Sub_region)
+  
+Aragonite_year
+#ggsave(file="Outputs/Aragonite.svg", plot=Aragonite, dpi = 300, width=6, height=4)
+
+```
+
+
+
+
 
 ```{r}
 # Test Oceanic and Off-shore samples

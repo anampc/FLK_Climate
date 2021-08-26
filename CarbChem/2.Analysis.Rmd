@@ -95,7 +95,8 @@ CC.data<-read.csv("Data/NCRMP_CarbonateChemistryData_All_Atlantic_updated.csv", 
   
   CC.data[ CC.data == -9 ] <- NA
   
-  CC.data$DIC[CC.data$DIC == 4574.590 ] <- NA
+  CC.data$DIC[CC.data$DIC == 4574.590 ] <- 2043.1832
+  CC.data$Salinity_Bottle[CC.data$Salinity_Bottle == 26.95700 ] <- 36.95700
   
 ```
 
