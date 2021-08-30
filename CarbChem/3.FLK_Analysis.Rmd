@@ -52,7 +52,7 @@ CC.data<-read.csv("CC.data_normalized.csv", header = T)
 # 2. Format variables
   # Date/times
   CC.data$Year<-as.numeric(CC.data$Year)
-  CC.data$Date<-as.Date(CC.data$ESTDate, "%m/%d/%y")
+  CC.data$Date<-as.Date(as.character(CC.data$ESTDate), "%m/%d/%Y")
  
   
   # Numerical data
@@ -107,7 +107,11 @@ CC.data<-read.csv("CC.data_normalized.csv", header = T)
 CC.data$Season<-factor(CC.data$Season, levels = c(
                         "Winter", "Spring", "Summer", "Fall"))
 
-CC.data$Month<-factor(CC.data$Month, levels = month.name)
+#CC.data$Month<-factor(CC.data$Month, levels = month.name)
+CC.data$Month<-factor(CC.data$Month, levels = c( "May","June", "July",
+                                                 "August","September","October",
+                                                 "November","December",
+                                                 "January", "February","March","April"))
 #summary(CC.data$Month)
 
 ```
@@ -129,13 +133,13 @@ CC.data$Month<-factor(CC.data$Month, levels = month.name)
                         "Biscayne", "UK", "MK", "LK"))
 
   FLK.data$Zone<-factor(FLK.data$Zone, levels = c(
-                        "Inshore", "Middle channel", 
-                        "Off-shore", "Oceanic"))
+                        "Inshore", "Mid channel", 
+                        "Offshore", "Oceanic"))
   
   
   ## FOR NOW: remove weird 2019 values 
+  QC.data<-subset(FLK.data, FLK.data$Aragonite_Sat_W<2)
   FLK.data<-FLK.data[!(FLK.data$ID  %in% QC.data$ID),]
-  #QC.data<-subset(FLK.data, FLK.data$Aragonite_Sat_W<2)
   #write.csv(QC.data, "QC.data.csv")
 
   
@@ -207,13 +211,62 @@ leaflet(FLK.data, height = '400px') %>%
 ```
 Map of the sites were samples are collected
 
+## 2. Walton smith - all zones
 
-# 2. nTA and nDIC relation
+## Locations (All samples)
 
-## Only using Walthon Smith data for spatial comparison
+```{r WS.Map, include=FALSE}
+# Map information
+
+WS.GPS.Sites <- ddply (WS.data, .(Sub_region, Zone, SiteID),summarise,
+                Lat = mean (Latitude, na.rm = F), 
+                Lon = mean (Longitude, na.rm = F),
+                number = n())
+
+#Change color depending on type of data?
+  #stations$Site<-as.numeric(stations$Site)
+  # pal <- colorNumeric(palette = "YlOrRd", 
+                      #domain = stations$Site)
+  
+  #stations$Site<-as.factor(stations$Site)
+  #pal.gen <- colorFactor(palette = "Set1",
+  #                       domain = Locations$Location)
+  pal.gen <- colorFactor(palette = "Set1",
+                         domain = WS.GPS.Sites$Zone)
+```
+
+
+```{r WSmap, echo=FALSE}
+
+leaflet(WS.GPS.Sites, height = '500px') %>% 
+  addTiles() %>%
+  addProviderTiles(providers$Esri.WorldImagery)%>%
+  #addProviderTiles(providers$OpenStreetMap) %>% 
+  #addMarkers(icon=coral.icon) %>% 
+  addCircleMarkers(lng = ~Lon, lat = ~Lat, 
+                   stroke = TRUE, 
+                   #radius = sqrt(WS.GPS.Sites$number), 
+                   fillOpacity = 1,
+                   color = ~pal.gen(Zone),
+                   label = ~SiteID,
+                   labelOptions = labelOptions(
+                     noHide = F, direction = "bottom",
+                     textOnly = TRUE,
+                     style = list(
+        "color" = "white")))  %>%
+  addLegend(position = "topright",
+            pal = pal.gen, 
+            values = ~Zone, opacity = 1) %>%
+  fitBounds(lng1=-81.20, lat=26, lng2=-80.5, lat2=24)
+  
+```
+Map of the sites were samples are collected
+
+
+### 2.1. nTA and nDIC relation
 
 ```{r}
-TA_DIC<- ggplot(FLK.data, aes (nDIC, nTA)) + 
+TA_DIC<- ggplot(WS.data, aes (nDIC, nTA)) + 
   
   theme_bw() +
   scale_y_continuous(#limits = c(1700,2900),
@@ -247,13 +300,11 @@ theme(legend.position="top",
 ```{r, fig.height=8.8, fig.width=8.8}
 
 TA_DIC +
-  facet_grid(Zone~Mission)
+  facet_grid(~Sub_region)
 
 TA_DIC +
   facet_grid(Zone~Sub_region)
 
-TA_DIC +
-  facet_grid(Sub_region~Mission)
 ```
 
 
@@ -277,15 +328,7 @@ TA_DIC +
 * Higher slopes -> a higher NCC:NCP? = Lower and Middle keys, then Miami, then Upper keys
 
 
-# Offsshore + Oceanic vs Inshore + Middle channel
-
-```{r}
-
-```
-
-# 3. Aragonite 
-
-## Walton smith
+### 2.2 Aragonite 
 
 * By months (seasonality)
 
@@ -294,9 +337,9 @@ Aragonite_months<- ggplot(WS.data,
                           aes(x=Month, y=Aragonite_Sat_W)) +
   
   theme_bw() +
-  scale_y_continuous(limits = c(0,5.5),
-                       name=("Aragonite Saturation") ,
-                       breaks = seq(0, 5, 1),  
+  scale_y_continuous(limits = c(1,5.5),
+                      name=(expression ("Aragonite saturation state "~Omega)),
+                      breaks = seq(1, 5, 1),  
                        expand = c(0, 0)) +
   #scale_x_date(name="Date",
                #labels = date_format("%M/%Y"),
@@ -305,8 +348,47 @@ Aragonite_months<- ggplot(WS.data,
     #           breaks ="6 months")+
   
 geom_boxplot()+
-#geom_jitter(aes(fill=factor(Year)),
- #          shape=21, alpha=0.8)+ 
+geom_point(aes(fill=Precipitation), shape=21, alpha=0.5)+ 
+geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)+
+  
+theme(legend.position="top",
+      legend.direction = "horizontal",
+      # legend.title = element_blank(),
+          plot.background=element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5),
+          panel.grid.major.y = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          legend.box.background = element_rect(),
+          panel.background =element_rect(fill = NA, color = "black")
+          ) #+
+  #scale_fill_gradient(low = "red", high = "blue", na.value = NA)
+  
+Aragonite_months+facet_grid(Zone~Sub_region)
+```
+
+### 2.3 nTA 
+
+* By months (seasonality)
+
+```{r}
+nTA_months<- ggplot(WS.data,
+                          aes(x=Month, y=nTA)) +
+  
+  theme_bw() +
+  scale_y_continuous(#limits = c(1,5.5),
+                      name=(expression ("nTA")),
+                      #breaks = seq(1, 5, 1),  
+                      expand = c(0, 0)) +
+  #scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+   #            expand = c(0, 0),
+    #           breaks ="6 months")+
+  
+geom_boxplot()+
+geom_point(aes(fill=Precipitation), shape=21, alpha=0.5, size=0.8)+ 
 geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)+
   
 theme(legend.position="top",
@@ -323,10 +405,53 @@ theme(legend.position="top",
           ) #+
   #scale_fill_gradient(low = "red", high = "blue", na.value = NA)
   
-Aragonite_months+facet_grid(Zone~Sub_region)
+nTA_months + facet_grid(Zone~Sub_region)
 ```
 
-Data available
+
+### 2.4 nDIC 
+
+* By months (seasonality)
+
+```{r}
+nDIC_months<- ggplot(WS.data,
+                          aes(x=Month, y=nTA)) +
+  
+  theme_bw() +
+  scale_y_continuous(#limits = c(1,5.5),
+                      name=(expression ("nDIC")),
+                      #breaks = seq(1, 5, 1),  
+                      expand = c(0, 0)) +
+  #scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+   #            expand = c(0, 0),
+    #           breaks ="6 months")+
+  
+geom_boxplot()+
+geom_point(aes(fill=Precipitation), shape=21, alpha=0.5, size=0.8)+ 
+#geom_jitter(aes(fill=factor(Year)),
+ #          shape=21, alpha=0.8)+ 
+#geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)+
+  
+theme(legend.position="top",
+      legend.direction = "horizontal",
+      #legend.title = element_blank(),
+          plot.background=element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5),
+          panel.grid.major.y = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          legend.box.background = element_rect(),
+          panel.background =element_rect(fill = NA, color = "black")
+          ) #+
+  #scale_fill_gradient(low = "red", high = "blue", na.value = NA)
+  
+nDIC_months + facet_grid(Zone~Sub_region)
+```
+
+### 2.5 Data available
 
 ```{r, echo=FALSE}
 Cases_WS<-WS.data %>% count(Month,
@@ -362,19 +487,115 @@ kable(as.data.frame(Aragonite.month, format = "markdown"),
 ```
 
 
-* By years (trends) -> need to remove sites not sampled across timepoints
+## 3. Walton smith - Inshore and Middle channel vs (Offsshore + Oceanic)
+
+```{r}
+  WS.open<-subset(WS.data, WS.data$Zone=="Offshore"|WS.data$Zone=="Oceanic")
+  WS.open$Date<-as.Date(WS.open$Date, "%Y-%m-%d")
+ 
+  WS.reef<-subset(WS.data, WS.data$Zone=="Inshore"|WS.data$Zone=="Mid channel")
+  WS.reef$Date<-as.Date(WS.reef$Date, "%Y-%m-%d")
+```
+
+* Get the oceanic / offshore mean values per monty and substract them from the reef data
 
 ```{r}
 
-Aragonite_year<- ggplot(WS.data,
-                          aes(x=factor(Year), y=Aragonite_Sat_W)) +
+# Reef data
+nTA.month.open <- ddply (WS.open, .(Sub_region, Month),summarise,
+                nTA_mo = mean (nTA, na.rm = F))
+
+nDIC.month.open <- ddply (WS.open, .(Sub_region, Month),summarise,
+                nDIC_mo = mean (nDIC, na.rm = F))
+
+WS.reef<-join(WS.reef,nTA.month.open, 
+                 type = "left", by=c("Month", "Sub_region"))
+
+WS.reef<-join(WS.reef, nDIC.month.open, 
+                 type = "left", by=c("Month", "Sub_region"))
+
+# Delta nTA
+WS.reef$dnTA<-WS.reef$nTA-WS.reef$nTA_mo
+
+# Delta nDIC
+WS.reef$dnDIC<-WS.reef$nDIC-WS.reef$nDIC_mo
+
+```
+
+### 3.1. dnTA and dnDIC relation
+
+```{r}
+dnTA_dnDIC<- ggplot(WS.reef, aes (dnDIC, dnTA)) + 
   
   theme_bw() +
-  scale_y_continuous(limits = c(0,5.5),
-                       name=("Aragonite Saturation") ,
-                       breaks = seq(0, 5, 1),  
+  scale_y_continuous(#limits = c(1700,2900),
+                     #expand = c(0, 0),
+                     #breaks = seq(1800, 2800, 100),
+                    name=expression(Delta~"nTA")) +
+  scale_x_continuous(# limits = c(1600, 2600),
+                     # expand = c(0, 0),
+                     # breaks = seq(1500,2600,100),
+                      name=expression(Delta~"nDIC"))+
+  
+theme(legend.position="top",
+          plot.background=element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5),
+          panel.grid.major.y = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          legend.box.background = element_rect(),
+          panel.background =element_rect(fill = NA, 
+                                         color = "black")
+          )+
+  geom_point(aes(fill=Precipitation), size=3, alpha=0.5, shape=21)+
+  #scale_shape_manual(values=c(21, 24))+
+  geom_smooth(method = "lm", colour="black")+
+  geom_abline(slope = 0, intercept = 0, linetype=2, colour="gray")+
+  geom_vline(xintercept = 0, linetype=2, colour="gray")
+
+```
+
+
+```{r, fig.height=8.8, fig.width=8.8}
+
+#dnTA_dnDIC + facet_grid(~Sub_region)
+
+dnTA_dnDIC +
+  facet_grid(Zone~Sub_region)
+
+```
+
+
+```{r}
+ # Individual LR for each region
+    
+    dnTA_dnDIC_lm_Subreg <- WS.reef %>% 
+                    group_by(Sub_region, Zone) %>%
+                    do({model = lm(dnTA~dnDIC, data=.)  
+                    # create model
+                    data.frame(tidy(model), # get coefficient info
+                    glance(model))})        # get model info
+
+    kable(as.data.frame(dnTA_dnDIC_lm_Subreg[,1:8], format = "markdown"),
+          caption = "Table 3: nTA vs nDIC equations", digits = 3)
+```
+
+* Higher slopes -> a higher NCC:NCP? = Lower and Middle keys, then Miami, then Upper keys
+
+### 3.2 seasonal Aragonite 
+
+* By months (seasonality)
+
+```{r}
+Aragonite_months<- ggplot(WS.reef,
+                          aes(x=Month, y=Aragonite_Sat_W)) +
+  
+  theme_bw() +
+  scale_y_continuous(limits = c(1.5,5.5),
+                       name=paste("Aragonite Saturation state (\u03a9)") ,
+                       breaks = seq(2, 5, 1),  
                        expand = c(0, 0)) +
-  ylab("Year")+
   #scale_x_date(name="Date",
                #labels = date_format("%M/%Y"),
                #limits = c(-1,114),
@@ -382,12 +603,13 @@ Aragonite_year<- ggplot(WS.data,
     #           breaks ="6 months")+
   
 geom_boxplot()+
-geom_point(aes(fill=factor(Season)), shape=21, alpha=0.5)+ 
+geom_point(aes(fill=Precipitation),
+          shape=21, alpha=0.5)+ 
 geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)+
   
 theme(legend.position="top",
       legend.direction = "horizontal",
-      legend.title = element_blank(),
+      #legend.title = element_blank(),
           plot.background=element_blank(),
           axis.text.x = element_text(angle = 90, vjust = 0.5),
           panel.grid.major.y = element_blank(),
@@ -396,35 +618,101 @@ theme(legend.position="top",
           panel.grid.minor.y = element_blank(),
           legend.box.background = element_rect(),
           panel.background =element_rect(fill = NA, color = "black")
-          ) +
-  #scale_fill_gradient(low = "blue", high = "red", na.value = NA)+
-  #scale_colour_gradientn(colours = terrain.colors(10))+
-  #scale_fill_gradient2()+
+          ) #+
+  #scale_fill_gradient(low = "red", high = "blue", na.value = NA)
   
-  facet_grid(Zone~Sub_region)
-  
-Aragonite_year
-#ggsave(file="Outputs/Aragonite.svg", plot=Aragonite, dpi = 300, width=6, height=4)
+Aragonite_months+facet_grid(Zone~Sub_region)
+```
 
+### 3.3 seasonal delta nTA 
+
+```{r}
+dnTA_months<- ggplot(WS.reef,
+                          aes(x=Month, y=dnTA)) +
+  
+  theme_bw() +
+  scale_y_continuous(#limits = c(1,5.5),
+                      name=(expression (Delta~ "nTA")),
+                       #breaks = seq(1, 5, 1),  
+                       expand = c(0, 0)) +
+  #scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+   #            expand = c(0, 0),
+    #           breaks ="6 months")+
+  
+geom_boxplot()+
+geom_point(aes(fill=Precipitation),
+          shape=21, alpha=0.5)+ 
+geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)+
+  
+theme(legend.position="top",
+      legend.direction = "horizontal",
+      #legend.title = element_blank(),
+          plot.background=element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5),
+          panel.grid.major.y = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          legend.box.background = element_rect(),
+          panel.background =element_rect(fill = NA, color = "black")
+          ) #+
+  #scale_fill_gradient(low = "red", high = "blue", na.value = NA)
+  
+dnTA_months+facet_grid(Zone~Sub_region)
 ```
 
 
-
-
+### 3.4 seasonal delta nDIC
 
 ```{r}
-# Test Oceanic and Off-shore samples
-A_Oceanic<-subset(FLK.data, FLK.data$Zone=="Oceanic")
-A_Ofshore<-subset(FLK.data, FLK.data$Zone=="Off-shore")
-
-Reference<-rbind(A_Oceanic, A_Ofshore)
-Reference$Aragonite_Sat_W[Reference$Aragonite_Sat_W <2 ] <- NA
+dnDIC_months<- ggplot(WS.reef,
+                          aes(x=Month, y=dnDIC)) +
+  
+  theme_bw() +
+  scale_y_continuous(#limits = c(1,5.5),
+                       name=(expression (Delta~ "nDIC")),
+                       #breaks = seq(1, 5, 1),  
+                       expand = c(0, 0)) +
+  #scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+   #            expand = c(0, 0),
+    #           breaks ="6 months")+
+  
+geom_boxplot()+
+geom_point(aes(fill=Precipitation),
+          shape=21, alpha=0.5)+ 
+geom_abline(slope = 0, intercept = 0, color="gray", linetype=2)+
+  
+theme(legend.position="top",
+      legend.direction = "horizontal",
+      #legend.title = element_blank(),
+          plot.background=element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5),
+          panel.grid.major.y = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          legend.box.background = element_rect(),
+          panel.background =element_rect(fill = NA, color = "black")
+          ) #+
+  #scale_fill_gradient(low = "red", high = "blue", na.value = NA)
+  
+dnDIC_months + facet_grid(Zone~Sub_region)
 ```
 
-## Oceanic-Offshore trends in FLK
+
+* By years (trends) -> need to remove sites not sampled across timepoints
+
+
+# 4. Oceanic-Offshore longterm trends in FLK
+
+## 4.1 LMER (do not use)
 
 ```{r}
-Aragonite_Reference<- ggplot(FLK.data,
+Aragonite_Reference<- ggplot(WS.open,
                           aes(x=Date, y=Aragonite_Sat_W)) +
   
   theme_bw() +
@@ -439,7 +727,7 @@ Aragonite_Reference<- ggplot(FLK.data,
                breaks ="6 months")+
 
 geom_smooth(method = "lm")+  
-geom_point(aes(fill=Season), shape=21, alpha=0.5)+
+geom_point(aes(fill=factor(Year)), shape=21, alpha=0.5)+
 geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)+
   
 theme(legend.position="top",
@@ -456,9 +744,8 @@ theme(legend.position="top",
           )
 Aragonite_Reference  
 
-Aragonite_Reference + facet_grid(Month~Mission)
-Aragonite_Reference + facet_grid(Season~~Mission)
-Aragonite_Reference + facet_grid(Precipitation~Mission)
+Aragonite_Reference + facet_grid(~Season)
+Aragonite_Reference + facet_grid(~Precipitation)
 ```
 
 NOTE: Only month is significant (no region (UK, MK, LK), no Zone (oof-shore vs oceanic))
@@ -468,17 +755,17 @@ NOTE: Only month is significant (no region (UK, MK, LK), no Zone (oof-shore vs o
 Reference_LM<-lmer(Aragonite_Sat_W~Year + 
                                   (1|Month) +
                                   (1|Sub_region) +
-                                  (1|Zone), data=Reference)
+                                  (1|Zone), data=WS.open)
 summary(Reference_LM)    
 anova(Reference_LM)
 ranova(Reference_LM)
 step(Reference_LM)
 
-Oceanic_model<-lmer(Aragonite_Sat_W ~ Year + (1 | Month), data=Reference)
+Oceanic_model<-Reference_LM
 Oceanic_model
 
-Arg_off_lm <- Reference %>% 
-                    group_by(Month) %>%
+Arg_off_lm <- WS.open %>% 
+                    group_by(Zone) %>%
                     do({model = lm(Aragonite_Sat_W~Year, data=.)  
                     # create model
                     data.frame(tidy(model), # get coefficient info
@@ -488,101 +775,39 @@ Arg_off_lm <- Reference %>%
           caption = "Table 3: nTA vs nDIC equations", digits = 3)
 ```
 
-**Oceanic Aragonite** = -0.01443 Y +  32.88656  
-
-```{r}
-Reference<-select(A_Oceanic, c("Reference", "Date", "Aragonite_Sat_W"))
-
-colnames(Reference) <-c("Reference", "Date", "Aragonite_Oce")
-
-Cases_Ref<-Reference %>% count(Reference,
-                                  Date,
-                                  sort = F)
-
-```
-
-
-```{r}
-nDIC.Season <- ddply (CC.data, .(Region, Season),summarise,
-                #nDICmin = min (nDIC, na.rm = F), 
-                #nDICmax = max (nDIC, na.rm = F),
-                nDICmean = mean (nDIC, na.rm = F), 
-                nDICsd = sd (nDIC, na.rm = F))
-```
-
-
-```{r}
-FLK.data<-join(FLK.data, Reference, 
-                 type = "full", by=c("Reference", "Date"))
-```
-
-* By months (seasonality)
-
-```{r}
-
-Aragonite_months<- ggplot(FLK.data,
-                          aes(x=Month, y=Aragonite_Sat_W)) +
-  
-  theme_bw() +
-  scale_y_continuous(limits = c(0,5.5),
-                       name=("Aragonite Saturation") ,
-                       breaks = seq(0, 5, 1),  
-                       expand = c(0, 0)) +
-  #scale_x_date(name="Date",
-               #labels = date_format("%M/%Y"),
-               #limits = c(-1,114),
-   #            expand = c(0, 0),
-    #           breaks ="6 months")+
-  
-geom_boxplot()+
-#geom_jitter(aes(fill=Year),
-#           shape=21, alpha=0.5, size=0.8)+ 
-geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)+
-  
-theme(legend.position=c(0.65, 0.1),
-      legend.direction = "horizontal",
-      legend.title = element_blank(),
-          plot.background=element_blank(),
-          axis.text.x = element_text(angle = 90, vjust = 0.5),
-          panel.grid.major.y = element_blank(),
-          panel.grid.major.x = element_blank(),
-          panel.grid.minor.x = element_blank(),
-          panel.grid.minor.y = element_blank(),
-          legend.box.background = element_rect(),
-          panel.background =element_rect(fill = NA, color = "black")
-          ) +
-  scale_fill_gradient(low = "red", high = "blue", na.value = NA)
-  
-Aragonite_months + facet_wrap(Sub_region~.)
-Aragonite_months + facet_wrap(Zone~.)
-Aragonite_months + facet_grid(Zone~Sub_region)
-
-```
-
-* REMOVE OCEANIC VALUES TO SEE WHAT IS DRIVING THE SEASONAL TRENDS??? 
-* ADD BENTHIC CO
+**Oceanic Aragonite** = -0.05803  Y +  120.84919  
 
 * By years (trends) -> need to remove sites not sampled across timepoints
 
-```{r}
 
-Aragonite_year<- ggplot(FLK.data,
-                          aes(x=factor(Year), y=Aragonite_Sat_W)) +
+## 4.2 means (do not use)
+
+```{r}
+Aragonite.month <- ddply (WS.open, .(Season, Year),
+                          summarise,
+                #Amin = min (Aragonite_Sat_W, na.rm = F), 
+                #Amax = max (Aragonite_Sat_W, na.rm = F),
+                Amean = mean (Aragonite_Sat_W, na.rm = F)#, 
+                #Asd = sd (Aragonite_Sat_W, na.rm = F)
+                )
+Aragonite.month
+
+Aragonite_Reference2<- ggplot(Aragonite.month,
+                          aes(x=Year, y=Amean)) +
   
   theme_bw() +
-  scale_y_continuous(limits = c(0,5.5),
+  scale_y_continuous(#limits = c(0,5.5),
                        name=("Aragonite Saturation") ,
-                       breaks = seq(0, 5, 1),  
+                       #breaks = seq(0, 5, 1),  
                        expand = c(0, 0)) +
-  ylab("Year")+
   #scale_x_date(name="Date",
                #labels = date_format("%M/%Y"),
                #limits = c(-1,114),
    #            expand = c(0, 0),
     #           breaks ="6 months")+
-  
-geom_boxplot()+
-geom_point(aes(fill=factor(Precipitation)), shape=21, alpha=0.5)+ 
+
+geom_smooth(method = "lm")+  
+geom_point(aes(fill=factor(Year)), shape=21, alpha=0.5)+
 geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)+
   
 theme(legend.position="top",
@@ -596,42 +821,36 @@ theme(legend.position="top",
           panel.grid.minor.y = element_blank(),
           legend.box.background = element_rect(),
           panel.background =element_rect(fill = NA, color = "black")
-          ) 
-Aragonite_year  +  facet_wrap(Sub_region~.)
-Aragonite_year  +  facet_wrap(Zone~.)
-Aragonite_year  +  facet_grid(Zone~Sub_region)
+          )
+Aragonite_Reference2  
 
-#ggsave(file="Outputs/Aragonite.svg", plot=Aragonite, dpi = 300, width=6, height=4)
+Aragonite_Reference + facet_wrap(~Season)
 
 ```
 
-**Note:** data from 2012-2015 is only Upper Keys! Miami, MK and LK start in 2016
 
-# 6. pCO2 
-
-* By months (seasonality)
+#5. Inshore-mid reef longterm trends in FLK
 
 ```{r}
-
-pCO2_months<- ggplot(FLK.data,
-                          aes(x=Month, y=pCO2)) +
+Aragonite_reef<- ggplot(WS.reef,
+                          aes(x=Date, y=Aragonite_Sat_W)) +
   
   theme_bw() +
-  #scale_y_continuous(limits = c(0,5.5),
-  #                     name=("Aragonite Saturation") ,
-  #                     breaks = seq(0, 5, 1),  
-   #                    expand = c(0, 0)) +
-  #scale_x_date(name="Date",
+  scale_y_continuous(#limits = c(0,5.5),
+                       name=("Aragonite Saturation") ,
+                       #breaks = seq(0, 5, 1),  
+                       expand = c(0, 0)) +
+  scale_x_date(name="Date",
                #labels = date_format("%M/%Y"),
                #limits = c(-1,114),
-   #            expand = c(0, 0),
-    #           breaks ="6 months")+
-  
-geom_boxplot()+
-geom_point(aes(fill=factor(Year)), shape=21, alpha=0.5, size=0.5)+ 
+               expand = c(0, 0),
+               breaks ="6 months")+
+
+geom_smooth(method = "lm")+  
+geom_point(aes(fill=factor(Year)), shape=21, alpha=0.5)+
 geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)+
   
-theme(legend.position=c(0.65, 0.05),
+theme(legend.position="top",
       legend.direction = "horizontal",
       legend.title = element_blank(),
           plot.background=element_blank(),
@@ -643,161 +862,48 @@ theme(legend.position=c(0.65, 0.05),
           legend.box.background = element_rect(),
           panel.background =element_rect(fill = NA, color = "black")
           )
-  
-pCO2_months  +  facet_wrap(Sub_region~.)
-pCO2_months  +  facet_wrap(Zone~.)
-pCO2_months  +  facet_grid(Zone~Sub_region)
+Aragonite_reef  
+
+Aragonite_reef+ facet_grid(~Season)
+Aragonite_reef + facet_grid(~Precipitation)
 ```
 
-* By years (trends) -> need to remove sites not sampled across timepoints
+NOTE: Only month is significant (no region (UK, MK, LK), no Zone (oof-shore vs oceanic))
 
 ```{r}
 
-pCO2_year<- ggplot(FLK.data,
-                          aes(x=factor(Year), y=pCO2)) +
-  
-  theme_bw() +
-  ylab("pCO2")+ xlab("Year")+ 
-  #scale_y_continuous(limits = c(0,5.5),
-  #                     name=("Aragonite Saturation") ,
-  #                     breaks = seq(0, 5, 1),  
-  #                     expand = c(0, 0)) +
+Reef_LM<-lmer(Aragonite_Sat_W~Year + 
+                                  (1|Month) +
+                                  (1|Sub_region) +
+                                  (1|Zone), data=WS.reef)
+summary(Reef_LM)    
+anova(Reef_LM)
+ranova(Reef_LM)
+step(Reef_LM)
 
-  #scale_x_date(name="Date",
-               #labels = date_format("%M/%Y"),
-               #limits = c(-1,114),
-   #            expand = c(0, 0),
-    #           breaks ="6 months")+
-  
-geom_boxplot()+
-geom_point(aes(fill=factor(Season)), shape=21, alpha=0.5)+ 
-geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)+
-  
-theme(legend.position=c(0.65, 0.1),
-      legend.direction = "horizontal",
-      legend.title = element_blank(),
-          plot.background=element_blank(),
-          axis.text.x = element_text(angle = 90, vjust = 0.5),
-          panel.grid.major.y = element_blank(),
-          panel.grid.major.x = element_blank(),
-          panel.grid.minor.x = element_blank(),
-          panel.grid.minor.y = element_blank(),
-          legend.box.background = element_rect(),
-          panel.background =element_rect(fill = NA, color = "black")
-          ) +
-  #scale_fill_gradient(low = "blue", high = "red", na.value = NA)+
-  #scale_colour_gradientn(colours = terrain.colors(10))+
-  #scale_fill_gradient2()+
-  
-  facet_wrap(Region~., scales= "free_y")
-  
-pCO2_year
-#ggsave(file="Outputs/Aragonite.svg", plot=Aragonite, dpi = 300, width=6, height=4)
+Reef_model<-Reef_LM
+Reef_model
 
+Arg_off_lm <- WS.open %>% 
+                    group_by(Zone) %>%
+                    do({model = lm(Aragonite_Sat_W~Year, data=.)  
+                    # create model
+                    data.frame(tidy(model), # get coefficient info
+                    glance(model))})        # get model info
+
+    kable(as.data.frame(Arg_off_lm[,1:8], format = "markdown"),
+          caption = "Table 3: nTA vs nDIC equations", digits = 3)
 ```
 
+**Oceanic Aragonite** = -0.05803  Y +  120.84919  
 
-```{r}
-  HighpCO2<-CC.data[FLK.data$pCO2 > 1000, ] 
-```
+**Note:** data from 2012-2015 is only Upper Keys! Miami, MK and LK start in 2016
 
-
-# 8. pH 
-
-* By months (seasonality)
-
-```{r}
-
-pH_months<- ggplot(FLK.data,
-                          aes(x=Month, y=pH)) +
-  
-  theme_bw() +
-  #scale_y_continuous(limits = c(0,5.5),
-  #                     name=("Aragonite Saturation") ,
-  #                     breaks = seq(0, 5, 1),  
-   #                    expand = c(0, 0)) +
-  #scale_x_date(name="Date",
-               #labels = date_format("%M/%Y"),
-               #limits = c(-1,114),
-   #            expand = c(0, 0),
-    #           breaks ="6 months")+
-  
-geom_boxplot()+
-geom_point(aes(fill=factor(Year)), shape=21, 
-           alpha=0.5, size=0.8)+ 
-geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)+
-  
-theme(legend.position=c(0.65, 0.05),
-      legend.direction = "horizontal",
-      legend.title = element_blank(),
-          plot.background=element_blank(),
-          axis.text.x = element_text(angle = 90, vjust = 0.5),
-          panel.grid.major.y = element_blank(),
-          panel.grid.major.x = element_blank(),
-          panel.grid.minor.x = element_blank(),
-          panel.grid.minor.y = element_blank(),
-          legend.box.background = element_rect(),
-          panel.background =element_rect(fill = NA, color = "black")
-          ) +
-  #scale_fill_gradient(low = "blue", high = "red", na.value = NA)+
-  #scale_colour_gradientn(colours = terrain.colors(10))+
-  #scale_fill_gradient2()+
-  
-  facet_wrap(Region~., scales = "free_y")
-  
-pH_months
-```
-
-* By years (trends) -> need to remove sites not sampled across timepoints
-
-```{r}
-
-pH_year<- ggplot(FLK.data,
-                          aes(x=factor(Year), y=pH)) +
-  
-  theme_bw() +
-  ylab("pH")+ xlab("Year")+ 
-  #scale_y_continuous(limits = c(0,5.5),
-  #                     name=("Aragonite Saturation") ,
-  #                     breaks = seq(0, 5, 1),  
-  #                     expand = c(0, 0)) +
-
-  #scale_x_date(name="Date",
-               #labels = date_format("%M/%Y"),
-               #limits = c(-1,114),
-   #            expand = c(0, 0),
-    #           breaks ="6 months")+
-  
-geom_boxplot()+
-geom_point(aes(fill=factor(Season)), shape=21, 
-           alpha=0.5, size=0.8)+ 
-geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)+
-  
-theme(legend.position=c(0.65, 0.1),
-      legend.direction = "horizontal",
-      legend.title = element_blank(),
-          plot.background=element_blank(),
-          axis.text.x = element_text(angle = 90, vjust = 0.5),
-          panel.grid.major.y = element_blank(),
-          panel.grid.major.x = element_blank(),
-          panel.grid.minor.x = element_blank(),
-          panel.grid.minor.y = element_blank(),
-          legend.box.background = element_rect(),
-          panel.background =element_rect(fill = NA, color = "black")
-          ) +
-  facet_wrap(Region~., scales= "free_y")
-  
-pH_year
-
-```
 
 # Notes on samples
 
 * Get offshore values for analysis (NCP and NCC)
 * Residence time with Heidi
 * Get better location information/metadata
-  - In-shore vs off-shore
   - Reefs vs no reefs
-  - L, M, and U keys
-* Separate multiple dephts
 * Choose timeframe/seasonality -> question driven
