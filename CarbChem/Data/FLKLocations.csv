@@ -1,19 +1,19 @@
 SiteID,dec lon,dec lat,Zone,Sub_region,Reference
 1,-80.12666667,25.645,Inshore,Biscayne,1
-2,-80.105,25.64166667,Middle channel,Biscayne,1
-3,-80.08333333,25.645,Off-shore,Biscayne,1
+2,-80.105,25.64166667,Mid channel,Biscayne,1
+3,-80.08333333,25.645,Offshore,Biscayne,1
 EK_IN,-80.227501,25.336306,Inshore,Biscayne,2
-EK_MID,-80.1946,25.314483,Middle channel,Biscayne,2
-EK_OFF,-80.162604,25.294251,Off-shore,Biscayne,2
+EK_MID,-80.1946,25.314483,Mid channel,Biscayne,2
+EK_OFF,-80.162604,25.294251,Offshore,Biscayne,2
 4,-80.38,25.10833333,Inshore,UK,3
 5,-80.355,25.09333333,Inshore,UK,3
-5.5,-80.33416667,25.07966667,Middle channel,UK,3
-6,-80.315,25.065,Off-shore,UK,3
+5.5,-80.33416667,25.07966667,Mid channel,UK,3
+6,-80.315,25.065,Offshore,UK,3
 6.5,-80.28766667,25.04833333,Oceanic,UK,3
-MR,-80.38,25.01,Off-shore,UK,3
+MR,-80.38,25.01,Offshore,UK,3
 UK_IN,-80.569852,24.939806,Inshore,UK,4
-UK_MID,-80.546176,24.920702,Middle channel,UK,4
-UK_OFF,-80.529497,24.898193,Off-shore,UK,4
+UK_MID,-80.546176,24.920702,Mid channel,UK,4
+UK_OFF,-80.529497,24.898193,Offshore,UK,4
 Transect 1,,,Inshore,UK,5
 H2O_1,,,Inshore,UK,5
 H2O_2,,,Inshore,UK,5
@@ -27,29 +27,29 @@ ADCP_NE,,,Inshore,UK,5
 ADCP_S,,,Inshore,UK,5
 ADCP_SW,,,Inshore,UK,5
 MapCO2_Buoy,,,Inshore,UK,5
-Transect 2,,,Middle channel,UK,5
-Transect 3,,,Off-shore,UK,5
+Transect 2,,,Mid channel,UK,5
+Transect 3,,,Offshore,UK,5
 Transect 4,,,Oceanic,UK,5
 7,-80.75666667,24.82083333,Inshore,MK,6
-8,-80.74166667,24.7925,Middle channel,MK,6
-9,-80.72333333,24.76333333,Off-shore,MK,6
+8,-80.74166667,24.7925,Mid channel,MK,6
+9,-80.72333333,24.76333333,Offshore,MK,6
 9.5,-80.69,24.71666667,Oceanic,MK,6
 10,-80.86,24.78833333,Inshore,MK,7
-11,-80.84666667,24.75333333,Middle channel,MK,7
-12,-80.83166667,24.71333333,Off-shore,MK,7
+11,-80.84666667,24.75333333,Mid channel,MK,7
+12,-80.83166667,24.71333333,Offshore,MK,7
 13,-81.03,24.70166667,Inshore,MK,8
-14,-81.02333333,24.675,Middle channel,MK,8
-15,-81.01666667,24.64333333,Off-shore,MK,8
+14,-81.02333333,24.675,Mid channel,MK,8
+15,-81.01666667,24.64333333,Offshore,MK,8
 15.5,-80.99166667,24.59166667,Oceanic,MK,8
 16,-81.205,24.675,Inshore,LK,9
-17,-81.19333333,24.635,Middle channel,LK,9
-18,-81.18333333,24.59833333,Off-shore,LK,9
+17,-81.19333333,24.635,Mid channel,LK,9
+18,-81.18333333,24.59833333,Offshore,LK,9
 19,-81.42166667,24.61,Inshore,LK,10
-20,-81.41833333,24.575,Middle channel,LK,10
-21LK,-81.42,24.54,Off-shore,LK,10
+20,-81.41833333,24.575,Mid channel,LK,10
+21LK,-81.42,24.54,Offshore,LK,10
 21.5,-81.39166667,24.48333333,Oceanic,LK,10
-WS,-81.717,24.478,Off-shore,LK,11
-22,-81.82833333,24.455,Off-shore,LK,11
+WS,-81.717,24.478,Offshore,LK,11
+22,-81.82833333,24.455,Offshore,LK,11
 22.5,-81.82833333,24.39666667,Oceanic,LK,11
-23,-81.82833333,24.48666667,Middle channel,LK,11
+23,-81.82833333,24.48666667,Mid channel,LK,11
 24,-81.82833333,24.53666667,Inshore,LK,11

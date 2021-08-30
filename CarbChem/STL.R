@@ -10,7 +10,7 @@ library(reshape2)
 
 
 #load data
-dm <- read.csv("C:/Users/axw913/Dropbox/MIAMI/data/CARB_DATA_ALL.csv")
+dm <- WS.data
 
 #restore date format
 dm$ESTDate <- as.Date(dm$ESTDate, "%d/%m/%Y")

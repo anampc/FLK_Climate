@@ -1,0 +1,86 @@
+---
+title: "6.Cycles"
+author: "Ana Palacio-Castro"
+date: "August 30, 2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+Cycles<-WS.data %>% select(SiteID, Date, Zone, Sub_region, Aragonite_Sat_W, BestSalinity, Month, Precipitation) 
+
+clycle<- ggplot(Cycles, aes(x=Date)) +
+  
+  theme_bw() +
+  #scale_y_continuous(limits = c(0,5.5),
+  #                     name=("Aragonite Saturation") ,
+  #                     breaks = seq(0, 5, 1),  
+   #                    expand = c(0, 0)) +
+  #scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+   #            expand = c(0, 0),
+    #           breaks ="6 months")+
+  
+geom_smooth(aes(x=Date, y=(Aragonite_Sat_W), colour=Zone), span= 0.3, se=FALSE)+
+geom_point(aes(x=Date, y=Aragonite_Sat_W, fill=Precipitation), shape=21, alpha=0.5, size=1)+ 
+geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)+
+  
+theme(legend.position=c(0.65, 0.05),
+      legend.direction = "horizontal",
+      legend.title = element_blank(),
+          plot.background=element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5),
+          panel.grid.major.y = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          legend.box.background = element_rect(),
+          panel.background =element_rect(fill = NA, color = "black")
+          )
+clycle  +  facet_wrap(Sub_region~.)
+```
+
+
+
+```{r}
+Cycles<-WS.data %>% select(SiteID, Date, Zone, Sub_region, Aragonite_Sat_W, BestSalinity, Month, Precipitation) 
+summary(Cycles$Month)
+str(Cycles$Month)
+Cycles$Months<-as.numeric(Cycles$Month)-9
+
+clycle<- ggplot(Cycles, aes(x=Months)) +
+  
+  theme_bw() +
+  #scale_y_continuous(limits = c(0,5.5),
+  #                     name=("Aragonite Saturation") ,
+  #                     breaks = seq(0, 5, 1),  
+   #                    expand = c(0, 0)) +
+  #scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+   #            expand = c(0, 0),
+    #           breaks ="6 months")+
+  
+geom_smooth(aes(x=Months, y=(Aragonite_Sat_W), colour=Zone), span= 0.7, se=FALSE)+
+geom_point(aes(x=Months, y=Aragonite_Sat_W, fill=Precipitation), shape=21, alpha=0.5, size=1)+ 
+geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)+
+  
+theme(legend.position="top",
+      legend.direction = "horizontal",
+      legend.title = element_blank(),
+          plot.background=element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5),
+          panel.grid.major.y = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          legend.box.background = element_rect(),
+          panel.background =element_rect(fill = NA, color = "black")
+          )
+clycle  +  facet_wrap(Sub_region~.)
+
+```
