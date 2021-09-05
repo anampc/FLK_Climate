@@ -761,6 +761,60 @@ anova(Reference_LM)
 ranova(Reference_LM)
 step(Reference_LM)
 
+library(emmeans)
+
+# Option 1
+
+  # Create a new data frame for independent variables  
+  NewData <- expand.grid(Month=unique(WS.open$Month),
+                          Year=unique(WS.open$Year),
+                          Sub_region=unique(WS.open$Sub_region),
+                          Zone=unique(WS.open$Zone))
+  pred_2 <- predict(Reference_LM , newdata=NewData, re.form= ~(1|Month),
+                    level=0)
+  #summary(pred_2) 
+  #length(pred_2)
+  head(pred_2)
+  
+  pred_2<-cbind(NewData, pred_2)
+  
+  
+  Aragonite_Reference<- ggplot(pred_2,
+                          aes(x=Year, y=pred_2)) +
+  
+  theme_bw() +
+  scale_y_continuous(#limits = c(0,5.5),
+                       name=("Aragonite Saturation") ,
+                       #breaks = seq(0, 5, 1),  
+                       expand = c(0, 0)) +
+  #scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+  #             expand = c(0, 0),
+  #             breaks ="6 months")+
+
+geom_smooth(method = "lm")+  
+geom_point(aes(fill=factor(Year)), shape=21, alpha=0.5)+
+geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)+
+  
+theme(legend.position="top",
+      legend.direction = "horizontal",
+      legend.title = element_blank(),
+          plot.background=element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5),
+          panel.grid.major.y = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          legend.box.background = element_rect(),
+          panel.background =element_rect(fill = NA, color = "black")
+          )
+Aragonite_Reference  
+
+Aragonite_Reference + facet_wrap(~Month)
+
+  
+
 Oceanic_model<-Reference_LM
 Oceanic_model
 
@@ -828,6 +882,10 @@ Aragonite_Reference + facet_wrap(~Season)
 
 ```
 
+```{r}
+
+```
+
 
 #5. Inshore-mid reef longterm trends in FLK
 
@@ -884,7 +942,9 @@ step(Reef_LM)
 Reef_model<-Reef_LM
 Reef_model
 
-Arg_off_lm <- WS.open %>% 
+plot(Reef_model)
+
+Arg_off_lm <- WS.reef %>% 
                     group_by(Zone) %>%
                     do({model = lm(Aragonite_Sat_W~Year, data=.)  
                     # create model
@@ -895,9 +955,8 @@ Arg_off_lm <- WS.open %>%
           caption = "Table 3: nTA vs nDIC equations", digits = 3)
 ```
 
-**Oceanic Aragonite** = -0.05803  Y +  120.84919  
-
-**Note:** data from 2012-2015 is only Upper Keys! Miami, MK and LK start in 2016
+**In shore Aragonite** = -0.074  Y +  152.498
+**Mid Cahnner Aragonite** = -0.035  Y +  73.542  
 
 
 # Notes on samples

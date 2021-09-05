@@ -1,0 +1,117 @@
+---
+title: "CalVal"
+author: "Ana Palacio-Castro"
+date: "September 2, 2021"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+theme_set(theme_bw())
+```
+
+# 7. CalVal to detrend
+
+## Create a regular data series
+```{r}
+# Get the WS data
+cv<-CalVal.data %>% select(SiteID, Date, Zone, Sub_region, Aragonite_Sat_W) 
+
+# Pool dates from the same month year
+library(zoo)
+cv$Y_M<-as.yearmon(dm$Date, format="%Y-%m")
+
+# How many samples per time point, zone and region
+CasesS<-cv %>% count(Y_M,
+                    Zone,
+                    Sub_region,
+                    sort = F)
+CasesS
+
+# Calculate average values per Zone and sub_region
+cv_mean<-ddply (cv, .(Y_M, Zone,Sub_region),
+                summarise,
+                Amean = mean (Aragonite_Sat_W, na.rm = F))
+
+# How many samples per time point, zone and region?
+CasesCV<-cv_mean %>% count(Y_M,
+                    Zone,
+                    Sub_region,
+                    sort = T)
+CasesCV
+ggplot(aes(x=Y_M,y=Amean), data=cv_mean)+geom_point()+geom_path()+geom_rug() + facet_grid(Sub_region~Zone)
+
+# Create unique ID
+cv_mean$ID<-paste(cv_mean$Sub_region,cv_mean$Zone, sep = "_" )
+cv_mean<-select(cv_mean, Y_M, ID, Amean)
+
+
+# Wide data to run multiple regul at once
+head(cv_mean)
+cv_mean<-reshape(cv_mean, idvar = "Y_M", timevar = "ID", direction = "wide")
+#cv_mean$Day<-as.numeric(cv_mean$Y_M)
+
+x<-select(cv_mean, Y_M)
+x$Y_M<-as.numeric(x$Y_M)
+
+y<-select(cv_mean, -Y_M)
+
+# TIME SERIES 
+library("pastecs")
+# Use "regul" function to regularize your data series and then extract the new data
+# Methods Linear (regul, by default)
+
+regT<-regul(x=x$Y_M, y=y, n=89, units = "year", deltat=1/12)
+plot(regT)
+str(regT)
+
+Mean_reg_CV<-extract(regT, n=88)
+head(Mean_reg_CV)
+plot(Mean_reg_CV[,1:4])
+autoplot(Mean_reg_CV)
+
+# self-Mahalanobis distance for this multivariate series.
+AutoD2(Mean_reg_WS,plotit=TRUE)
+
+```
+
+## Plot the raw ts data 
+```{r}
+#install.packages("tsbox")
+library(tsbox)
+df <- ts_df(Mean_reg_CV)
+summary(df)
+str(df)
+head(df)
+tail(df)
+ggplot(aes(x=time, y=value), data=df)+geom_point()+geom_path() + facet_wrap(~id)
+
+
+AResiduals<-(df$value -mean(df$value))
+ComSum<-cumsum(AResiduals)
+plot(df$time,ComSum)
+
+```
+
+## Decompose ts
+
+```{r}
+require(graphics)
+head(Mean_reg_CV)
+
+
+# Inshore
+CalVal_Inshore<-(stl (Mean_reg_CV[,1], "per", robust = TRUE))
+acf(CalVal_Inshore$time.series[,"remainder"])
+plot(CalVal_Inshore)
+summary(CalVal_Inshore)
+
+CalVal_MidChannel<-(stl (Mean_reg_CV[,2], "per"))
+plot(CalVal_MidChannel)
+
+CalVal_Off<-(stl (Mean_reg_CV[-1,3], "per"))
+plot(CalVal_Off)
+
+```
+
