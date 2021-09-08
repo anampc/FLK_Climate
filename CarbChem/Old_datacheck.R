@@ -121,7 +121,11 @@ TA<- ggplot(All.data) + theme_bw() +
                breaks ="6 months")+
   
   scale_shape_manual(values=c(21,24))+
+<<<<<<< HEAD
   geom_point(aes (Date, TA, fill=SiteID, shape=Dataset), alpha=0.5)+    
+=======
+  geom_point(aes (Date, TA, fill=SiteID, shape=Dataset))+    
+>>>>>>> a779b2ccbad80c404841b4b9d922b9c862bdaaf5
   
   theme(legend.position="none",
         plot.background=element_blank(),
@@ -152,7 +156,11 @@ DIC<- ggplot(All.data) + theme_bw() +
                breaks ="6 months")+
   
   scale_shape_manual(values=c(21,24))+
+<<<<<<< HEAD
   geom_point(aes (Date, DIC, fill=SiteID, shape=Dataset), alpha=0.5)+    
+=======
+  geom_point(aes (Date, DIC, fill=SiteID, shape=Dataset))+    
+>>>>>>> a779b2ccbad80c404841b4b9d922b9c862bdaaf5
   
   theme(legend.position="none",
         plot.background=element_blank(),
