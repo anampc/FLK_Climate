@@ -41,7 +41,7 @@ editor_options:
 
 ```{r, include=FALSE}
 # 1. Get data
-CC.data<-read.csv("Data/NCRMP_CarbonateChemistryData_All_Atlantic_updated.csv", header = T)
+CC.data<-read.csv("Data/NCRMP_CarbonateChemistryData_3Files.csv", header = T)
   summary(CC.data)
   str((CC.data))
   #summary(CC.data$Region)
@@ -51,7 +51,8 @@ CC.data<-read.csv("Data/NCRMP_CarbonateChemistryData_All_Atlantic_updated.csv", 
 # 2. Format variables
   # Date/times
   CC.data$Year<-as.numeric(CC.data$Year)
-  CC.data$Date<-as.Date(CC.data$ESTDate, "%m/%d/%y")
+  CC.data$Date<-as.Date(CC.data$ESTDate, "%m/%d/%Y")
+  CC.data$DoM<-format(as.Date(CC.data$Date), "%d")
  
   
   # Numerical data
@@ -88,33 +89,52 @@ CC.data<-read.csv("Data/NCRMP_CarbonateChemistryData_All_Atlantic_updated.csv", 
   CC.data$Aragonite_Sat_W<-
     as.numeric((as.character(CC.data$Aragonite_Sat_W)))
   
+  CRM<-subset(CC.data,CC.data$CTDID=="CalVal_Jul2019_5" |
+              CC.data$CTDID=="CalVal_Jul2019_6" |
+                CC.data$CTDID=="CalVal_Jul2019_7" |
+                CC.data$CTDID=="CalVal_Jul2019_8" |
+                CC.data$CTDID=="CalVal_Jul2019_9" |
+                CC.data$CTDID=="CalVal_Jul2019_10" |
+                CC.data$CTDID=="CalVal_Jul2019_11" |
+                CC.data$CTDID=="CalVal_Jul2019_12")
+  
+  CC.data<-CC.data[!CC.data$CTDID %in% CRM$CTDID, , drop = FALSE]
+  
+  
+  # Remove CalVal
+  CC.data<-filter(CC.data, Mission!="CalVal")
+  
   #Values set to -9 -> Changed to NAs
-  CC.data_Neg9<-subset(CC.data,CC.data$Aragonite_Sat_W==-9 |
-                         CC.data$pH==-9 |
-                         CC.data$pCO2==-9)
+  #CC.data_Neg9<-subset(CC.data,CC.data$Aragonite_Sat_W==-9 |
+  #                       CC.data$pH==-9 |
+  #                       CC.data$pCO2==-9)
   
-  CC.data[ CC.data == -9 ] <- NA
+  #CC.data[ CC.data == -9 ] <- NA
   
-  CC.data$DIC[CC.data$DIC == 4574.590 ] <- 2043.1832
-  CC.data$Salinity_Bottle[CC.data$Salinity_Bottle == 26.95700 ] <- 36.95700
+  #CC.data$DIC[CC.data$DIC == 4574.590 ] <- 2043.1832 (Done in data file)
+  #CC.data$Salinity_Bottle[CC.data$Salinity_Bottle == 26.95700 ] <- 36.95700 (Done in file)
   
 ```
 
 # Add seasonality
 
 ```{r, include=FALSE}
-# Define seasons
+# Define seasons (rougly by month)
   metseasons <- c(
-    "01" = "Winter", "02" = "Winter",
-    "03" = "Spring", "04" = "Spring", "05" = "Spring",
-    "06" = "Summer", "07" = "Summer", "08" = "Summer",
-    "09" = "Fall", "10" = "Fall", "11" = "Fall",
-    "12" = "Winter"
+    "01" = "Winter", "02" = "Winter", "03" = "Winter",
+    "04" = "Spring", "05" = "Spring", "06" = "Spring",
+    "07" = "Summer", "08" = "Summer", "09" = "Summer",
+    "10" = "Fall", "11" = "Fall", "12" = "Fall"
   )
-
 Seasons<-as.data.frame(metseasons[format(CC.data$Date, "%m")])
 colnames(Seasons)<-"Season"
 CC.data<-cbind(CC.data, Seasons)
+
+# Adjust byu days of the month
+CC.data$Season[(CC.data$Month=="March" & CC.data$DoM>19)]<-"Spring"
+CC.data$Season[(CC.data$Month=="June" & CC.data$DoM>19)]<-"Summer"
+CC.data$Season[(CC.data$Month=="September" & CC.data$DoM>21)]<-"Fall"
+CC.data$Season[(CC.data$Month=="December" & CC.data$DoM>20)]<-"Winter"
 
 precipitation<-c(
     "01" = "Dry", "02" = "Dry", "03" = "Dry", "04" = "Dry",
@@ -143,7 +163,7 @@ summary(CC.data$Month)
 # Add info from the sampling stations
 Locations <- CC.data %>% select(Latitude,
                                 Longitude, 
-                                Location, 
+                                Region, 
                                 SiteID)
 Locations$GPS<-paste(Locations$Latitude,
                      "-", 
@@ -165,7 +185,7 @@ GPS.Sites <- ddply (CC.data, .(Location, SiteID),summarise,
   #pal.gen <- colorFactor(palette = "Set1",
   #                       domain = Locations$Location)
   pal.gen <- colorFactor(palette = "Set1",
-                         domain = CC.data$Year)
+                         domain = CC.data$Region)
 ```
 
 
@@ -179,7 +199,7 @@ leaflet(CC.data, height = '400px') %>%
                    stroke = TRUE, 
                    radius = sqrt(GPS.Sites$number), 
                    fillOpacity = 1,
-                   color = ~pal.gen(Year),
+                   color = ~pal.gen(Region),
                    label = ~SiteID,
                    labelOptions = labelOptions(
                      noHide = F, direction = "bottom",
@@ -188,7 +208,7 @@ leaflet(CC.data, height = '400px') %>%
         "color" = "white")))  %>%
   addLegend(position = "topright",
             pal = pal.gen, 
-            values = ~Year, opacity = 1) %>%
+            values = ~Region, opacity = 1) %>%
   fitBounds(lng1=-93.80, lat=28, lng2=-64.1, lat2=17.5)
   
 ```
@@ -218,16 +238,6 @@ Map of the sites were samples are collected
 
 ```{r}
     
-# 3.TA normalization to intercept  
-    # One intercept?
-    #TA1<-lm(TA~BestSalinity, data=CC.data)
-    #TA1
-    #summary(TA1)
-    # Intercept for each region
-    #TA2<-lm(TA~BestSalinity+Region, data=CC.data)
-    #TA2
-    #summary(TA2)
-    
     # Individual LR for each region
     TA_lm <- CC.data %>%
       group_by(Region) %>%
@@ -246,19 +256,6 @@ Map of the sites were samples are collected
 
 ```{r}
 # 3.DIC normalization to intercept  
-
-    #DIC
-    # One intercept?
-    #DIC1<-lm(DIC~BestSalinity, data=CC.data)
-    #DIC1
-    # Intercept for each region
-    #DIC2<-lm(DIC~BestSalinity+Region, data=CC.data)
-    #DIC2 
-    
-    # Individual LR for each region
-      #DIC_lm <- CC.data %>%
-      # group_by(Region) %>%
-      # do(mod = lm(DIC ~ BestSalinity,data = .))
 
     DIC_coef <- CC.data %>% 
                   group_by(Region) %>%
@@ -302,11 +299,14 @@ Map of the sites were samples are collected
 ```{r}
 kable(as.data.frame(TA_coef[,1:8], format = "markdown"), caption = "Table 1: TA parameters for normalization", digits = 3)
 
+#write.csv(TA_coef, "TA_coef.csv")
+
 ```
     
 ```{r, fig.height=8.8, fig.width=8.8}
 # 5. Chech normalization?
-nTA_Sal<- ggplot(CC.data, x=BestSalinity) +
+nTA_Sal<- ggplot(subset(CC.data, Region=="FLK")) + theme_bw() +
+#nTA_Sal<- ggplot(CC.data, x=BestSalinity) +
   
   theme_bw() +
   #scale_y_continuous(limits = c(1700,2900),
@@ -351,13 +351,15 @@ nTA_Sal+facet_wrap(~Region, scales = "free")
 
 ```{r}
     kable(as.data.frame(DIC_coef[,1:8], format = "markdown"), caption = "Table 2: DIC parameters for normalization", digits = 3)
+
+#write.csv(DIC_coef, "DIC_coef.csv")
     
 ```
 
 
 ```{r, fig.height=8.8, fig.width=8.8}
-nDIC_Sal<- ggplot(CC.data) + theme_bw() +
-  
+nDIC_Sal<- ggplot(subset(CC.data, Region=="FLK")) + theme_bw() +
+#nDIC_Sal<- ggplot(CC.data) + theme_bw() +  
   #scale_y_continuous(limits = c(1700,2900),
   #                     name="TA",
   #                     breaks = seq(1800, 2800, 200),
@@ -398,12 +400,23 @@ nDIC_Sal+facet_wrap(~Region, scales = "free")
 * Original data: Black line and circles
 * Friis normalization: blue line and triangles
 
+```{r}
+library(ggpubr)
+FLK_parameters<-ggarrange(nDIC_Sal, nTA_Sal,
+          #labels = c("DIC Friss regresion", "TA Friss regresion"),
+          ncol = 2, nrow = 1)
+
+FLK_parameters
+```
+
+
 # 3. nTA and nDIC relation
 
 * Removed the DIC>4000
 
 ```{r}
-TA_DIC<- ggplot(CC.data, aes (nDIC, nTA)) + 
+TA_DIC<- ggplot(subset(CC.data, Region=="FLK"), aes (nDIC, nTA)) + theme_bw() +
+#TA_DIC<- ggplot(CC.data, aes (nDIC, nTA)) + 
   
   theme_bw() +
   scale_y_continuous(#limits = c(1700,2900),

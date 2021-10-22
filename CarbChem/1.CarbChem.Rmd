@@ -35,7 +35,7 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, options(kni
 
 ```{r, include=FALSE}
 # 1. Get data
-CC.data<-read.csv("Data/NCRMP_CarbonateChemistryData_All_Atlantic_updated.csv", header = T)
+CC.data<-read.csv("Data/NCRMP_CarbonateChemistryData_3Files.csv", header = T)
   summary(CC.data)
   str((CC.data))
   #summary(CC.data$Region)
@@ -45,7 +45,7 @@ CC.data<-read.csv("Data/NCRMP_CarbonateChemistryData_All_Atlantic_updated.csv", 
 # 2. Format variables
   # Date/times
   CC.data$Year<-as.numeric(CC.data$Year)
-  CC.data$Date<-as.Date(CC.data$ESTDate, "%m/%d/%y")
+  CC.data$Date<-as.Date(CC.data$ESTDate, "%m/%d/%Y")
  
   
   # Numerical data
@@ -157,7 +157,7 @@ leaflet(Locations, height = '400px') %>%
   addCircleMarkers(lng = ~Longitude, lat = ~Latitude, 
                    stroke = TRUE, radius = 4, 
                    fillOpacity = 1,
-                   color = ~pal.gen(Location),
+                   color = ~pal.gen(),
                    label = ~Sample_Depth_m,
                    labelOptions = labelOptions(
                      noHide = T, direction = "bottom",
@@ -181,7 +181,6 @@ Map of the sites were samples are collected
 ## Locations (Avergage geolocation for permanent samples)
 
 ```{r, echo=FALSE}
-
 GPS.Sites <- ddply (CC.data, .(Location, SiteID),summarise,
                 Lat = mean (Latitude, na.rm = F), 
                 Lon = mean (Longitude, na.rm = F),
@@ -278,6 +277,29 @@ Cases_Mission<-Cases_Mission %>%
   select(c(Region, Mission), everything())
 
 kable(as.data.frame(Cases_Mission, format = "html"), caption="Samples collected by each mission")
+```
+
+
+### Only WS, year, Month 
+```{r, echo=FALSE}
+WS<-filter(CC.data, CC.data$Mission=="WaltonSmith")
+WS$Month<-month(WS$Date)
+
+Cases_Mission<-WS %>% count(
+                                 Year,
+                                 Month, sort = F)
+
+Cases_Mission<-as.data.frame(Cases_Mission %>%
+    pivot_wider(names_from = Year, values_from = n))
+
+# Organize table
+Cases_Mission<-Cases_Mission %>% 
+    select(sort(names(.)))
+Cases_Mission<-Cases_Mission %>%
+  select(c(Region, Mission), everything())
+
+kable(as.data.frame(Cases_Mission, format = "html"), caption="WS samples collected by year-month")
+#write.csv(Cases_Mission, "WS_samples.csv")
 ```
 
 ## Number of sites per region
@@ -626,7 +648,7 @@ Relationships<- ggplot(CC.data) + theme_bw() +
 geom_point(aes (Aragonite_Sat_W, Temperature_C, fill=Region), alpha=0.5, shape=21)+
 #geom_line(aes (Date, Temperature_C, colour=SiteID))+
  
-theme(legend.position="none",
+theme(legend.position="top",
           plot.background=element_blank(),
           axis.text.x = element_text(angle = 90, vjust = 0.5),
           panel.grid.major.y = element_blank(),
