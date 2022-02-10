@@ -1,0 +1,3213 @@
+---
+title: "Carbon Chemistry analysis - New database-Filtered"
+author: "Ana Palacio-Castro"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: hide
+    fig_height: 8
+    fig_width: 8
+    df_print: paged
+    toc: yes
+    toc_float: true
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, options(knitr.kable.NA = ''))
+```
+
+# Libraries and settings
+
+```{r, include=FALSE}
+# Libraries
+    library(plyr)
+    library(tidyverse)
+    library(reshape2)
+    library(lubridate)
+    library(knitr)
+    library(dplyr)
+    library(broom)
+
+    library(ggpubr)
+    library(ggthemes)
+    library(gridExtra)
+    library(ggExtra)
+    
+#Models     
+    library(lmerTest)
+    library(emmeans)
+
+# Interactive Maps
+    library(leaflet)
+
+# Plots
+MyTheme<-theme_bw() +  
+theme(legend.position="top",
+          plot.background=element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5),
+          panel.grid.major.y = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          legend.box.background = element_rect(),
+          panel.background =element_rect(fill = NA, 
+                                         color = "black")
+          )
+
+```
+
+# 1. Import and format carbon chemistry data
+
+```{r, include=FALSE}
+# 1. Get data
+FLK.data<-read.csv("FLK_results/FLK_filtered.csv", header = T)
+#FLK.data$Region<-NULL
+FLK.data$Mission<-NULL
+FLK.data$Location<-NULL
+FLK.data$Sample_Depth_m<-NULL
+
+FLK.data$TA_0<-NULL
+FLK.data$DIC_0<-NULL
+FLK.data$nTA<-NULL
+FLK.data$nDIC<-NULL
+
+  #summary(FLK.data)
+  str(FLK.data)
+  Sites<-as.data.frame(unique(FLK.data$SiteID))
+  
+# 2. Format variables
+  # Date/times
+    # Year
+    FLK.data$Year<-as.numeric(FLK.data$Year)
+    summary(FLK.data$Year)
+    
+    # UTC Date
+    #FLK.data$UTCDate<-as.Date(FLK.data$UTCDate, "%m/%d/%Y", tz="UTC")
+    #summary(FLK.data$UTCDate)
+  
+    # UTC Date-time 
+    #FLK.data$UTCDate_Time<-paste(FLK.data$UTCDate, FLK.data$UTCTime, sep = " ")
+    #FLK.data$UTCDate_Time<-as_datetime(FLK.data$UTCDate_Time, tz="UTC")
+    #summary(FLK.data$UTCDate_Time)
+    
+    # EST Date-time 
+    #FLK.data$datetime<-as_datetime(FLK.data$UTCDate_Time, tz="EST")
+    #FLK.data$ESTDate<-as.Date(FLK.data$datetime, tz="EST")
+    #FLK.data$ESTTime <- format(FLK.data$datetime,"%H:%M:%S")
+   
+    #CC.data$Month<-month(CC.data$ESTDate)
+    #FLK.data$Month <- as.numeric(format(FLK.data$ESTDate,"%m"))
+    #summary(FLK.data$Month)
+    #FLK.data$Month<-month.abb[FLK.data$Month]
+    #CC.data$Month<-factor(CC.data$Month, levels = month.name)
+    FLK.data$Month<-factor(FLK.data$Month, 
+                          levels = c("Apr", "May","Jun",
+                                    "Jul", "Aug", "Sep",
+                                    "Oct","Nov","Dec",
+                                    "Jan", "Feb", "Mar"))
+    summary(FLK.data$Month)
+    #FLK.data$Months<-months(FLK.data$ESTDate)
+    FLK.data$Months<-factor(FLK.data$Months, levels = month.name)
+    FLK.data$Date<-as.Date(FLK.data$Date)
+    
+  ## Add time variables 
+
+    # FLK.data <- transform(FLK.data,
+    #                    SiteID = factor(SiteID),
+    #                    MY = format(datetime, format = '%Y-%m'),
+    #                    MoY = as.numeric(format(datetime, format = '%m')),
+    #                    #DoY = as.numeric(format(datetime, format = '%j')),
+    #                    ToD = as.numeric(format(datetime, format = '%H')) +
+    #                      (as.numeric(format(datetime, format = '%M')) / 60))
+    
+  FLK.data$Sub_region<-factor(FLK.data$Sub_region, levels = c(
+                          "Biscayne", "UK", "MK", "LK"))
+  
+  FLK.data$Zone<-factor(FLK.data$Zone, levels = c(
+                        "Inshore", "Mid channel", 
+                        "Offshore", "Oceanic"))
+    FLK.data$Season<-factor(FLK.data$Season, levels = c(
+                        "Winter", "Spring", 
+                        "Summer", "Fall"))
+
+summary(FLK.data)
+
+   # Numerical data
+    # CC.data$Latitude <-as.numeric((as.character(CC.data$Latitude)))
+    # CC.data$Longitude <-as.numeric((as.character(CC.data$Longitude)))
+   
+    # CC.data$Temperature_C <-
+    #    as.numeric((as.character(CC.data$Temperature_C)))
+    # Temperature_NA2<-CC.data[(is.na(CC.data$Temperature_C)),]
+  
+    # CC.data$TA <-as.numeric((as.character(CC.data$TA)))
+    # CC.data$DIC <-as.numeric((as.character(CC.data$DIC)))
+    
+    # CC.data$pH <-as.numeric((as.character(CC.data$pH)))
+    # CC.data$pCO2 <-as.numeric((as.character(CC.data$pCO2)))
+    # CC.data$Aragonite_Sat_W<-
+    #   as.numeric((as.character(CC.data$Aragonite_Sat_W)))
+```
+
+## Seasonality
+
+* Winter: Dec 20-March 19
+* Spring: March 20-June 18
+* Summer: June 19-Sep 20 
+* Fall: Sep 21-Dec 19
+
+* Wet: May - October
+* Dry: November - April
+
+
+## Remove extreme events?
+
+```{r}
+# Label and filter extreme events
+  FLK.data$Extreme<-as.factor(FLK.data$Extreme)
+  summary(FLK.data$Extreme)
+```
+
+# 2. Check data available
+
+## 2.1 Locations (all samples)
+
+```{r MapINformation, include=FALSE}
+Locations <- FLK.data %>% select(Latitude,
+                                Longitude, 
+                                Sub_region, 
+                                SiteID)
+Locations$GPS<-paste(Locations$Latitude,
+                     "-", 
+                     Locations$Longitude)
+
+Locations<-unique(Locations)
+
+GPS.Sites <- ddply (FLK.data, .(Sub_region, SiteID),summarise,
+                Lat = mean (Latitude, na.rm = F), 
+                Lon = mean (Longitude, na.rm = F),
+                number = n())
+#write.csv(GPS.Sites, "FLK_results/meanSitePoints.csv")
+
+  #stations$Site<-as.factor(stations$Site)
+  #pal.gen <- colorFactor(palette = "Set1",
+  #                       domain = Locations$Location)
+  pal.gen <- colorFactor(palette = "Set1",
+                         domain = FLK.data$Zone)
+```
+
+
+```{r makeAmap, echo=FALSE}
+
+leaflet(FLK.data, height = '400px') %>% 
+  addTiles() %>%
+  #addProviderTiles(providers$Esri.WorldImagery)%>%
+  addProviderTiles(providers$OpenStreetMap) %>% 
+  #addMarkers(icon=coral.icon) %>% 
+  addCircleMarkers(lng = ~Longitude, lat = ~Latitude, 
+                   #stroke = TRUE, 
+                   radius = sqrt(GPS.Sites$number), 
+                   fillOpacity = 1,
+                   color = ~pal.gen(Zone),
+                   label = ~SiteID,
+                   labelOptions = labelOptions(
+                     noHide = F, direction = "bottom",
+                     textOnly = TRUE,
+                     style = list(
+        "color" = "white")))  %>%
+  addLegend(position = "topright",
+            pal = pal.gen, 
+            values = ~Zone, opacity = 1) %>%
+  fitBounds(lng1=-81.20, lat=26, lng2=-80.5, lat2=24)
+  
+```
+
+**Figure:** Map of the sites where individual samples were collected
+
+**Notes:**
+* Check location of individual SiteIDs
+
+## 2.2 Average GPS point location
+
+```{r WS.Map, include=FALSE}
+# Map information
+
+WS.GPS.Sites <- ddply (FLK.data, .(Sub_region, Zone, SiteID),summarise,
+                Lat = mean (Latitude, na.rm = F), 
+                Lon = mean (Longitude, na.rm = F),
+                number = n())
+
+#Change color depending on type of data?
+  #stations$Site<-as.numeric(stations$Site)
+  # pal <- colorNumeric(palette = "YlOrRd", 
+                      #domain = stations$Site)
+  
+  #stations$Site<-as.factor(stations$Site)
+  #pal.gen <- colorFactor(palette = "Set1",
+  #                       domain = Locations$Location)
+  pal.gen <- colorFactor(palette = "Set1",
+                         domain = WS.GPS.Sites$Zone)
+```
+
+
+```{r WSmap, echo=FALSE}
+
+leaflet(WS.GPS.Sites, height = '600px') %>% 
+  addTiles() %>%
+  #addProviderTiles(providers$Esri.WorldImagery)%>%
+  addProviderTiles(providers$OpenStreetMap) %>% 
+  addCircleMarkers(lng = ~Lon, lat = ~Lat, 
+                   stroke = FALSE, 
+                   radius = 4, 
+                   fillOpacity = 1,
+                   color = ~pal.gen(Zone),
+                   label = ~SiteID,
+                   labelOptions = labelOptions(
+                     noHide = F, direction = "bottom",
+                     textOnly = TRUE,
+                     style = list(
+        "color" = "white")))  %>%
+  addLegend(position = "topright",
+            pal = pal.gen, 
+            values = ~Zone, opacity = 1) %>%
+  fitBounds(lng1=-81.20, lat=26, lng2=-80.5, lat2=24)
+  
+```
+
+**Figure:** Permanent location of WS stations
+
+## 2.3 Number of samples
+
+### By zone and location
+
+```{r, echo=FALSE}
+Cases_Loc_Zone<-FLK.data %>% count(Sub_region,
+                                  Zone,
+                                  sort = F)
+
+Cases_Loc_Zone<-as.data.frame(Cases_Loc_Zone %>%
+                   pivot_wider(names_from = Zone,
+                   values_from = n))
+#write.csv(Cases_Loc_Zone, "FLK_results/SampleSizeFLK.csv")
+
+kable(as.data.frame(Cases_Loc_Zone, format = "markdown"), 
+      longtable = TRUE)
+```
+
+### By year and sub_region
+
+```{r, echo=FALSE}
+Cases_Reg_Year<-FLK.data %>% count(Year, Sub_region, sort = F)
+
+Cases_Reg_Year<-as.data.frame(Cases_Reg_Year %>%
+    pivot_wider(names_from = Year, values_from = n))
+#write.csv(Cases_Reg_Year, "FLK_results/SampleYearFLK.csv")
+
+kable(as.data.frame(Cases_Reg_Year, format = "html"),  caption = "Samples collected in each year")
+```
+
+### By climatological season and region
+
+```{r, echo=FALSE}
+Cases_Reg_season<-FLK.data %>% count(Season, Sub_region, sort = T)
+
+Cases_Reg_season<-as.data.frame(Cases_Reg_season %>%
+    pivot_wider(names_from = Season, values_from = n))
+#write.csv(Cases_Reg_season, "FLK_results/SampleSeasonFLK.csv")
+
+kable(as.data.frame(Cases_Reg_season, format = "html"),
+      caption = "Samples collected in each season")
+```
+
+### By Month-year
+
+```{r, echo=FALSE}
+
+Cases_Month<-FLK.data %>% count(Year,
+                                Month, sort = F)
+
+Cases_Month<-as.data.frame(Cases_Month %>%
+    pivot_wider(names_from = Year, values_from = n))
+
+# Organize table
+  #Cases_Month<-Cases_Month %>% 
+  #    select(sort(names(.)))
+#write.csv(Cases_Month, "FLK_results/SampleMonthYearFLK.csv")
+
+kable(as.data.frame(Cases_Month, format = "html"), caption="Samples collected by year-month")
+#write.csv(Cases_Mission, "WS_samples.csv")
+```
+
+### By Month-region
+
+```{r, echo=FALSE}
+
+Cases_Month_Location<-FLK.data %>% count(Sub_region,
+                                Zone,
+                                Month, sort = F)
+
+Cases_Month_Location<-as.data.frame(Cases_Month_Location %>%
+    pivot_wider(names_from = Month, values_from = n))
+#write.csv(Cases_Month_Location, "FLK_results/SampleMonthZoneFLK.csv")
+
+kable(as.data.frame(Cases_Month_Location, format = "html"),
+      caption="Samples collected by month-Location")
+```
+
+### Per station during all sampling time
+
+```{r, echo=FALSE}
+Cases_Site_FLK<-FLK.data %>% count(Year, SiteID, sort = F)
+#Cases_Site_FLK
+
+Cases_Site_FLK<-as.data.frame(Cases_Site_FLK %>%
+    pivot_wider(names_from = Year, values_from = n))
+#write.csv(Cases_Site_FLK, "FLK_results/SampleSiteIDFLK.csv")
+
+kable(as.data.frame(Cases_Site_FLK, format = "html"),
+      caption = "Samples collected in SiteIDs")
+```
+
+**Notes:** 
+
+* 
+
+
+# 3. TA and DIC salinity normalization
+
+## Salinity standardizations 
+
+1. Used salinity Bottle first, if not available, salinity CTD
+
+2. Calculate TA intercepts
+
+```{r}
+    
+    # Individual LR for each region
+    TA_lm <- FLK.data %>%
+      group_by(Region) %>%
+      do(mod = lm(TA_umol_kg ~ BestSalinity,data = .))
+
+    TA_coef <- FLK.data %>% 
+                group_by(Region) %>%
+                do({model = lm(TA_umol_kg~BestSalinity, data=.)  # model
+                    data.frame(tidy(model), # get coefficient info
+                    glance(model))})        # get model info
+    
+```
+
+3. Calculate DIC intercepts 
+
+```{r}
+# 3.DIC normalization to intercept  
+
+    DIC_coef <- FLK.data %>% 
+                  group_by(Region) %>%
+                  do({model = lm(DIC_umol_kg~BestSalinity, data=.)  
+                  # create model
+                  data.frame(tidy(model), # get coefficient info
+                  glance(model))})        # get model info
+```
+
+4. Normalize with Friss equation
+
+```{r}
+# 4. Normalize the data
+
+  TA_TO<-subset(TA_coef, term=="(Intercept)")
+  TA_TO<-as.data.frame(select(TA_TO, c(Region, estimate)))
+  names(TA_TO)[2] <- "TA_0"
+  
+  DIC_TO<-subset(DIC_coef, term=="(Intercept)")
+  DIC_TO<-as.data.frame(select(DIC_TO, c(Region, estimate)))
+  names(DIC_TO)[2] <- "DIC_0"
+    
+  Intercepts<-join(TA_TO, DIC_TO, by="Region", type="full")
+  FLK.data<-join(FLK.data, Intercepts, by="Region", type="left")
+```
+
+```{r}
+FLK.data$nTA<-(
+    FLK.data$TA_umol_kg-FLK.data$TA_0)/
+    FLK.data$BestSalinity*35+FLK.data$TA_0
+  
+  FLK.data$nDIC<-(
+    FLK.data$DIC_umol_kg-FLK.data$DIC_0)/
+    FLK.data$BestSalinity*35+FLK.data$DIC_0
+  
+#write.csv(FLK.data, "FLK_results/FLK.data_filtered_normalized.csv", row.names = F)
+```
+
+5. TA parameters to nTA
+
+```{r}
+kable(as.data.frame(TA_coef[,1:8], format = "markdown"), caption = "Table 1: TA parameters for normalization", digits = 3)
+
+#write.csv(TA_coef, "TA_coef.csv")
+
+```
+    
+```{r, echo=F, fig.height=8.8, fig.width=8.8}
+# 5. Chech normalization?
+nTA_Sal<- ggplot(FLK.data) + theme_bw() +
+  #scale_y_continuous(limits = c(1700,2900),
+  #                     name="TA",
+  #                     breaks = seq(1800, 2800, 200),
+  #                     expand = c(0, 0)) +
+  # scale_x_continuous(name="Aragonite",
+  #                limits = c(0.5,6),
+  #                expand = c(0, 0),
+  #                breaks = seq(1,6,1))+
+  
+geom_point(aes (BestSalinity, TA_umol_kg, fill=Season), alpha=0.5, shape=21)+
+geom_smooth(aes(BestSalinity, TA_umol_kg), linetype=2, method = "lm", color="black")+
+  
+geom_point(aes (BestSalinity, nTA, fill=Season), alpha=0.5, shape=24)+
+geom_smooth(aes(BestSalinity, nTA), linetype=1, method = "lm")+  
+
+theme(legend.position="top",
+          plot.background=element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5),
+          panel.grid.major.y = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          legend.box.background = element_rect(),
+          panel.background =element_rect(fill = NA, color = "black")
+          )
+#nTA_Sal
+#ggsave(file="Outputs/Figure_1_Experiment_design.svg", plot=Design, dpi = 300, width=6, height=4)
+```
+
+6. DIC parameters to nDIC
+
+```{r}
+    kable(as.data.frame(DIC_coef[,1:8], format = "markdown"), caption = "Table 2: DIC parameters for normalization", digits = 3)
+
+#write.csv(DIC_coef, "DIC_coef.csv")
+    
+```
+
+```{r, echo=F, fig.height=8.8, fig.width=8.8}
+nDIC_Sal<- ggplot(FLK.data) + theme_bw() +
+  #scale_y_continuous(limits = c(1700,2900),
+  #                     name="TA",
+  #                     breaks = seq(1800, 2800, 200),
+  #                     expand = c(0, 0)) +
+  # scale_x_continuous(name="Aragonite",
+  #                limits = c(0.5,6),
+  #                expand = c(0, 0),
+  #                breaks = seq(1,6,1))+
+  
+geom_point(aes (BestSalinity, DIC_umol_kg, fill=Season),
+           alpha=0.5, shape=21)+
+geom_smooth(aes(BestSalinity, DIC_umol_kg),
+            linetype=2, method = "lm", color="black")+
+  
+geom_point(aes (BestSalinity, nDIC, fill=Season), alpha=0.5, shape=24)+
+geom_smooth(aes(BestSalinity, nDIC), linetype=1, method = "lm")+  
+
+ 
+theme(legend.position="top",
+          plot.background=element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5),
+          panel.grid.major.y = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          legend.box.background = element_rect(),
+          panel.background =element_rect(fill = NA, color = "black")
+          )
+#nDIC_Sal
+
+#ggsave(file="Outputs/Figure_1_Experiment_design.svg", plot=Design, dpi = 300, width=6, height=4)
+```
+
+```{r,  echo=FALSE}
+library(ggpubr)
+FLK_parameters<-ggarrange(nTA_Sal, nDIC_Sal,
+          #labels = c("DIC Friss regresion", "TA Friss regresion"),
+          ncol = 2, nrow = 1)
+
+FLK_parameters
+```
+
+**Figure 0:** Overview of linear regressions of total alkalinity (TA, µmol kg−1) and dissolved inorganic carbon (DIC, µmol kg−1) as a function of salinity + Friss normalized values.
+
+* Original data: Black line and circles
+* Friis normalization: blue line and triangles
+
+# Discuss very low r2 in these corrections
+
+# 4. nTA and nDIC relation
+
+## 4.1 Region (all FLK samples)
+
+```{r}
+nTA_nDIC<- ggplot(FLK.data, aes (nDIC, nTA)) + 
+  
+  scale_y_continuous(#limits = c(1700,2900),
+                     #expand = c(0, 0),
+                     #breaks = seq(1800, 2800, 100),
+                    name="nTA") +
+  scale_x_continuous(# limits = c(1600, 2600),
+                     # expand = c(0, 0),
+                     # breaks = seq(1500,2600,100),
+                      name="nDIC")+
+MyTheme
+
+#TA_DIC+ 
+ #geom_point(aes (fill=Region, shape=Season), alpha=0.5)+
+ #scale_shape_manual(values=c(21, 22, 23, 24))
+
+#ggsave(file="Outputs/Figure_1_Experiment_design.svg", plot=Design, dpi = 300, width=6, height=4)
+```
+
+```{r, fig.height=8.8, fig.width=8.8}
+nTA_nDIC_ext<-nTA_nDIC +
+   scale_shape_manual(values=c(21,21,24, 24))+
+  geom_point(aes (fill=Extreme, shape=Zone), alpha=0.4)+
+  geom_smooth(method = "lm", colour="black")
+ 
+```
+
+```{r, fig.height=8.8, fig.width=8.8}
+nTA_nDIC_pre<-nTA_nDIC +
+  scale_shape_manual(values=c(21,21,24, 24))+
+  geom_point(aes (fill=Precipitation,  shape=Zone), alpha=0.4)+
+  geom_smooth(method = "lm", colour="black")
+ 
+```
+
+```{r}
+nTA_nDIC_parameters<-ggarrange(nTA_nDIC_ext, nTA_nDIC_pre,
+          #labels = c("DIC Friss regresion", "TA Friss regresion"),
+          ncol = 2, nrow = 1)
+
+nTA_nDIC_parameters
+```
+
+**Figure 2:** Linear regressions of total alkalinity (nTA) as a function of dissolved inorganic carbon (nDIC) for the Florida Keys.
+
+
+```{r}
+ # Individual LR for each region
+    TA_DIC_lm <- FLK.data %>%
+      group_by(Region) %>%
+      do(mod = lm(nTA ~ nDIC, data = .))
+
+    TA_DIC_coef <- FLK.data %>% 
+                    group_by(Region) %>%
+                    do({model = lm(nTA~nDIC, data=.)  
+                    # create model
+                    data.frame(tidy(model), # get coefficient info
+                    glance(model))})        # get model info
+
+    kable(as.data.frame(TA_DIC_coef[,1:8], format = "markdown"),
+          caption = "nTA vs nDIC equations", digits = 3)
+```
+
+## 4.2 By zone sub_region
+
+```{r, fig.height=8.8, fig.width=8.8}
+nTA_nDIC_ext_zone<-nTA_nDIC_ext + facet_grid(Zone~Sub_region)
+nTA_nDIC_ext_zone
+```
+
+```{r, fig.height=8.8, fig.width=8.8}
+nTA_nDIC_pre_zone<-nTA_nDIC_pre +  facet_grid(Zone~Sub_region)
+nTA_nDIC_pre_zone
+```
+
+```{r}
+ # Individual LR for each Zone and Sub_region
+    TA_DIC_lm_zone <- FLK.data %>%
+      group_by(Zone, Sub_region) %>%
+      do(mod = lm(nTA ~ nDIC, data = .))
+
+    TA_DIC_coef_zone <- FLK.data %>% 
+                    group_by(Zone, Sub_region) %>%
+                    do({model = lm(nTA~nDIC, data=.)  
+                    # create model
+                    data.frame(tidy(model), # get coefficient info
+                    glance(model))})        # get model info
+
+    kable(as.data.frame(TA_DIC_coef_zone[,1:8], format = "markdown"),
+          caption = "nTA vs nDIC equations", digits = 3)
+```
+
+**Notes: **
+
+* Higher slopes in TA vs. DIC 
+  * -> a higher NCC:NCP
+  * -> calcifying (e.g., corals, sediments, and calcifying algae) relative to non-calcifying communities (e.g., fleshy algae)
+  
+* Intermediate slopes for mixed communities of calcifiers and non-calcifiers (Anthony et al., 2013; Page et al., 2016; Lantz et al., 2017). 
+
+
+## 4.3 Removing Extreme events
+
+```{r, fig.height=8.8, fig.width=8.8}
+nTA_nDIC_Extreme<- ggplot() + 
+    scale_y_continuous(#limits = c(1700,2900),
+                     #expand = c(0, 0),
+                     #breaks = seq(1800, 2800, 100),
+                    name="nTA") +
+  scale_x_continuous(# limits = c(1600, 2600),
+                     # expand = c(0, 0),
+                     # breaks = seq(1500,2600,100),
+                      name="nDIC")+
+  MyTheme +  facet_grid(Zone~Sub_region)+
+  geom_smooth(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+              aes (nDIC, nTA), method = "lm", colour="black")
+
+nTA_nDIC_Extreme + 
+  geom_point(data=FLK.data, aes (nDIC, nTA, fill=Extreme), 
+             shape=21, alpha=0.8)
+```
+
+# Discuss if including extreme events on nDIC nTA slopes
+
+```{r}
+nTA_nDIC_Extreme + 
+  geom_point(data=FLK.data, aes (nDIC, nTA, fill=Precipitation), 
+             shape=21, alpha=0.8)
+```
+
+**Figure 1:** Linear regressions of total alkalinity (nTA, µmol kg−1) and dissolved inorganic carbon (nDIC, µmol kg−1)
+
+```{r}
+ # Individual LR for each Zone and Sub_region
+    
+    TA_DIC_coef_zone_noExtremes <- FLK.data[FLK.data$Extreme=="Normal", ] %>% 
+                    group_by(Zone, Sub_region) %>%
+                    do({model = lm(nTA~nDIC, data=.)  
+                    # create model
+                    data.frame(tidy(model), # get coefficient info
+                    glance(model))})        # get model info
+
+    kable(as.data.frame(TA_DIC_coef_zone_noExtremes[,1:8], format = "markdown"),
+          caption = "nTA vs nDIC equations without extreme events", digits = 3)
+```
+
+# Discuss  nTA - nDIC slope results
+
+**Notes: **
+* Inshore: UK has lowest slope- expected? 
+* Mid Chanel: Biscayne and UK vs MK and LK- worth discussing? 
+
+# 5. Basic plots and stats summary - Seasonality
+
+## 5.1 Temperature
+
+### Season stats 
+
+```{r, echo=FALSE}
+Temp.Season <- ddply (FLK.data, .(Season, Zone),summarise,
+                Tmin = min (Temperature_C, na.rm = T), 
+                Tmax = max (Temperature_C, na.rm = T),
+                Tmean = mean (Temperature_C, na.rm = T), 
+                Tsd = sd (Temperature_C, na.rm = T))
+
+kable(as.data.frame(Temp.Season, format = "markdown"), caption = "Temperature by season")
+
+```
+
+### Overview
+
+```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
+Temperature_All<- ggplot(FLK.data) +
+  scale_y_continuous(#limits = c(15,40),
+                       name=(expression("Temperature"~(degree*C))),
+                       breaks = seq(16, 40, 2),  
+                       expand = c(0.1, 0.1)) +
+  scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+               #expand = c(0, 0),
+               breaks ="6 months")+
+  MyTheme 
+Temperature_All +
+  geom_point(aes (Date, Temperature_C, fill=Season), shape=21, alpha=0.8)
+
+# Temperature_All +
+#   geom_point(aes (Date, Temperature_C, fill=Extreme), shape=21, alpha=0.8) + facet_grid(Zone~.)
+
+```
+
+### Monthly 
+
+```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
+Temperature_month<- ggplot(FLK.data) +
+  
+  scale_y_continuous(#limits = c(15,40),
+                       name=(expression("Temperature"~(degree*C))),
+                       breaks = seq(16, 40, 3),  
+                       expand = c(0.1, 0.1)) +
+  MyTheme +  facet_grid(Zone~Sub_region)
+```
+
+```{r}
+Temperature_month +
+  geom_boxplot(aes (x=Month, y=Temperature_C))+
+  geom_point(aes (x=Month, y=Temperature_C, fill=Extreme), 
+             shape=21, size = 1, alpha=0.5)
+  
+```
+
+```{r}
+Temperature_month +
+  geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+               aes (x=Month, y=Temperature_C))+
+  geom_point(aes (x=Month, y=Temperature_C, fill=Precipitation), 
+             shape=21, size = 1, alpha=0.5)
+  
+```
+
+## 5.2 Salinity 
+
+### Season stats 
+
+```{r, echo=FALSE}
+Sal.Season <- ddply (FLK.data, .(Season, Zone),summarise,
+                Sal_min = min (BestSalinity, na.rm = T), 
+                Sal_max = max (BestSalinity, na.rm = T),
+                Sal_mean = mean (BestSalinity, na.rm = T), 
+                Sal_sd = sd (BestSalinity, na.rm = T))
+
+kable(as.data.frame(Sal.Season, format = "markdown"), caption = "Salinity by season")
+
+```
+
+### Overview
+
+```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
+SAl_All<- ggplot(FLK.data) +
+  scale_y_continuous(#limits = c(15,40),
+                       name=(expression("Salinity")),
+                       breaks = seq(15, 40, 2),  
+                       expand = c(0.1, 0.1)) +
+  scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+               #expand = c(0, 0),
+               breaks ="6 months")+
+  MyTheme 
+SAl_All +
+  geom_point(aes (Date, Temperature_C, fill=Season), shape=21, alpha=0.8)
+
+```
+
+### Monthly 
+
+```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
+Sal_All<- ggplot(FLK.data) + 
+   scale_y_continuous(#limits = c(15,40),
+                       #expand = c(0, 0),
+                        name="Salinity",
+                        breaks = seq(20, 40, 2)
+                        ) +
+  MyTheme +
+  facet_grid(Zone~Sub_region)
+```
+
+```{r}
+Sal_All +
+  geom_boxplot(aes (x=Month, y=BestSalinity))+
+  geom_point(aes (x=Month, y=BestSalinity, fill=Extreme), 
+             shape=21, size = 1, alpha=0.5)
+```
+
+```{r}
+Sal_All +
+  geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+               aes (x=Month, y=BestSalinity))+
+  geom_point(aes (x=Month, y=BestSalinity, fill=Precipitation), 
+             shape=21, size = 1, alpha=0.5)
+```
+
+!### Salinity - Temperature correlations and outliers
+
+```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
+Sal_Temp<- ggplot(FLK.data) + MyTheme+
+  scale_x_continuous(limits = c(15,40),
+                       name=(expression("Temperature"~(degree*C))),
+                       breaks = seq(16, 36, 2),
+                       expand = c(0, 0)) +
+  scale_y_continuous(name="Salinity",
+                 #limits = c(0.5,6),
+                 #expand = c(0, 0),
+                 breaks = seq(1,40,2))+
+  geom_abline(slope = 0, intercept = 30, color="red", linetype=2)+
+  geom_abline(slope = 0, intercept = 39, color="red", linetype=2)+
+  geom_vline(xintercept = 33, color="red", linetype=2)
+
+```
+
+```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
+# Sal_Temp +
+#   geom_point(aes (Temperature_C, BestSalinity, fill=Precipitation),
+#              alpha=0.5, shape=21)+
+#   facet_wrap(~Zone)
+#   
+# Sal_Temp +  
+#   geom_point(aes (Temperature_C, BestSalinity, fill=factor(Extreme)),
+#              alpha=0.5, shape=21)+
+#   facet_wrap(~Zone)
+#   
+# Sal_Temp +  
+#   geom_point(aes (Temperature_C, BestSalinity, fill=factor(Year)),
+#              alpha=0.5, shape=21)+
+#   facet_wrap(~Zone)
+```
+
+## 5.3 Aragonite
+
+### Season stats
+
+```{r, echo=FALSE}
+Aragonite.Season <- ddply (FLK.data, .(Season, Zone),summarise,
+                Amin = min (Aragonite_Sat_W, na.rm = T), 
+                Amax = max (Aragonite_Sat_W, na.rm = T),
+                Amean = mean (Aragonite_Sat_W, na.rm = T), 
+                Asd = sd (Aragonite_Sat_W, na.rm = T))
+
+kable(as.data.frame(Aragonite.Season, format = "markdown"), caption = "Omega by season")
+
+Aragonite.Season.Subregion <- ddply (
+  FLK.data, .(Season, Zone, Sub_region),summarise,
+                Amin = min (Aragonite_Sat_W, na.rm = T), 
+                Amax = max (Aragonite_Sat_W, na.rm = T),
+                Amean = mean (Aragonite_Sat_W, na.rm = T), 
+                Asd = sd (Aragonite_Sat_W, na.rm = T))
+
+kable(as.data.frame(Aragonite.Season.Subregion, format = "markdown"), caption = "Omega by season and region")
+```
+
+### Overview
+
+```{r,echo=FALSE, fig.height=8, fig.width=8.8}
+Aragonite_all<- ggplot(FLK.data) +
+    scale_y_continuous(#limits = c(0,5.5),
+                       name=("Aragonite Saturation") ,
+                       breaks = seq(0, 5, 1),  
+                       expand = c(0.01, 0.01)) +
+    scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+               expand = c(0.01, 0.01),
+               breaks ="6 months")+
+    MyTheme +
+    geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)
+
+Aragonite_all + 
+  geom_point(aes (Date, Aragonite_Sat_W, fill=Season), shape=21, alpha=0.8)
+
+```
+
+### Monthly 
+
+```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
+Omega_month<- ggplot(FLK.data) + 
+   scale_y_continuous(#limits = c(1,5.5),
+                       name=(expression ("Aragonite saturation state "~Omega)),
+                       breaks = seq(1, 5, 1),
+                       expand = c(0.02, 0.02)
+                        ) +
+  geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)+
+  MyTheme +
+  facet_grid(Zone~Sub_region)
+```
+
+```{r}
+Omega_month +
+  geom_boxplot(aes (x=Month, y=Aragonite_Sat_W))+
+  geom_point(aes (x=Month, y=Aragonite_Sat_W, fill=Extreme), 
+             shape=21, size = 1, alpha=0.5)
+```
+
+```{r}
+Omega_month +
+  geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+               aes (x=Month, y=Aragonite_Sat_W))+
+  geom_point(aes (x=Month, y=Aragonite_Sat_W, fill=Precipitation), 
+             shape=21, size = 1, alpha=0.5)
+```
+
+## 5.4 TA
+
+### Season stats 
+
+```{r, echo=FALSE}
+nTA.Season <- ddply (FLK.data, .(Season, Zone),summarise,
+                nTAmin = min (nTA, na.rm = T), 
+                nTAmax = max (nTA, na.rm = T),
+                nTAmean = mean (nTA, na.rm = T), 
+                nTAsd = sd (nTA, na.rm = T))
+
+kable(as.data.frame(nTA.Season, format = "markdown"),
+      caption = "nTA by season")
+
+nTA.Season.Region <- ddply (FLK.data, .(Season, Zone, Sub_region),summarise,
+                nTAmin = min (nTA, na.rm = T), 
+                nTAmax = max (nTA, na.rm = T),
+                nTAmean = mean (nTA, na.rm = T), 
+                nTAsd = sd (nTA, na.rm = T))
+
+kable(as.data.frame(nTA.Season.Region, format = "markdown"),
+      caption = "nTA by season and region")
+```
+
+### Overview - outliers
+
+```{r, echo=FALSE, fig.height=8.0, fig.width=8.8}
+nTA_all<- ggplot(FLK.data) +
+    scale_y_continuous(#limits = c(0,5.5),
+                       name=("nTA") ,
+                       #breaks = seq(0, 5, 1),  
+                       expand = c(0.01, 0.01)) +
+    scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+               expand = c(0.02, 0.02),
+               breaks ="6 months")+
+    MyTheme
+    #geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)
+
+nTA_all + 
+  geom_point(aes (Date, nTA, fill=Season), shape=21, alpha=0.8)
+
+```
+
+```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
+nTA_all + 
+  geom_point(aes (Date, nTA, fill=Extreme), shape=21, alpha=0.8)+
+  geom_abline(slope = 0, intercept = 2400, color="gray", linetype=2)+
+  geom_abline(slope = 0, intercept = 2300, color="red", linetype=1)+
+  geom_abline(slope = 0, intercept = 2500, color="red", linetype=1)+
+  facet_grid(Sub_region~Zone)
+```
+
+### Monthly 
+
+```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
+nTA_month<- ggplot(FLK.data) + 
+   scale_y_continuous(#limits = c(1,5.5),
+                       name=(expression ("nTA")),
+                       breaks = seq(2000, 2800, 200),
+                       expand = c(0.02, 0.02)
+                        ) +
+  MyTheme +
+  facet_grid(Zone~Sub_region)
+```
+
+```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
+nTA_month +
+  geom_boxplot(aes (x=Month, y=nTA))+
+  geom_point(aes (x=Month, y=nTA, fill=Extreme), 
+             shape=21, size = 1, alpha=0.5)
+```
+
+```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
+nTA_month +
+  geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+               aes (x=Month, y=nTA))+
+  geom_point(aes (x=Month, y=nTA, fill=Precipitation), 
+             shape=21, size = 1, alpha=0.5)
+```
+
+
+## 5.5 DIC
+
+### Season stats 
+
+```{r, echo=FALSE}
+nDIC.Season <- ddply (FLK.data, .(Season, Zone),summarise,
+                nDIC_min = min (nDIC, na.rm = T), 
+                nDIC_max = max (nDIC, na.rm = T),
+                nDIC_mean = mean (nDIC, na.rm = T), 
+                nDIC_sd = sd (nDIC, na.rm = T))
+kable(as.data.frame(nDIC.Season, format = "markdown"), caption = "DIC by season")
+
+nDIC.Season.Region <- ddply (FLK.data, .(Season, Zone, Sub_region),summarise,
+                nDIC_min = min (nDIC, na.rm = T), 
+                nDIC_max = max (nDIC, na.rm = T),
+                nDIC_mean = mean (nDIC, na.rm = T), 
+                nDIC_sd = sd (nDIC, na.rm = T))
+kable(as.data.frame(nDIC.Season.Region, format = "markdown"), caption = "nDIC by season")
+```
+
+### Overview - outliers
+
+```{r,  echo=FALSE, fig.height=8.0, fig.width=8.8}
+nDIC_all<- ggplot(FLK.data) +
+    scale_y_continuous(#limits = c(0,5.5),
+                       name=("nDIC") ,
+                       #breaks = seq(0, 5, 1),  
+                       expand = c(0.01, 0.01)) +
+    scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+               expand = c(0.02, 0.02),
+               breaks ="6 months")+
+    MyTheme
+    #geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)
+
+nDIC_all + 
+  geom_point(aes (Date, nDIC, fill=Season), shape=21, alpha=0.8)
+
+```
+
+```{r.  echo=FALSE, fig.height=8.8, fig.width=8.8}
+nDIC_all + 
+  geom_point(aes (Date, nDIC, fill=Extreme), shape=21, alpha=0.8)+
+  geom_abline(slope = 0, intercept = 2100, color="gray", linetype=2)+
+  geom_abline(slope = 0, intercept = 2200, color="red", linetype=1)+
+  geom_abline(slope = 0, intercept = 2000, color="red", linetype=1)+
+  facet_grid(~Zone)
+```
+
+### Monthly 
+
+```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
+nDIC_month<- ggplot(FLK.data) + 
+   scale_y_continuous(#limits = c(1,5.5),
+                       name=(expression ("nDIC")),
+                       breaks = seq(2000, 2800, 200),
+                       expand = c(0.02, 0.02)
+                        ) +
+  MyTheme +
+  facet_grid(Zone~Sub_region)
+```
+
+```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
+nDIC_month +
+  geom_boxplot(aes (x=Month, y=nDIC))+
+  geom_point(aes (x=Month, y=nDIC, fill=Extreme), 
+             shape=21, size = 1, alpha=0.8)
+```
+
+```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
+nDIC_month +
+  geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+               aes (x=Month, y=nDIC))+
+  geom_point(aes (x=Month, y=nDIC, fill=Precipitation), 
+             shape=21, size = 1, alpha=0.5)
+```
+
+## 5.6 pCO2 
+
+### Season stats 
+
+```{r, echo=FALSE}
+pCO2.Season <- ddply (FLK.data, .(Season, Zone),summarise,
+                pH_min = min (pCO2_uatm, na.rm = T), 
+                pCO2_uatm_max = max (pCO2_uatm, na.rm = T),
+                pCO2_uatm_mean = mean (pCO2_uatm, na.rm = T), 
+                pCO2_uatm_sd = sd (pCO2_uatm, na.rm = T))
+kable(as.data.frame(pCO2.Season, format = "markdown"), caption = "pCO2 by season")
+
+pCO2.Season.Region <- ddply (FLK.data, .(Season, Zone, Sub_region),summarise,
+                pH_min = min (pCO2_uatm, na.rm = T), 
+                pCO2_uatm_max = max (pCO2_uatm, na.rm = T),
+                pCO2_uatm_mean = mean (pCO2_uatm, na.rm = T), 
+                pCO2_uatm_sd = sd (pCO2_uatm, na.rm = T))
+kable(as.data.frame(pCO2.Season.Region, format = "markdown"), caption = "pCO2 by season")
+```
+
+### Overview - outliers
+
+```{r,  echo=FALSE, fig.height=8.0, fig.width=8.8}
+pCO2_all<- ggplot(FLK.data) +
+    scale_y_continuous(#limits = c(0,5.5),
+                       name=("pCO2") ,
+                       #breaks = seq(0, 5, 1),  
+                       expand = c(0.01, 0.01)) +
+    scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+               expand = c(0.02, 0.02),
+               breaks ="6 months")+
+    MyTheme
+  
+pCO2_all + 
+  geom_point(aes (Date, pCO2_uatm, fill=Season), shape=21, alpha=0.8)
+
+```
+
+```{r.  echo=FALSE, fig.height=8.8, fig.width=8.8}
+pCO2_all + 
+  geom_point(aes (Date, pCO2_uatm, fill=Extreme), shape=21, alpha=0.8)+
+  #geom_abline(slope = 0, intercept = 2100, color="gray", linetype=2)+
+  geom_abline(slope = 0, intercept = 490, color="red", linetype=1)+
+  #geom_abline(slope = 0, intercept = 2000, color="red", linetype=1)+
+  facet_grid(~Zone)
+```
+
+### Monthly 
+
+```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
+pCO2_month<- ggplot(FLK.data) + 
+   scale_y_continuous(#limits = c(1,5.5),
+                       name=(expression ("pCO2")),
+                       breaks = seq(200, 600, 100),
+                       expand = c(0.03, 0.03)
+                        ) +
+  MyTheme +
+  facet_grid(Zone~Sub_region)
+```
+
+```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
+pCO2_month +
+  geom_boxplot(aes (x=Month, y=pCO2_uatm))+
+  geom_point(aes (x=Month, y=pCO2_uatm, fill=Extreme), 
+             shape=21, size = 1, alpha=0.8)
+```
+
+```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
+pCO2_month +
+  geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+               aes (x=Month, y=pCO2_uatm))+
+  geom_point(aes (x=Month, y=pCO2_uatm, fill=Precipitation), 
+             shape=21, size = 1, alpha=0.5)
+```
+
+## 5.7 pH 
+
+### Season stats 
+
+```{r, echo=FALSE}
+pH.Season <- ddply (FLK.data, .(Season, Zone),summarise,
+                pH_min = min (pH_calculated, na.rm = T), 
+                pCO2_uatm_max = max (pH_calculated, na.rm = T),
+                pCO2_uatm_mean = mean (pH_calculated, na.rm = T), 
+                pCO2_uatm_sd = sd (pH_calculated, na.rm = T))
+kable(as.data.frame(pH.Season, format = "markdown"), caption = "pH  (calculated) by season")
+
+pCO2.Season.Region <- ddply (FLK.data, .(Season, Zone, Sub_region),summarise,
+                pH_min = min (pH_calculated, na.rm = T), 
+                pCO2_uatm_max = max (pH_calculated, na.rm = T),
+                pCO2_uatm_mean = mean (pH_calculated, na.rm = T), 
+                pCO2_uatm_sd = sd (pH_calculated, na.rm = T))
+kable(as.data.frame(pCO2.Season.Region, format = "markdown"), caption = "pH (calculated) by season")
+```
+
+### Overview - outliers
+
+```{r,  echo=FALSE, fig.height=8.0, fig.width=8.8}
+pH_all<- ggplot(FLK.data) +
+    scale_y_continuous(#limits = c(0,5.5),
+                       name=("pH - calculated") ,
+                       #breaks = seq(0, 5, 1),  
+                       expand = c(0.01, 0.01)) +
+    scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+               expand = c(0.02, 0.02),
+               breaks ="6 months")+
+    MyTheme
+  
+pH_all + 
+  geom_point(aes (Date, pH_calculated, fill=Season), shape=21, alpha=0.8)
+
+```
+
+```{r.  echo=FALSE, fig.height=8.8, fig.width=8.8}
+pH_all + 
+  geom_point(aes (Date, pH_calculated, fill=Extreme), shape=21, alpha=0.8)+
+  #geom_abline(slope = 0, intercept = 2100, color="gray", linetype=2)+
+  geom_abline(slope = 0, intercept = 7.95, color="red", linetype=1)+
+  #geom_abline(slope = 0, intercept = 2000, color="red", linetype=1)+
+  facet_grid(~Zone)
+```
+
+### Monthly 
+
+```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
+pH_month<- ggplot(FLK.data) + 
+   scale_y_continuous(#limits = c(1,5.5),
+                       name=(expression ("pH")),
+                       breaks = seq(0, 9, 0.1),
+                       expand = c(0.03, 0.03)
+                        ) +
+  MyTheme +
+  facet_grid(Zone~Sub_region)
+```
+
+```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
+pH_month +
+  geom_boxplot(aes (x=Month, y=pH_calculated))+
+  geom_point(aes (x=Month, y=pH_calculated, fill=Extreme), 
+             shape=21, size = 1, alpha=0.8)
+```
+
+```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
+pH_month +
+  geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+               aes (x=Month, y=pH_calculated))+
+  geom_point(aes (x=Month, y=pH_calculated, fill=Precipitation), 
+             shape=21, size = 1, alpha=0.5)
+```
+
+**Notes from Dereks' paper: **
+
+* January 2010: High inshore TCO2 and TA in the UK after the cold-water mass mortality of reef-building corals that occurred at inshore patch reefs 
+* August 2010: persistent winds at 5 to 7.5 m s21 and overcast skies during sampling. -> lower than normal nTA -> spike in pCO2 and depression in arag at both sites, erasing any inshore-to-offshore gradient for these two parameters
+* October 2011:  high rainfall -> low salinity at all sites, with salinities inshore and offshore ranging from 32.04– 32.685 and 34.035–34.835, respectively. At the inshore sites, low salinity was coincident with a spike in pCO2 and depression in arag. All sites showed net respiration during this time
+
+# 6 Remove extreme events
+
+```{r}
+FLK.data_filtered<-FLK.data[FLK.data$Extreme=="Normal",]
+write.csv(FLK.data_filtered, "FLK.data_filtered2.csv", row.names = FALSE)
+```
+
+```{r, echo=FALSE}
+Temp.Season <- ddply (FLK.data_filtered,
+                     .(Zone, Sub_region, Season),summarise,
+                mean = mean (Temperature_C, na.rm = T), 
+                sd = sd (Temperature_C, na.rm = T))
+
+Temp.Season <- gather(Temp.Season, statistics, value, mean:sd, factor_key=TRUE)
+Temp.Season <- spread(Temp.Season, Season, value)
+
+kable(as.data.frame(Temp.Season, format = "markdown"),
+      caption = "Temperature by season, region and zone", digits=1)
+```
+
+```{r, echo=FALSE}
+pCO2.Season <- ddply (FLK.data_filtered,
+                     .(Zone, Sub_region, Season),summarise,
+                mean = mean (pCO2_uatm, na.rm = T), 
+                #med = median (pCO2_uatm, na.rm = T),
+                sd = sd (pCO2_uatm, na.rm = T))
+
+pCO2.Season <- gather(pCO2.Season, statistics, value, mean:sd, factor_key=TRUE)
+pCO2.Season <- spread(pCO2.Season, Season, value)
+
+kable(as.data.frame(pCO2.Season, format = "markdown"),
+      caption = "pCO2 by season, region and zone", digits=1)
+```
+
+# 7 Oceanic-offshore corrections - SEASONAL PATTERNS WITH endpoint
+
+```{r, echo=FALSE}
+Cases_WS<-FLK.data_filtered %>% count(Month,
+                            Sub_region,
+                            Zone,
+                            sort = F)
+Cases_WS<-as.data.frame(Cases_WS %>%
+                   pivot_wider(names_from = Month,
+                   values_from = n))
+#write.csv(Cases_WS, "Cases_WS.csv")
+
+
+Cases_WS<-FLK.data_filtered %>% count(Year,
+                            Sub_region,
+                            Zone,
+                            sort = F)
+
+Cases_WS<-as.data.frame(Cases_WS %>%
+                   pivot_wider(names_from = Year,
+                   values_from = n))
+#write.csv(Cases_WS, "Cases_WS.csv")
+
+kable(as.data.frame(Cases_WS, format = "markdown"), 
+      longtable = TRUE)
+
+Cases_WS.MY<-FLK.data_filtered %>% count(MY,
+                            Sub_region,
+                            Zone,
+                            sort = F)
+
+Cases_WS.MY<-as.data.frame(Cases_WS.MY %>%
+                   pivot_wider(names_from = MY,
+                   values_from = n))
+
+kable(as.data.frame(Cases_WS.MY, format = "markdown"), 
+      longtable = TRUE)
+
+```
+
+## 7.1. nTA nDIC slopes
+
+### 7.1.1 All nTA nDIC with mean oceanic-offshore value plotted for reference
+
+**Option**: all values plotted individually, plus plot mean offshore oceanic for reference
+
+```{r}
+WS.open<-subset(FLK.data_filtered, FLK.data_filtered$Zone=="Offshore"|FLK.data_filtered$Zone=="Oceanic")
+
+mean_Open<- ddply (WS.open, .(Sub_region),
+                          summarise,
+                nTA_O = mean (nTA, na.rm = T),
+                nDIC_O = mean (nDIC, na.rm = T)
+                )
+mean_Open
+```
+
+```{r}
+TA_DIC_Inshore<- ggplot(subset(FLK.data_filtered, Zone!="Mid channel"), 
+                        aes (nDIC, nTA)) + 
+  
+  theme_bw() +
+  scale_y_continuous(limits = c(1990,2810),
+                     expand = c(0.01, 0.01),
+                     breaks = seq(1800, 2800, 200),
+                    name="nTA") +
+  scale_x_continuous(limits = c(1790, 2410),
+                      expand = c(0.01, 0.01),
+                      breaks = seq(1800,2400,100),
+                      name="nDIC")+
+  
+  
+theme(legend.position="top",
+          plot.background=element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5),
+          panel.grid = element_blank(),
+          legend.box.background = element_rect(),
+          panel.background =element_rect(fill = NA, 
+                                         color = "black")
+          )+
+  geom_point(aes (fill=Precipitation, shape=Zone),
+             size=1, alpha=0.8)+
+  scale_shape_manual(values=c(21, 24, 24))+
+  
+  geom_abline(slope = 0, intercept =mean_Open$nTA_O, 
+              linetype=2, colour="gray")+
+  geom_vline(xintercept = mean_Open$nDIC_O,
+             linetype=2, colour="gray")+
+
+  geom_point(data=mean_Open,
+             aes (x=nDIC_O, y=nTA_O),
+             size=3, alpha=1, shape=24, fill="black")+
+  
+  geom_smooth(data=subset(FLK.data_filtered, Zone=="Inshore"),
+              method = "lm", colour="black") +
+  facet_grid(~Sub_region)
+
+```
+
+```{r}
+TA_DIC_Midchannel<- ggplot(subset(FLK.data_filtered, Zone!="Inshore"), 
+                           aes (nDIC, nTA)) + 
+  
+  theme_bw() +
+  scale_y_continuous(limits = c(1990,2810),
+                     expand = c(0.01, 0.01),
+                     breaks = seq(1800, 2800, 200),
+                    name="nTA") +
+  scale_x_continuous(limits = c(1790, 2410),
+                      expand = c(0.01, 0.01),
+                      breaks = seq(1800,2400,100),
+                      name="nDIC")+
+  
+theme(legend.position="top",
+          plot.background=element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5),
+          panel.grid = element_blank(),
+          legend.box.background = element_rect(),
+          panel.background =element_rect(fill = NA, 
+                                         color = "black")
+          )+
+  geom_point(aes (fill=Precipitation, shape=Zone),
+             size=1, alpha=0.8)+
+    scale_shape_manual(values=c(21, 24, 24))+
+  
+  geom_abline(slope = 0, intercept =mean_Open$nTA_O, 
+              linetype=2, colour="gray")+
+  geom_vline(xintercept = mean_Open$nDIC_O,
+             linetype=2, colour="gray")+
+  
+  geom_point(data=mean_Open,
+             aes (x=nDIC_O, y=nTA_O),
+             size=3, alpha=1, shape=24, fill="black")+
+    
+  geom_smooth(data=subset(FLK.data_filtered, Zone=="Mid channel"),
+              method = "lm", colour="black") +
+  facet_grid(~Sub_region)
+
+```
+
+```{r}
+FLK_slopes<-ggarrange(TA_DIC_Inshore,TA_DIC_Midchannel,
+          labels = c("Inshore", "Midchannel"),
+          ncol = 1, nrow = 2)
+
+FLK_slopes
+
+#ggsave(file="FLK_results/nTA_nDIC.svg", plot=FLK_slopes, dpi = 300, width=6, height=5.5)
+
+```
+
+Not my favorite, but good if absolute values are important vs value-reference
+
+```{r}
+ # Individual LR for each region
+    
+TA_DIC_lm_reef <- as.data.frame(FLK.data_filtered  %>% 
+                    group_by(Zone, Sub_region) %>%
+                    do({model = lm(nTA~nDIC, data=.)  
+                    # create model
+                    data.frame(tidy(model), # get coefficient info
+                    glance(model))}))        # get model info
+
+    TA_DIC_lm_reef<-filter(TA_DIC_lm_reef, Zone!="Offshore")
+    TA_DIC_lm_reef<-filter(TA_DIC_lm_reef, Zone!="Oceanic")
+
+    kable(TA_DIC_lm_reef[,1:8], format = "markdown",
+          caption = "nTA vs nDIC equations", digits = 3)
+```
+
+### 7.1.2 Delta de nTA and nDIC with endpoint calculated by each month-year
+
+**Option**: Subset open water vs reefs and calculate mean ocean-offshore for each month-year
+
+```{r}
+  WS.open<-subset(FLK.data_filtered,
+                  FLK.data_filtered$Zone=="Offshore"|
+                    FLK.data_filtered$Zone=="Oceanic")
+  WS.open$Date<-as.Date(WS.open$Date, "%Y-%m-%d")
+ 
+  WS.reef<-subset(FLK.data_filtered, FLK.data_filtered$Zone=="Inshore"|FLK.data_filtered$Zone=="Mid channel")
+  WS.reef$Date<-as.Date(WS.reef$Date, "%Y-%m-%d")
+```
+
+```{r}
+# Get the oceanic / offshore mean values per month-year and subtract them from the reef data
+nTA.MY.open <- ddply (WS.open, .(Sub_region, MY, Month),summarise,
+                OnTA_my = mean (nTA, na.rm = T),
+                sd = sd (nTA, na.rm = T),
+                number = n())
+
+nDIC.MY.open <- ddply (WS.open, .(Sub_region, MY, Month),summarise,
+                OnDIC_my = mean (nDIC, na.rm = T),
+                #sd = sd (nDIC, na.rm = T),
+                number = n())
+
+WS.reef<-join(WS.reef,nTA.MY.open[,-6], 
+                 type = "left", by=c("MY", "Month", "Sub_region"))
+
+WS.reef<-join(WS.reef, nDIC.MY.open, 
+                 type = "left", by=c("MY", "Month", "Sub_region"))
+
+
+# Delta nTA
+WS.reef$dnTA_MY<-WS.reef$nTA-WS.reef$OnTA_my
+
+# Delta nDIC
+WS.reef$dnDIC_MY<-WS.reef$nDIC-WS.reef$OnDIC_my
+
+```
+
+```{r}
+dnTA_dnDIC_my<- ggplot(WS.reef, aes (dnDIC_MY, dnTA_MY)) + 
+  
+  theme_bw() +
+  scale_y_continuous(#limits = c(1700,2900),
+                     #expand = c(0, 0),
+                     #breaks = seq(1800, 2800, 100),
+                    name=expression(Delta~"nTA")) +
+  scale_x_continuous(# limits = c(1600, 2600),
+                     # expand = c(0, 0),
+                     # breaks = seq(1500,2600,100),
+                      name=expression(Delta~"nDIC"))+
+  
+theme(legend.position="top",
+          plot.background=element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5),
+          panel.grid = element_blank(),
+          legend.box.background = element_rect(),
+          panel.background =element_rect(fill = NA, 
+                                         color = "black")
+          )+
+
+  geom_smooth(method = "lm", colour="black")+
+  geom_abline(slope = 0, intercept = 0, linetype=2, colour="gray")+
+  geom_vline(xintercept = 0, linetype=2, colour="gray")
+
+Option2<-dnTA_dnDIC_my +
+  geom_point(aes(fill=Precipitation), size=1, alpha=0.5, shape=21)+
+  facet_grid(Zone~Sub_region)
+Option2
+#ggsave(file="FLK_results/nTA_nDIC_delta.svg", plot=Option2, dpi = 300, width=6, height=5)
+
+```
+
+```{r}
+ # Individual LR for each region
+   dnTA_dnDIC_lm_Subreg <- WS.reef %>% 
+                    group_by(Zone, Sub_region) %>%
+                    do({model = lm(dnTA_MY~dnDIC_MY, data=.)  
+                    # create model
+                    data.frame(tidy(model), # get coefficient info
+                    glance(model))})        # get model info
+
+    kable(as.data.frame(dnTA_dnDIC_lm_Subreg[,1:8], format = "markdown"),
+          caption = "dnTA vs dnDIC equations (delta MY)", digits = 3)
+    
+    #write.csv(dnTA_dnDIC_lm_Subreg[,1:8], "FLK_results/nTA_nDIC_deltaMY.csv") 
+```
+
+* Higher slopes -> a higher NCC:NCP? = Lower and Middle keys, then Miami, then Upper keys
+
+## 7.2 Seasonal - reef aragonite 
+
+* Not corrected
+
+```{r}
+Aragonite_months<- ggplot(WS.reef,
+                          aes(x=Month, y=Aragonite_Sat_W)) +
+  
+  MyTheme +
+  scale_y_continuous(limits = c(2,5.5),
+                       name=paste("Aragonite Saturation state (\u03a9)") ,
+                       breaks = seq(2, 5, 0.5),  
+                       expand = c(0, 0)) +
+  geom_boxplot()+
+  geom_point(aes(fill=Precipitation),
+            shape=21, alpha=0.5, size=1)+ 
+  geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)+
+    
+  facet_grid(Zone~Sub_region)
+Aragonite_months
+#ggsave(file="FLK_results/Aragonite_months_reef.svg", plot=Aragonite_months, dpi = 300, width=6, height=5)
+
+```
+
+```{r}
+# Get the oceanic / offshore mean values per month-year and subtract them from the reef data
+Omega.open <- ddply (WS.open, .(Sub_region, MY, Month),summarise,
+                O_Arg_my = mean (Aragonite_Sat_W, na.rm = T))
+
+WS.reef<-join(WS.reef, Omega.open[,-6], 
+                 type = "left", by=c("MY", "Month", "Sub_region"))
+
+# Delta Omega MY
+WS.reef$dOmega_MY<-WS.reef$Aragonite_Sat_W-WS.reef$O_Arg_my
+```
+
+* Corrected ny month - year
+
+```{r}
+Aragonite_MY<- ggplot(WS.reef,
+                          aes(x=Month, y=dOmega_MY)) +
+  
+  MyTheme +
+  scale_y_continuous(#limits = c(1.5,5.5),
+                       name=expression (Delta~ "Aragonite Saturation state (\u03a9)") ,
+                      # breaks = seq(2, 5, 1),  
+                       expand = c(0.05, 0.05)) +
+  geom_boxplot()+
+  geom_point(aes(fill=Precipitation),
+            shape=21, alpha=0.5, size=1)+ 
+  geom_abline(slope = 0, intercept = 0, color="gray", linetype=2)+
+  facet_grid(Zone~Sub_region)
+Aragonite_MY
+#ggsave(file="FLK_results/Aragonite_months_reef.svg", plot=Aragonite_months, dpi = 300, width=6, height=5)
+
+```
+
+### Mean delta 
+
+```{r, echo=FALSE}
+dOmega.Season <- ddply (WS.reef, .(Season, Zone),summarise,
+                dOm_min = min (dOmega_MY, na.rm = T), 
+                dOm_uatm_max = max (dOmega_MY, na.rm = T),
+                dOm_uatm_mean = mean (dOmega_MY, na.rm = T), 
+                dOm_uatm_sd = sd (dOmega_MY, na.rm = T))
+kable(as.data.frame(dOmega.Season, format = "markdown"), caption = "delta of Omega by season")
+
+dOmega.Season.Region <- ddply (WS.reef, .(Season, Zone, Sub_region),summarise,
+               dOm_min = min (dOmega_MY, na.rm = T), 
+               dOm_uatm_max = max (dOmega_MY, na.rm = T),
+               dOm_uatm_mean = mean (dOmega_MY, na.rm = T), 
+               dOm_uatm_sd = sd (dOmega_MY, na.rm = T))
+kable(as.data.frame(dOmega.Season.Region, format = "markdown"), caption = "delta of Omega by season")
+```
+
+## 7.3 seasonal delta nTA - MY
+
+* delta nTA - MY
+
+```{r}
+dnTA_MY<- ggplot(WS.reef, aes(x=Month, y=dnTA_MY)) +
+  MyTheme+
+  scale_y_continuous(#limits = c(1,5.5),
+                      name=(expression (Delta~ "nTA - MY")),
+                       breaks = seq(-300, 200, 100),  
+                       expand = c(0.05, 0.05)) +
+  geom_boxplot()+
+  geom_point(aes(fill=Season),
+            shape=21, alpha=0.8, size=1)+ 
+  geom_abline(slope = 0, intercept = 0, color="gray", linetype=2)+
+  facet_grid(Zone~Sub_region)
+    
+dnTA_MY
+#ggsave(file="FLK_results/deltanTA_MY.svg", plot=dnTA_MY, dpi = 300, width=6, height=4.5)
+```
+
+### Mean delta 
+
+```{r, echo=FALSE}
+dTA.Season <- ddply (WS.reef, .(Season, Zone),summarise,
+                dTA_min = min (dnTA_MY, na.rm = T), 
+                dTA_uatm_max = max (dnTA_MY, na.rm = T),
+                dTA_uatm_mean = mean (dnTA_MY, na.rm = T), 
+                dTA_uatm_sd = sd (dnTA_MY, na.rm = T))
+kable(as.data.frame(dTA.Season, format = "markdown"), caption = "delta of nTA by season")
+
+dTA.Season.Region <- ddply (WS.reef, .(Season, Zone, Sub_region),summarise,
+                dTA_min = min (dnTA_MY, na.rm = T), 
+                dTA_uatm_max = max (dnTA_MY, na.rm = T),
+                dTA_uatm_mean = mean (dnTA_MY, na.rm = T), 
+                dTA_uatm_sd = sd (dnTA_MY, na.rm = T))
+kable(as.data.frame(dTA.Season.Region, format = "markdown"), caption = "delta of nTA by season")
+```
+
+## 7.4 seasonal delta nDIC  - MY
+
+* Delta nDIC - MY
+
+```{r}
+dnDIC_MY<- ggplot(WS.reef,aes(x=Month, y=dnDIC_MY)) +
+  MyTheme+
+  scale_y_continuous(#limits = c(1,5.5),
+                       name=(expression (Delta~ "nDIC - Month-Year")),
+                       breaks = seq(-300, 300, 100),   
+                       expand = c(0.05, 0.05)) +
+  geom_boxplot()+
+  geom_point(aes(fill=Precipitation),
+            shape=21, alpha=0.5, size=1)+ 
+  geom_abline(slope = 0, intercept = 0, color="gray", linetype=2)+
+    
+  facet_grid(Zone~Sub_region)
+dnDIC_MY
+
+#ggsave(file="FLK_results/deltanDIC_MY.svg", plot=dnDIC_MY, dpi = 300, width=6, height=4.5)
+```
+
+### Mean delta 
+
+```{r, echo=FALSE}
+dDIC.Season <- ddply (WS.reef, .(Season, Zone),summarise,
+                dDIC_min = min (dnDIC_MY, na.rm = T), 
+                dDIC_max = max (dnDIC_MY, na.rm = T),
+                dDIC_mean = mean (dnDIC_MY, na.rm = T), 
+                dDIC_sd = sd (dnDIC_MY, na.rm = T))
+kable(as.data.frame(dDIC.Season, format = "markdown"), caption = "delta of nDIC by season")
+
+dDIC.Season.Region <- ddply (WS.reef, .(Season, Zone, Sub_region),summarise,
+               dDIC_min = min (dnDIC_MY, na.rm = T), 
+                dDIC_max = max (dnDIC_MY, na.rm = T),
+                dDIC_mean = mean (dnDIC_MY, na.rm = T), 
+                dDIC_sd = sd (dnDIC_MY, na.rm = T))
+kable(as.data.frame(dDIC.Season.Region, format = "markdown"), caption = "delta of nDIC by season")
+```
+
+***NOTES: **: Calfitication (delta nTA is kind of stable during summer and fall, but DIC (respiration?) increases during the fall and drops Omega?
+
+# 8. Long Term trends in FLK (Al zones) using linear models
+
+This approach is not optimum because of strong seasonality. Especially in the reef. However it is useful to compare the long term predictions with the ones from gam models. 
+
+To deal with seasonality, include Season in the model. Month gets noisy since some month have been sampled very few times
+
+## 8.1 Omega - all data
+
+```{r}
+Aragonite_all<- ggplot(FLK.data_filtered,
+                          aes(x=Date, y=Aragonite_Sat_W)) +
+  MyTheme+
+  scale_y_continuous(#limits = c(0,5.5),
+                       name=("Aragonite Saturation") ,
+                       #breaks = seq(0, 5, 1),  
+                       expand = c(0.02, 0.02)) +
+  scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+               expand = c(0.03, 0.03),
+               breaks ="1 year")+
+
+  geom_smooth(method = "lm", color="black")+  
+  geom_point(aes(fill=factor(Precipitation)), shape=21, alpha=0.8, size=1)+
+  geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)
+
+Aragonite_all  
+Aragonite_all + facet_grid(~Zone)
+Aragonite_all + facet_grid(Sub_region~Zone)
+#Aragonite_all + facet_grid(Zone~Precipitation)
+```
+
+Summer was not sampled in the early years!
+
+## 8.2 nDIC - all data
+
+```{r}
+DIC_all<- ggplot(FLK.data_filtered,
+                          aes(x=Date, y=nDIC)) +
+  
+  MyTheme+
+  scale_y_continuous(#limits = c(0,5.5),
+                       name=("nDIC") ,
+                       #breaks = seq(0, 5, 1),  
+                       expand = c(0.01, 0.01)) +
+  scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+               expand = c(0.05, 0.05),
+               breaks ="1 year")+
+
+   geom_smooth(method = "lm", color="black")+  
+   geom_point(aes(fill=factor(Precipitation)), shape=21, alpha=0.8, size=1)
+
+DIC_all  
+DIC_all + facet_grid(~Zone)
+DIC_all + facet_grid(Sub_region~Zone)
+```
+
+## 8.3 nTA - all data
+
+```{r}
+nTA_all<- ggplot(FLK.data_filtered,
+                          aes(x=Date, y=nTA)) +
+  
+  MyTheme+
+  scale_y_continuous(#limits = c(0,5.5),
+                       name=("nTA") ,
+                       #breaks = seq(0, 5, 1),  
+                       expand = c(0.01, 0.01)) +
+  scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+               expand = c(0.05, 0.05),
+                 breaks ="1 year")+
+  
+  geom_smooth(method = "lm", color="black")+  
+  geom_point(aes(fill=factor(Precipitation)), shape=21, alpha=0.8, size=1)
+nTA_all  
+nTA_all + facet_grid(~Zone)
+nTA_all + facet_grid(Zone~Sub_region)
+```
+
+## 8.5 pCO2
+
+```{r}
+pCO2_all<- ggplot(FLK.data_filtered,
+                          aes(x=Date, y=pCO2_uatm)) +
+  
+  MyTheme+
+  scale_y_continuous(#limits = c(0,5.5),
+                       name=("pCO2") ,
+                       #breaks = seq(0, 5, 1),  
+                       expand = c(0.01, 0.01)) +
+  scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+               expand = c(0.01, 0.01),
+               breaks ="2 year")+
+
+  geom_smooth(method = "lm", color="black")+  
+  geom_point(aes(fill=factor(Precipitation)), shape=21, alpha=0.5, size=1)
+pCO2_all
+pCO2_all+ facet_grid(~Zone)
+pCO2_all+ facet_grid(Zone~Sub_region)
+
+```
+
+## 8.6 pH
+
+```{r}
+pH_all<- ggplot(FLK.data_filtered,
+                          aes(x=Date, y=pH_calculated)) +
+  MyTheme+
+  scale_y_continuous(#limits = c(0,5.5),
+                       name=("pH") ,
+                       #breaks = seq(0, 5, 1),  
+                       expand = c(0.01, 0.01)) +
+  scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+               expand = c(0.01, 0.01),
+               breaks ="2 year")+
+
+  geom_smooth(method = "lm", color="black")+  
+  geom_point(aes(fill=factor(Precipitation)), shape=21, alpha=0.5, size=1)
+pH_all
+pH_all+ facet_grid(~Zone)
+pH_all+ facet_grid(Zone~Sub_region)
+```
+
+# 9 Omega LMERs
+
+## 9.1 Omega - Open
+
+### Raw data
+
+```{r}
+Aragonite_open <- ggplot(WS.open, aes(x=Date, y=Aragonite_Sat_W)) +
+  MyTheme+
+  scale_y_continuous(#limits = c(0,5.5),
+                       name=("Aragonite Saturation - Offshore") ,
+                       #breaks = seq(0, 5, 1),  
+                      expand = c(0.05, 0.05)) +
+  scale_x_date(name="Date",
+               #labels = date_format("%Y"),
+               #limits = c(-1,114),
+               expand = c(0.05, 0.05),
+               breaks ="1 year")+
+
+  geom_smooth(method = "lm", aes(colour=Sub_region))+  
+  geom_point(aes(fill=factor(Precipitation)), shape=21, alpha=0.5)+
+  geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)
+
+Aragonite_open 
+Aragonite_open + facet_grid(~Precipitation)
+Aragonite_open + facet_grid(~Season)
+```
+
+### Model
+
+```{r}
+Reference_LM<-lmer(Aragonite_Sat_W~Year * Season +
+                                  #(1|Zone)+             
+                                  #(1|Sub_region)+
+                                  (1|SiteID), data=WS.open)
+# Subregion is not significant
+
+summary(Reference_LM)    
+anova(Reference_LM)
+ranova(Reference_LM)
+#step(Reference_LM)
+
+OmegaLM_Open<-lm(Aragonite_Sat_W~Year * Season, data=WS.open)
+summary(OmegaLM_Open)    
+anova(OmegaLM_Open)
+
+par(mfrow=c(2,3))
+plot(OmegaLM_Open)
+acf(resid(OmegaLM_Open), main="acf(resid(Omega open))")
+par(mfrow=c(1,1))
+```
+
+### Predicted values
+
+```{r}
+# Create a new data frame for independent variables  
+  NewData <- expand.grid(#Month=unique(WS.open$Month) ,
+                        Season=unique(WS.open$Season) ,
+                        Year=seq(min(WS.open$Year), max(WS.open$Year), by=1)#,
+                        #SiteID=unique(WS.open$SiteID)#,
+                         #Zone=unique(WS.open$Zone),
+                        #Sub_region=unique(WS.open$Sub_region)
+                          )
+  
+
+  pred_om_of <- data.frame(predict(OmegaLM_Open , newdata=NewData, se.fit = TRUE))
+  pred_om_of <- transform(pred_om_of, upper = fit + (2 * se.fit),
+                              lower = fit - (2 * se.fit))
+  head(pred_om_of)
+  
+  pred_om_of<-cbind(NewData, pred_om_of)
+  #pred_om_of$Year<-as.factor(pred_om_of$Year)
+  
+Aragonite_Open<- ggplot(pred_om_of,
+                          aes(x=Year, y=fit, colour=Season)) +
+  theme_bw() +
+  scale_y_continuous(limits = c(2.8,4.6),
+                       name=("Aragonite Saturation - Offshore") ,
+                       breaks = seq(2.8, 4.8, 0.2),  
+                       expand = c(0.05, 0.05)) +
+  scale_x_continuous(name="Year",
+               limits = c(2009,2020),
+               expand = c(0, 0),
+               breaks = seq(2009, 2020, by = 1))+
+
+  geom_ribbon(aes(ymin = lower, ymax = upper), fill = 'grey', alpha = 0.5) +
+  geom_line() +
+  geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)+
+    
+  theme(legend.position="top",
+        legend.direction = "horizontal",
+        legend.title = element_blank(),
+            plot.background=element_blank(),
+            axis.text.x = element_text(angle = 90, vjust = 0.5),
+            panel.grid = element_blank(),
+            legend.box.background = element_rect(),
+            panel.background =element_rect(fill = NA, color = "black")
+            )
+Aragonite_Open
+```
+
+
+```{r}
+Arg_off_lm <- WS.open %>% 
+                    group_by(Season) %>%
+                    do({model = lm(Aragonite_Sat_W~Year, data=.)  
+                    # create model
+                    data.frame(tidy(model), # get coefficient info
+                    glance(model))})        # get model info
+
+    kable(as.data.frame(Arg_off_lm[,1:8], format = "markdown"),
+          caption = "Offshore aragonite overtime", digits = 3)
+```
+
+Notes on Omega models: 
+* declining omega for all month, but weird data in Feb 2012 bias this month regression
+* data by season follows better GAM models
+
+## 9.2 Omega - Inshore
+
+### Raw data
+
+```{r}
+Aragonite_reef_data<- ggplot(WS.reef[WS.reef$Zone=="Inshore",],
+                          aes(x=Date, y=Aragonite_Sat_W)) +
+  
+  MyTheme +
+  scale_y_continuous(#limits = c(0,5.5),
+                       name=("Aragonite Saturation - Reef") ,
+                       #breaks = seq(0, 5, 1),  
+                       expand = c(0.05, 0.05)) +
+  scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+               expand = c(0.05, 0.05),
+               breaks ="1 year")+
+
+  geom_smooth(method = "lm", aes(colour=Season))+  
+  geom_point(aes(fill=factor(Season)), shape=21, alpha=0.5)+
+  geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)
+Aragonite_reef_data  
+#Aragonite_reef_data  + facet_wrap(~Month)
+Aragonite_reef_data+ facet_grid(~Precipitation)
+Aragonite_reef_data + facet_grid(Zone~Sub_region)
+Aragonite_reef_data + facet_grid(~Season)
+```
+
+### Model
+
+```{r}
+Arg_Reef<-lmer(Aragonite_Sat_W ~ Year * Season  +
+                                  Sub_region +
+                                  (1|SiteID),
+               data=WS.reef[WS.reef$Zone=="Inshore", ])
+# Subregion is not significant
+
+summary(Arg_Reef)    
+anova(Arg_Reef)
+ranova(Arg_Reef)
+#step(Arg_Reef)
+
+OmegaLM_reef<-lm(Aragonite_Sat_W~Year + 
+                  Season +
+                  #Zone + Sub_region +
+                  #Year:Zone + Year:Zone+
+                  Year:Season, 
+                  data=WS.reef[WS.reef$Zone=="Inshore", ])
+summary(OmegaLM_reef)    
+anova(OmegaLM_reef)
+
+par(mfrow=c(2,3))
+plot(OmegaLM_reef)
+acf(resid(OmegaLM_reef), main="acf(resid(Omega open))")
+par(mfrow=c(1,1))
+```
+
+### Predicted values
+
+```{r}
+# Create a new data frame for independent variables  
+  NewData <- expand.grid(#Month=unique(WS.open$Month) ,
+                        Season=unique(WS.reef$Season) ,
+                        Year=seq(min(WS.reef$Year), max(WS.reef$Year), by=1)#,
+                        #SiteID=unique(WS.open$SiteID)#,
+                        #Zone=unique(WS.reef$Zone),
+                        #Sub_region=unique(WS.reef$Sub_region)
+                        )
+  
+
+  pred_om_in <- data.frame(predict(OmegaLM_reef , newdata=NewData, se.fit = TRUE))
+  pred_om_in <- transform(pred_om_in, upper = fit + (2 * se.fit),
+                              lower = fit - (2 * se.fit))
+  head(pred_om_in)
+  
+  pred_om_in<-cbind(NewData, pred_om_in)
+  #pred_2$Year<-as.factor(pred_om_in$Year)
+  
+Aragonite_reef_m<- ggplot(pred_om_in,
+                          aes(x=Year, y=fit, colour=Season)) +
+  MyTheme +
+  scale_y_continuous(limits = c(2.8,4.6),
+                       name=("Aragonite Saturation - Reef") ,
+                       breaks = seq(2.8, 4.8, 0.2),  
+                       expand = c(0.05, 0.05)) +
+  scale_x_continuous(name="Year",
+               limits = c(2009,2020),
+               expand = c(0, 0),
+               breaks = seq(2009, 2020, by = 1))+
+
+  geom_ribbon(aes(ymin = lower, ymax = upper), fill = 'gray', alpha = 0.5) +
+  geom_line() +
+  geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)
+    
+Aragonite_reef_m 
+#+ facet_grid(Zone~Sub_region)
+
+```
+
+
+```{r}
+Arg_inn_lm <- WS.reef[WS.reef$Zone=="Inshore", ] %>% 
+                    group_by(Season) %>%
+                    do({model = lm(Aragonite_Sat_W~Year, data=.)  
+                    # create model
+                    data.frame(tidy(model), # get coefficient info
+                    glance(model))})        # get model info
+
+    kable(as.data.frame(Arg_inn_lm[,1:8], format = "markdown"),
+          caption = "Reef aragonite overtime", digits = 3)
+```
+
+
+## 9.3 Compare in and off-shore
+
+```{r}
+Omega_Models<-select(pred_om_of, c("Season", "Year", "fit"))
+colnames(Omega_Models)<-c("Season", "Year", "offshore")
+Omega_Models<-cbind(Omega_Models, pred_om_in[,3:4])
+Omega_Models$Difference<-Omega_Models$fit-Omega_Models$offshore
+
+#Omega_Models <- transform(Omega_Models, upper = Omega_Models + (2 * se.fit),
+#                              lower = Omega_Models - (2 * se.fit))
+
+
+Aragonite_diff<- ggplot(Omega_Models,
+                          aes(x=Year, y=Difference, colour=Season)) +
+  theme_bw() +
+  scale_y_continuous(limits = c(-1,0.5),
+                       name=("Aragonite Reef - Ocean") ,
+                       breaks = seq(-1, 0.5, 0.2),  
+                       expand = c(0.05, 0.05)) +
+  scale_x_continuous(name="Year",
+               limits = c(2009,2020),
+               expand = c(0, 0),
+               breaks = seq(2009, 2020, by = 1))+
+
+  #geom_ribbon(aes(ymin = lower, ymax = upper), fill = 'gray', alpha = 0.5) +
+  geom_line() +
+  geom_abline(slope = 0, intercept = 0, color="gray", linetype=2)+
+    
+  theme(legend.position="top",
+        legend.direction = "horizontal",
+        legend.title = element_blank(),
+            plot.background=element_blank(),
+            axis.text.x = element_text(angle = 90, vjust = 0.5),
+           panel.grid = element_blank(),
+            legend.box.background = element_rect(),
+            panel.background =element_rect(fill = NA, color = "black")
+            )
+Aragonite_diff 
+#+ facet_grid(Zone~Sub_region)
+```
+
+```{r}
+grid.arrange(Aragonite_Open, Aragonite_reef_m, Aragonite_diff, ncol=3)
+
+```
+
+# 10 nDIC LMERs
+
+## 10.1 nDIC - Open
+
+### Raw data
+
+```{r}
+nDIC_data_o<- ggplot(WS.open,
+                          aes(x=Date, y=nDIC)) +
+  
+  MyTheme+
+  scale_y_continuous(#limits = c(0,5.5),
+                       name=("nDIC -Offshore") ,
+                       #breaks = seq(0, 5, 1),  
+                       expand = c(0.03, 0.03)) +
+  scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+               expand = c(0.01, 0.01),
+               breaks ="1 year")+
+
+  geom_smooth(method = "lm", aes(colour=Sub_region))+  
+  geom_point(aes(fill=factor(Month)), shape=21, alpha=0.5)+
+  geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)
+
+#nDIC_data_o + facet_wrap(~Month)
+nDIC_data_o + facet_grid(~Zone)
+nDIC_data_o+ facet_grid(~Precipitation)
+nDIC_data_o+ facet_grid(~Season)
+```
+
+### Model
+
+```{r}
+nDICref_LM<-lmer(nDIC~Year * Season +
+                                  #(1|Zone)+             
+                                  #(1|Sub_region)+
+                                  (1|SiteID), data=WS.open)
+# Subregion and Site are not significant
+
+summary(nDICref_LM)    
+anova(nDICref_LM)
+ranova(nDICref_LM)
+#step(nDICref_LM)
+
+nDICLM_Open<-lm(nDIC~Year * Season, data=WS.open)
+summary(nDICLM_Open)    
+anova(nDICLM_Open)
+
+par(mfrow=c(2,3))
+plot(nDICLM_Open)
+acf(resid(nDICLM_Open), main="acf(resid(Omega open))")
+par(mfrow=c(1,1))
+```
+
+### Predicted values
+
+```{r}
+# Create a new data frame for independent variables  
+  NewData <- expand.grid(#Month=unique(WS.open$Month) ,
+                        Season=unique(WS.open$Season) ,
+                      Year=seq(min(WS.open$Year), max(WS.open$Year), by=1)#,
+                      #SiteID=unique(WS.open$SiteID)#,
+                       #Zone=unique(WS.open$Zone),
+                      #Sub_region=unique(WS.open$Sub_region)
+                          )
+  
+
+  pred_DIC_of <- data.frame(predict(nDICLM_Open , newdata=NewData, se.fit = TRUE))
+  pred_DIC_of <- transform(pred_DIC_of, upper = fit + (2 * se.fit),
+                              lower = fit - (2 * se.fit))
+  head(pred_DIC_of)
+  
+  pred_DIC_of<-cbind(NewData, pred_DIC_of)
+  #pred_DIC_of$Year<-as.factor(pred_DIC_of$Year)
+  
+nDIC_Open<- ggplot(pred_DIC_of,
+                          aes(x=Year, y=fit, colour=Season)) +
+  MyTheme+
+  scale_y_continuous(limits = c(1900,2200),
+                       name=("nDIC -Offshore") ,
+                       breaks = seq(1900, 2200, 50),  
+                       expand = c(0.05, 0.05)) +
+  scale_x_continuous(name="Year",
+               limits = c(2009,2020),
+               expand = c(0, 0),
+               breaks = seq(2009, 2020, by = 1))+
+
+  geom_ribbon(aes(ymin = lower, ymax = upper), fill = 'gray', alpha = 0.5) +
+  geom_line() +
+  geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)
+nDIC_Open
+```
+
+
+```{r}
+nDIC_off_lm <- WS.open %>% 
+                    group_by(Season) %>%
+                    do({model = lm(nDIC~Year, data=.)  
+                    # create model
+                    data.frame(tidy(model), # get coefficient info
+                    glance(model))})        # get model info
+
+    kable(as.data.frame(nDIC_off_lm[,1:8], format = "markdown"),
+          caption = "Offshore aragonite overtime", digits = 3)
+```
+
+Notes on nDIC offshore models: 
+* Spring and summer >0.05
+
+## 10.2 nDIC - Inshore
+
+### Raw data
+
+```{r}
+nDIC_reef_data<- ggplot(WS.reef[WS.reef$Zone=="Inshore",],
+                          aes(x=Date, y=nDIC)) +
+  
+  MyTheme+
+   scale_y_continuous(#limits = c(1950,2150),
+                       name=("nDIC -Reefs") ,
+                       breaks = seq(1700, 2500, 50),  
+                       expand = c(0.05, 0.05)) +
+  scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+               expand = c(0.05, 0.05),
+               breaks ="1 year")+
+
+  geom_smooth(method = "lm", aes(colour=Season))+  
+  geom_point(aes(fill=factor(Season)), shape=21, alpha=0.5)
+ 
+#nDIC_reef_data  + facet_wrap(~Month)
+#Aragonite_reef + facet_grid(~Zone)
+#nDIC_reef_data+ facet_grid(~Precipitation)
+nDIC_reef_data + facet_grid(Zone~Sub_region)
+nDIC_reef_data + facet_grid(~Season)
+```
+
+### Model
+
+```{r}
+nDIC_Reef<-lmer(nDIC~Year * Season + Sub_region+
+                                  (1|SiteID),
+                data=WS.reef[WS.reef$Zone=="Inshore",])
+# Subregion is significant
+
+summary(nDIC_Reef)    
+anova(nDIC_Reef)
+ranova(nDIC_Reef)
+#step(nDIC_Reef)
+
+nDICLM_reef<-lm(nDIC~Year + 
+                  Season +
+                  #Zone +
+                  #Sub_region +
+                  #Year:Zone + Year:Zone+
+                  Year:Season, 
+                  data=WS.reef[WS.reef$Zone=="Inshore",])
+summary(nDICLM_reef)    
+anova(nDICLM_reef)
+
+par(mfrow=c(2,3))
+plot(nDICLM_reef)
+acf(resid(nDICLM_reef), main="acf(resid(nDIC-reef))")
+par(mfrow=c(1,1))
+```
+
+### Predicted values
+
+```{r}
+# Create a new data frame for independent variables  
+  NewData <- expand.grid(#Month=unique(WS.open$Month) ,
+                        Season=unique(WS.reef$Season) ,
+                        Year=seq(min(WS.reef$Year), max(WS.reef$Year), by=1)#,
+                        #SiteID=unique(WS.open$SiteID)#,
+                        #Zone=unique(WS.reef$Zone),
+                        #Sub_region=unique(WS.reef$Sub_region)
+                        )
+  
+
+  pred_nDIC_in <- data.frame(predict(nDICLM_reef ,
+                                     newdata=NewData, se.fit = TRUE))
+  pred_nDIC_in <- transform(pred_nDIC_in, upper = fit + (2 * se.fit),
+                              lower = fit - (2 * se.fit))
+  head(pred_nDIC_in)
+  
+  pred_nDIC_in<-cbind(NewData, pred_nDIC_in)
+ 
+nDIC_reef_m<- ggplot(pred_nDIC_in,
+                     aes(x=Year, y=fit, colour=Season)) +
+  MyTheme +
+  scale_y_continuous(limits = c(1900,2200),
+                       name=("nDIC -Reef") ,
+                       breaks = seq(1900, 2200, 50),  
+                       expand = c(0.05, 0.05)) +
+  scale_x_continuous(name="Year",
+               limits = c(2009,2020),
+               expand = c(0, 0),
+               breaks = seq(2009, 2020, by = 1))+
+
+  geom_ribbon(aes(ymin = lower, ymax = upper), fill = 'gray', alpha = 0.5) +
+  geom_line()
+nDIC_reef_m 
+#+ facet_grid(Zone~Sub_region)
+
+```
+
+
+```{r}
+nDIC_inn_lm <- WS.reef[WS.reef$Zone=="Inshore",]%>% 
+                    group_by(Season) %>%
+                    do({model = lm(nDIC~Year, data=.)  
+                    # create model
+                    data.frame(tidy(model), # get coefficient info
+                    glance(model))})        # get model info
+
+    kable(as.data.frame(nDIC_inn_lm[,1:8], format = "markdown"),
+          caption = "Reef aragonite overtime", digits = 3)
+```
+
+## 10.3 Compare in and off-shore
+
+```{r}
+
+nDIC_Models<-select(pred_DIC_of, c("Season", "Year", "fit"))
+colnames(nDIC_Models)<-c("Season", "Year", "offshore")
+nDIC_Models<-cbind(nDIC_Models, pred_nDIC_in[,3:4])
+nDIC_Models$Difference<-nDIC_Models$fit-nDIC_Models$offshore
+
+#Omega_Models <- transform(Omega_Models, upper = Omega_Models + (2 * se.fit),
+#                              lower = Omega_Models - (2 * se.fit))
+
+
+nDIC_diff<- ggplot(nDIC_Models,
+                          aes(x=Year, y=Difference, colour=Season)) +
+ MyTheme +
+  scale_y_continuous(#limits = c(-1,0.5),
+                       name=("nDIC Reef - Ocean") ,
+                       breaks = seq(-100,100, 10),  
+                       expand = c(0.05, 0.05)) +
+  scale_x_continuous(name="Year",
+               limits = c(2009,2020),
+               expand = c(0, 0),
+               breaks = seq(2009, 2020, by = 1))+
+
+  #geom_ribbon(aes(ymin = lower, ymax = upper), fill = 'gray', alpha = 0.5) +
+  geom_line() +
+  geom_abline(slope = 0, intercept = 0, color="gray", linetype=2)
+nDIC_diff 
+#+ facet_grid(Zone~Sub_region)
+```
+
+```{r}
+grid.arrange(nDIC_Open, nDIC_reef_m, nDIC_diff, ncol=3)
+
+```
+
+# 11 nTA LMERs
+
+## 11.1 nTA - Open
+
+### Raw data
+
+```{r}
+
+nTA_data_o<- ggplot(WS.open,
+                          aes(x=Date, y=nTA)) +
+  
+ MyTheme +
+  scale_y_continuous(#limits = c(0,5.5),
+                       name=("nTA -Offshore") ,
+                       #breaks = seq(0, 5, 1),  
+                       expand = c(0.03, 0.03)) +
+  scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+               expand = c(0.01, 0.01),
+               breaks ="1 year")+
+
+  geom_smooth(method = "lm", aes(colour=Season))+  
+  geom_point(aes(fill=factor(Season)), shape=21, alpha=0.5)
+
+#nTA_data_o + facet_wrap(~Month)
+nTA_data_o + facet_grid(~Zone)
+nTA_data_o+ facet_grid(~Precipitation)
+nTA_data_o+ facet_grid(~Season)
+
+```
+
+### Model
+
+```{r}
+nTAref_LM<-lmer(nTA~Year * Season +
+                                  (1|Zone),             
+                                  #(1|Sub_region),
+                                  #(1|SiteID), 
+                                  data=WS.open)
+# Subregion is not significant
+
+summary(nTAref_LM)    
+anova(nTAref_LM)
+ranova(nTAref_LM)
+#step(nTAref_LM)
+
+nTALM_Open<-lm(nTA~Year * Season, data=WS.open)
+summary(nTALM_Open)    
+anova(nTALM_Open)
+
+par(mfrow=c(2,3))
+plot(nTALM_Open)
+acf(resid(nTALM_Open), main="acf(resid(nTA open))")
+par(mfrow=c(1,1))
+    
+```
+
+### Predicted values
+
+```{r}
+# Create a new data frame for independent variables  
+  NewData <- expand.grid(#Month=unique(WS.open$Month) ,
+                      Season=unique(WS.open$Season) ,
+                      Year=seq(min(WS.open$Year), max(WS.open$Year), by=1)#,
+                      #SiteID=unique(WS.open$SiteID)#,
+                       #Zone=unique(WS.open$Zone),
+                      #Sub_region=unique(WS.open$Sub_region)
+                          )
+  
+  pred_TA_of <- data.frame(predict(nTALM_Open , newdata=NewData,
+                                   se.fit = TRUE))
+  pred_TA_of <- transform(pred_TA_of, upper = fit + (2 * se.fit),
+                              lower = fit - (2 * se.fit))
+  head(pred_TA_of)
+  
+  pred_TA_of<-cbind(NewData, pred_TA_of)
+  #pred_TA_of$Year<-as.factor(pred_TA_of$Year)
+  
+nTA_Open<- ggplot(pred_TA_of,
+                          aes(x=Year, y=fit, colour=Season)) +
+  MyTheme +
+  scale_y_continuous(limits = c(2200,2450),
+                       name=("nTA - Open") ,
+                       breaks = seq(2200, 2450, 50),  
+                       expand = c(0.05, 0.05)) +
+  scale_x_continuous(name="Year",
+               limits = c(2009,2020),
+               expand = c(0, 0),
+               breaks = seq(2009, 2020, by = 1))+
+
+  geom_ribbon(aes(ymin = lower, ymax = upper), fill = 'gray', alpha = 0.5) +
+  geom_line()
+nTA_Open
+```
+
+
+```{r}
+nTA_off_lm <- WS.open %>% 
+                    group_by(Season) %>%
+                    do({model = lm(nTA~Year, data=.)  
+                    # create model
+                    data.frame(tidy(model), # get coefficient info
+                    glance(model))})        # get model info
+
+    kable(as.data.frame(nTA_off_lm[,1:8], format = "markdown"),
+          caption = "Offshore aragonite overtime", digits = 3)
+```
+
+Notes on nTA offshore models: 
+* year is not significant
+
+## 11.2 nTA - Inshore
+
+### Raw data
+
+```{r}
+nTA_reef_data<- ggplot(WS.reef[WS.reef$Zone=="Inshore", ] ,
+                          aes(x=Date, y=nTA)) +
+  
+  MyTheme +
+   scale_y_continuous(#limits = c(1950,2150),
+                       name=("nTA -Reefs") ,
+                       breaks = seq(1700, 2500, 50),  
+                       expand = c(0.05, 0.05)) +
+  scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+               expand = c(0.05, 0.05),
+               breaks ="1 year")+
+
+  geom_smooth(method = "lm", aes(colour=Season))+  
+  geom_point(aes(fill=factor(Season)), shape=21, alpha=0.5)+
+  geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)
+nTA_reef_data
+#nTA_reef_data  + facet_wrap(~Month)
+nTA_reef_data + facet_grid(~Zone)
+#nTA_reef_data+ facet_grid(~Precipitation)
+#nTA_reef_data + facet_grid(Zone~Sub_region)
+nTA_reef_data + facet_grid(~Season)
+```
+
+### Model
+
+```{r}
+nTA_Reef<-lmer(nTA~Year * Season +
+                                  Sub_region+
+                                  (1|SiteID),
+               data=WS.reef[WS.reef$Zone=="Inshore", ])
+# Subregion is not significant
+
+summary(nTA_Reef)    
+anova(nTA_Reef)
+ranova(nTA_Reef)
+#step(nTA_Reef)
+
+nTALM_reef<-lm(nTA~Year + 
+                  Season +
+                  #Zone +
+                  #Sub_region +
+                  #Year:Zone + Year:Zone+
+                  Year:Season, 
+                  data=WS.reef[WS.reef$Zone=="Inshore", ])
+summary(nTALM_reef)    
+anova(nTALM_reef)
+
+par(mfrow=c(2,3))
+plot(nTALM_reef)
+acf(resid(nTALM_reef), main="acf(resid(nTA-reef))")
+par(mfrow=c(1,1))
+```
+
+### Predicted values
+
+```{r}
+# Create a new data frame for independent variables  
+  NewData <- expand.grid(#Month=unique(WS.open$Month) ,
+                        Season=unique(WS.reef$Season) ,
+                        Year=seq(min(WS.reef$Year), max(WS.reef$Year), by=1)#,
+                        #SiteID=unique(WS.open$SiteID)#,
+                        #Zone=unique(WS.reef$Zone),
+                        #Sub_region=unique(WS.reef$Sub_region)
+                        )
+  
+
+  pred_nTA_in <- data.frame(predict(nTALM_reef ,
+                                     newdata=NewData, se.fit = TRUE))
+  pred_nTA_in <- transform(pred_nTA_in, upper = fit + (2 * se.fit),
+                              lower = fit - (2 * se.fit))
+  head(pred_nTA_in)
+  
+  pred_nTA_in<-cbind(NewData, pred_nTA_in)
+ 
+nTA_reef_m<- ggplot(pred_nTA_in,
+                     aes(x=Year, y=fit, colour=Season)) +
+  theme_bw() +
+  scale_y_continuous(limits = c(2200,2450),
+                       name=("nTA -Reef") ,
+                       breaks = seq(2200, 2450, 50),  
+                       expand = c(0.05, 0.05)) +
+  scale_x_continuous(name="Year",
+               limits = c(2009,2020),
+               expand = c(0, 0),
+               breaks = seq(2009, 2020, by = 1))+
+
+  geom_ribbon(aes(ymin = lower, ymax = upper), fill = 'gray', alpha = 0.5) +
+  geom_line() +
+  geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)+
+    
+  theme(legend.position="top",
+        legend.direction = "horizontal",
+        legend.title = element_blank(),
+            plot.background=element_blank(),
+            axis.text.x = element_text(angle = 90, vjust = 0.5),
+            panel.grid = element_blank(),
+            legend.box.background = element_rect(),
+            panel.background =element_rect(fill = NA, color = "black")
+            )
+nTA_reef_m 
+#+ facet_grid(Zone~Sub_region)
+
+```
+
+
+```{r}
+nTA_inn_lm <- WS.reef[WS.reef$Zone=="Inshore", ] %>% 
+                    group_by(Season) %>%
+                    do({model = lm(nTA~Year, data=.)  
+                    # create model
+                    data.frame(tidy(model), # get coefficient info
+                    glance(model))})        # get model info
+
+    kable(as.data.frame(nTA_inn_lm[,1:8], format = "markdown"),
+          caption = "Reef nTA overtime", digits = 3)
+```
+
+## 11.3 Compare in and off-shore
+
+
+```{r}
+
+nTA_Models<-select(pred_TA_of, c("Season", "Year", "fit"))
+colnames(nTA_Models)<-c("Season", "Year", "offshore")
+nTA_Models<-cbind(nTA_Models, pred_nTA_in[,3:4])
+nTA_Models$Difference<-nTA_Models$fit-nTA_Models$offshore
+
+nTA_diff<- ggplot(nTA_Models,
+                          aes(x=Year, y=Difference, colour=Season)) +
+  theme_bw() +
+  scale_y_continuous(#limits = c(-1,0.5),
+                       name=("nTA Reef - Ocean") ,
+                       breaks = seq(-100,100, 10),  
+                       expand = c(0.05, 0.05)) +
+  scale_x_continuous(name="Year",
+               limits = c(2009,2020),
+               expand = c(0, 0),
+               breaks = seq(2009, 2020, by = 1))+
+
+  #geom_ribbon(aes(ymin = lower, ymax = upper), fill = 'gray', alpha = 0.5) +
+  geom_line() +
+  geom_abline(slope = 0, intercept = 0, color="gray", linetype=2)+
+    
+  theme(legend.position="top",
+        legend.direction = "horizontal",
+        legend.title = element_blank(),
+            plot.background=element_blank(),
+            axis.text.x = element_text(angle = 90, vjust = 0.5),
+            panel.grid = element_blank(),
+            legend.box.background = element_rect(),
+            panel.background =element_rect(fill = NA, color = "black")
+            )
+nTA_diff 
+#+ facet_grid(Zone~Sub_region)
+```
+
+```{r}
+grid.arrange(nTA_Open, nTA_reef_m, nTA_diff, ncol=3)
+
+```
+
+
+# 12 pCO2 LMERs
+
+## 12.1 pCO2 - Open
+
+### Raw data
+
+```{r}
+pCO2_data_o<- ggplot(WS.open,
+                          aes(x=Date, y=pCO2_uatm)) +
+  
+  MyTheme +
+  scale_y_continuous(#limits = c(0,5.5),
+                       name=("pCO2 -Offshore") ,
+                       #breaks = seq(0, 5, 1),  
+                       expand = c(0.03, 0.03)) +
+  scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+               expand = c(0.01, 0.01),
+               breaks ="1 year")+
+  
+  geom_smooth(method = "lm", aes(colour=Sub_region))+  
+  geom_point(aes(fill=factor(Month)), shape=21, alpha=0.5)
+#pCO2_data_o + facet_wrap(~Month)
+pCO2_data_o + facet_grid(~Zone)
+pCO2_data_o+ facet_grid(~Precipitation)
+pCO2_data_o+ facet_grid(~Season)
+```
+
+### Model
+
+```{r}
+pCO2ref_LM<-lmer(pCO2_uatm~Year * Season +
+                                  (1|Zone)+             
+                                  (1|Sub_region),
+                                  #(1|SiteID), 
+                                  data=WS.open)
+# Subregion and zone are not significant
+
+summary(pCO2ref_LM)    
+anova(pCO2ref_LM)
+ranova(pCO2ref_LM)
+#step(pCO2ref_LM)
+
+pCO2LM_Open<-lm(pCO2_uatm~Year * Season, data=WS.open)
+summary(pCO2LM_Open)    
+anova(pCO2LM_Open)
+
+par(mfrow=c(2,3))
+plot(pCO2LM_Open)
+acf(resid(pCO2LM_Open), main="acf(resid(pCO2 open))")
+par(mfrow=c(1,1))
+```
+
+### Predicted values
+
+```{r}
+# Create a new data frame for independent variables  
+  NewData <- expand.grid(#Month=unique(WS.open$Month) ,
+                      Season=unique(WS.open$Season) ,
+                      Year=seq(min(WS.open$Year), max(WS.open$Year), by=1)#,
+                      #SiteID=unique(WS.open$SiteID)#,
+                       #Zone=unique(WS.open$Zone),
+                      #Sub_region=unique(WS.open$Sub_region)
+                          )
+  
+  pred_pCO2_of <- data.frame(predict(pCO2LM_Open , newdata=NewData,
+                                   se.fit = TRUE))
+  pred_pCO2_of <- transform(pred_pCO2_of, upper = fit + (2 * se.fit),
+                              lower = fit - (2 * se.fit))
+  head(pred_pCO2_of)
+  
+  pred_pCO2_of<-cbind(NewData, pred_pCO2_of)
+  #pred_pCO2_of$Year<-as.factor(pred_pCO2_of$Year)
+  
+pCO2_Open<- ggplot(pred_pCO2_of,
+                          aes(x=Year, y=fit, colour=Season)) +
+  MyTheme+
+  scale_y_continuous(limits = c(290,540),
+                       name=("pCO2 -Offshore") ,
+                      breaks = seq(290, 600, 50),  
+                       expand = c(0.05, 0.05)) +
+  scale_x_continuous(name="Year",
+               limits = c(2009,2020),
+               expand = c(0, 0),
+               breaks = seq(2009, 2020, by = 1))+
+
+  geom_ribbon(aes(ymin = lower, ymax = upper), fill = 'gray', alpha = 0.5) +
+  geom_line()
+pCO2_Open
+```
+
+
+```{r}
+pCO2_off_lm <- WS.open %>% 
+                    group_by(Season) %>%
+                    do({model = lm(pCO2_uatm~Year, data=.)  
+                    # create model
+                    data.frame(tidy(model), # get coefficient info
+                    glance(model))})        # get model info
+
+    kable(as.data.frame(pCO2_off_lm[,1:8], format = "markdown"),
+          caption = "Offshore pCO2 overtime", digits = 3)
+```
+
+Notes on pCO2 offshore models: 
+* 
+
+## 12.2 pCO2 - Inshore
+
+### Raw data
+
+```{r}
+pCO2_reef_data<- ggplot(WS.reef[WS.reef$Zone=="Inshore", ],
+                          aes(x=Date, y=pCO2_uatm)) +
+  
+    MyTheme+
+   scale_y_continuous(#limits = c(1950,2150),
+                       name=("pCO2 -Reefs") ,
+                       breaks = seq(1700, 2500, 50),  
+                       expand = c(0.05, 0.05)) +
+  scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+               expand = c(0.05, 0.05),
+               breaks ="1 year")+
+
+  geom_smooth(method = "lm", aes(colour=Season))+  
+  geom_point(aes(fill=factor(Season)), shape=21, alpha=0.5)
+#pCO2_reef_data  + facet_wrap(~Month)
+pCO2_reef_data + facet_grid(~Zone)
+#pCO2_reef_data+ facet_grid(~Precipitation)
+#pCO2_reef_data + facet_grid(Zone~Sub_region)
+pCO2_reef_data + facet_grid(~Season)
+```
+
+### Model
+
+```{r}
+pCO2_Reef<-lmer(pCO2_uatm~Year * Season + Sub_region+
+                                  (1|SiteID),
+                data=WS.reef[WS.reef$Zone=="Inshore", ] )
+# Subregion is not significant
+
+#summary(pCO2_Reef)    
+anova(pCO2_Reef)
+ranova(pCO2_Reef)
+#step(pCO2_Reef)
+
+pCO2LM_reef<-lm(pCO2_uatm~Year + 
+                  Season +
+                  #Zone +
+                  #Sub_region +
+                  #Year:Zone + Year:Zone+
+                  Year:Season, 
+                  data=WS.reef[WS.reef$Zone=="Inshore", ] )
+summary(pCO2LM_reef)    
+anova(pCO2LM_reef)
+
+par(mfrow=c(2,3))
+plot(pCO2LM_reef)
+acf(resid(pCO2LM_reef), main="acf(resid(pCO2-reef))")
+par(mfrow=c(1,1))
+```
+
+### Predicted values
+
+```{r}
+# Create a new data frame for independent variables  
+  NewData <- expand.grid(#Month=unique(WS.open$Month) ,
+                        Season=unique(WS.reef$Season) ,
+                        Year=seq(min(WS.reef$Year), max(WS.reef$Year), by=1)#,
+                        #SiteID=unique(WS.open$SiteID)#,
+                        #Zone=unique(WS.reef$Zone),
+                        #Sub_region=unique(WS.reef$Sub_region)
+                        )
+  
+
+  pred_pCO2_in <- data.frame(predict(pCO2LM_reef ,
+                                     newdata=NewData, se.fit = TRUE))
+  pred_pCO2_in <- transform(pred_pCO2_in, upper = fit + (2 * se.fit),
+                              lower = fit - (2 * se.fit))
+  head(pred_pCO2_in)
+  
+  pred_pCO2_in<-cbind(NewData, pred_pCO2_in)
+ 
+pCO2_reef_m<- ggplot(pred_pCO2_in,
+                     aes(x=Year, y=fit, colour=Season)) +
+  MyTheme+
+  scale_y_continuous(limits = c(290,540),
+                       name=("pCO2 -Reef") ,
+                      breaks = seq(290, 600, 50),  
+                       expand = c(0.05, 0.05)) +
+  scale_x_continuous(name="Year",
+               limits = c(2009,2020),
+               expand = c(0, 0),
+               breaks = seq(2009, 2020, by = 1))+
+
+  geom_ribbon(aes(ymin = lower, ymax = upper), fill = 'gray', alpha = 0.5) +
+  geom_line() 
+pCO2_reef_m 
+#+ facet_grid(Zone~Sub_region)
+
+```
+
+
+```{r}
+pCO2_inn_lm <- WS.reef[WS.reef$Zone=="Inshore", ]  %>% 
+                    group_by(Season) %>%
+                    do({model = lm(pCO2_uatm~Year, data=.)  
+                    # create model
+                    data.frame(tidy(model), # get coefficient info
+                    glance(model))})        # get model info
+
+    kable(as.data.frame(pCO2_inn_lm[,1:8], format = "markdown"),
+          caption = "Reef pCO2 overtime", digits = 3)
+```
+
+## 12.3 Compare in and off-shore
+
+```{r}
+pCO2_Models<-select(pred_pCO2_of, c("Season", "Year", "fit"))
+colnames(pCO2_Models)<-c("Season", "Year", "offshore")
+pCO2_Models<-cbind(pCO2_Models, pred_pCO2_in[,3:4])
+pCO2_Models$Difference<-pCO2_Models$fit-pCO2_Models$offshore
+
+pCO2_diff<- ggplot(pCO2_Models,
+                          aes(x=Year, y=Difference, colour=Season)) +
+  theme_bw() +
+  scale_y_continuous(#limits = c(-1,0.5),
+                       name=("pCO2 Reef - Ocean") ,
+                       breaks = seq(-100,150, 20),  
+                       expand = c(0.05, 0.05)) +
+  scale_x_continuous(name="Year",
+               limits = c(2009,2020),
+               expand = c(0, 0),
+               breaks = seq(2009, 2020, by = 1))+
+
+  #geom_ribbon(aes(ymin = lower, ymax = upper), fill = 'gray', alpha = 0.5) +
+  geom_line() +
+  geom_abline(slope = 0, intercept = 0, color="gray", linetype=2)+
+    
+  theme(legend.position="top",
+        legend.direction = "horizontal",
+        legend.title = element_blank(),
+            plot.background=element_blank(),
+            axis.text.x = element_text(angle = 90, vjust = 0.5),
+            panel.grid = element_blank(),
+            legend.box.background = element_rect(),
+            panel.background =element_rect(fill = NA, color = "black")
+            )
+pCO2_diff 
+#+ facet_grid(Zone~Sub_region)
+```
+
+```{r}
+grid.arrange(pCO2_Open, pCO2_reef_m, pCO2_diff, ncol=3)
+
+```
+
+# 13 pH LMERs
+
+## 13.1 pH - Open
+
+### Raw data
+
+```{r}
+pH_data_o<- ggplot(WS.open,
+                          aes(x=Date, y=pH_calculated)) +
+  
+  MyTheme +
+  scale_y_continuous(#limits = c(0,5.5),
+                       name=("pH -Offshore") ,
+                       #breaks = seq(0, 5, 1),  
+                       expand = c(0.03, 0.03)) +
+  scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+               expand = c(0.01, 0.01),
+               breaks ="1 year")+
+
+  geom_smooth(method = "lm", aes(colour=Sub_region))+  
+  geom_point(aes(fill=factor(Sub_region)), shape=21, alpha=0.5)
+pH_data_o
+#pH_data_o + facet_grid(~Zone)
+pH_data_o+ facet_grid(~Precipitation)
+pH_data_o+ facet_grid(~Season)
+```
+
+### Model
+
+```{r}
+pHref_LM<-lmer(pH_calculated~Year * Season +
+                                  (1|Zone)+             
+                                  (1|Sub_region),
+                                  #(1|SiteID), 
+                                  data=WS.open)
+# Subregion and zone are not significant
+
+summary(pHref_LM)    
+anova(pHref_LM)
+ranova(pHref_LM)
+#step(pHref_LM)
+
+pHLM_Open<-lm(pH_calculated~Year * Season, data=WS.open)
+summary(pHLM_Open)    
+anova(pHLM_Open)
+
+par(mfrow=c(2,3))
+plot(pHLM_Open)
+acf(resid(pHLM_Open), main="acf(resid(pH open))")
+par(mfrow=c(1,1))
+```
+
+### Predicted values
+
+```{r}
+# Create a new data frame for independent variables  
+  NewData <- expand.grid(#Month=unique(WS.open$Month) ,
+                      Season=unique(WS.open$Season) ,
+                      Year=seq(min(WS.open$Year), max(WS.open$Year), by=1)#,
+                      #SiteID=unique(WS.open$SiteID)#,
+                       #Zone=unique(WS.open$Zone),
+                      #Sub_region=unique(WS.open$Sub_region)
+                          )
+  
+  pred_pH_of <- data.frame(predict(pHLM_Open , newdata=NewData,
+                                   se.fit = TRUE))
+  pred_pH_of <- transform(pred_pH_of, upper = fit + (2 * se.fit),
+                              lower = fit - (2 * se.fit))
+  head(pred_pH_of)
+  
+  pred_pH_of<-cbind(NewData, pred_pH_of)
+  #pred_pH_of$Year<-as.factor(pred_pH_of$Year)
+  
+pH_Open<- ggplot(pred_pH_of,
+                          aes(x=Year, y=fit, colour=Season)) +
+   MyTheme +
+   scale_y_continuous(limits = c(7.9,8.2),
+                         name=("pH -Offshore") ,
+                        breaks = seq(7.9, 8.2, 0.1),  
+                       expand = c(0.01, 0.01)) +
+  scale_x_continuous(name="Year",
+               limits = c(2009,2020),
+               expand = c(0, 0),
+               breaks = seq(2009, 2020, by = 1))+
+
+  geom_ribbon(aes(ymin = lower, ymax = upper), fill = 'gray', alpha = 0.5) +
+  geom_line() 
+pH_Open
+```
+
+
+```{r}
+pH_off_lm <- WS.open %>% 
+                    group_by(Season) %>%
+                    do({model = lm(pH_calculated~Year, data=.)  
+                    # create model
+                    data.frame(tidy(model), # get coefficient info
+                    glance(model))})        # get model info
+
+    kable(as.data.frame(pH_off_lm[,1:8], format = "markdown"),
+          caption = "Offshore aragonite overtime", digits = 3)
+```
+
+Notes on pH offshore models: 
+* 
+
+## 13.2 pH - Inshore
+
+### Raw data
+
+```{r}
+pH_reef_data<- ggplot(WS.reef[WS.reef$Zone=="Inshore", ],
+                          aes(x=Date, y=pH_calculated)) +
+  
+   MyTheme +
+   scale_y_continuous(#limits = c(1950,2150),
+                       name=("pH -Reefs") ,
+                       breaks = seq(1700, 2500, 50),  
+                       expand = c(0.05, 0.05)) +
+  scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+               expand = c(0.05, 0.05),
+               breaks ="1 year")+
+  
+  geom_smooth(method = "lm", aes(colour=Season))+  
+  geom_point(aes(fill=factor(Season)), shape=21, alpha=0.5)
+pH_reef_data
+#Aragonite_reef + facet_grid(~Zone)
+#pH_reef_data+ facet_grid(~Precipitation)
+#pH_reef_data + facet_grid(Zone~Sub_region)
+pH_reef_data + facet_grid(~Season)
+```
+
+### Model
+
+```{r}
+pH_Reef<-lmer(pH_calculated~Year * Season + Sub_region+
+                                  (1|SiteID),
+              data=WS.reef[WS.reef$Zone=="Inshore", ])
+# Subregion is not significant
+
+#summary(pH_Reef)    
+anova(pH_Reef)
+ranova(pH_Reef)
+#step(pH_Reef)
+
+pHLM_reef<-lm(pH_calculated~Year + 
+                  Season +
+                  #Zone +
+                  #Sub_region +
+                  #Year:Zone + Year:Zone+
+                  Year:Season, 
+                  data=WS.reef[WS.reef$Zone=="Inshore", ])
+summary(pHLM_reef)    
+anova(pHLM_reef)
+
+par(mfrow=c(2,3))
+plot(pHLM_reef)
+acf(resid(pHLM_reef), main="acf(resid(pH-reef))")
+par(mfrow=c(1,1))
+```
+
+### Predicted values
+
+```{r}
+# Create a new data frame for independent variables  
+  NewData <- expand.grid(#Month=unique(WS.open$Month) ,
+                        Season=unique(WS.reef$Season) ,
+                        Year=seq(min(WS.reef$Year), max(WS.reef$Year), by=1)#,
+                        #SiteID=unique(WS.open$SiteID)#,
+                        #Zone=unique(WS.reef$Zone),
+                        #Sub_region=unique(WS.reef$Sub_region)
+                        )
+  
+  pred_pH_in <- data.frame(predict(pHLM_reef ,
+                                     newdata=NewData, se.fit = TRUE))
+  pred_pH_in <- transform(pred_pH_in, upper = fit + (2 * se.fit),
+                              lower = fit - (2 * se.fit))
+  head(pred_pH_in)
+  
+  pred_pH_in<-cbind(NewData, pred_pH_in)
+ 
+  
+pH_reef_m<- ggplot(pred_pH_in,
+                     aes(x=Year, y=fit, colour=Season)) +
+  MyTheme +
+  scale_y_continuous(limits = c(7.9,8.2),
+                       name=("pH -Reef") ,
+                      breaks = seq(7.9, 8.2, 0.1),  
+                       expand = c(0.01, 0.01)) +
+  scale_x_continuous(name="Year",
+               limits = c(2009,2020),
+               expand = c(0, 0),
+               breaks = seq(2009, 2020, by = 1))+
+
+  geom_ribbon(aes(ymin = lower, ymax = upper), fill = 'gray', alpha = 0.5) +
+  geom_line() 
+pH_reef_m 
+#+ facet_grid(Zone~Sub_region)
+
+```
+
+
+```{r}
+pH_inn_lm <- WS.reef[WS.reef$Zone=="Inshore", ] %>% 
+                    group_by(Season) %>%
+                    do({model = lm(pH_calculated~Year, data=.)  
+                    # create model
+                    data.frame(tidy(model), # get coefficient info
+                    glance(model))})        # get model info
+
+    kable(as.data.frame(pH_inn_lm[,1:8], format = "markdown"),
+          caption = "Reef aragonite overtime", digits = 3)
+```
+
+
+## 13.3 Compare in and off-shore
+
+```{r}
+pH_Models<-select(pred_pH_of, c("Season", "Year", "fit"))
+colnames(pH_Models)<-c("Season", "Year", "offshore")
+pH_Models<-cbind(pH_Models, pred_pH_in[,3:4])
+pH_Models$Difference<-pH_Models$fit-pH_Models$offshore
+
+pH_diff<- ggplot(pH_Models,
+                          aes(x=Year, y=Difference, colour=Season)) +
+  MyTheme +
+  scale_y_continuous(#limits = c(-1,0.5),
+                       name=("pH Reef - Ocean") ,
+                       breaks = seq(-100,150, 0.1),  
+                       expand = c(0.05, 0.05)) +
+  scale_x_continuous(name="Year",
+               limits = c(2009,2020),
+               expand = c(0, 0),
+               breaks = seq(2009, 2020, by = 1))+
+
+  #geom_ribbon(aes(ymin = lower, ymax = upper), fill = 'gray', alpha = 0.5) +
+  geom_line() +
+  geom_abline(slope = 0, intercept = 0, color="gray", linetype=2)
+pH_diff 
+#+ facet_grid(Zone~Sub_region)
+```
+
+```{r}
+grid.arrange(pH_Open, pH_reef_m, pH_diff, ncol=3)
+
+```
+
+
+## Manzello (2012)
+
+* local carbonate chemistry: Variation on CO2, alkalinity, and salinity - Florida Reef Tract (FRT) data.
+
+* Measure total CO2 (TCO2) - coulometrically and total alkalinity (TA) - gran titration. Other parameters derived 
+* Predominantly in inshore / upper FRT (higher than modeled). 
+* H Productivity -> net uptake of total CO2 (TCO2) -> H aragonite
+*Offshore reefs: oceanic carbonate chemistries consistent with present day tropical surface ocean conditions.
+* Photosynthetic uptake of TCO2 by seagrasses/macroalgae in the inshore waters of the FRT. Acidification refugia (spatial * time)
+
+## Uthicke (2014)
+
+* GBR - 14 Inshore fringing  reefs
+Measured: TA and DIC. Derived:pCO2, pH and aragonite
+* TA: 2069 - 2364 mmol kg2
+* DIC:1846 - 2099 mmol kg2
+* pCO2: 340 - 554 matm
+  * Higher wet seasons
+  * Inshore reefs above atmospheric values.
+  * Arg was not further reduced in the wet season (temp effects)
+  *Thermodynamic effects and anthropogenic runoff (P, R and P/R ratios).
+  * Expected slope of  linear regression bw DIC and TA in systems where calcification is dominating is ~ 2.0 
+  
+## Cyronak (2018)
+
+* Net community production; NCP - organic
+* net community calcification; NCC inorganic
+* 23 coral reef locations across the globe - derived from TA and DIC
+* All reefs were net calcifying for the majority of observations (alkalinity depletion relative to offshore)
+* Occasional observations of net dissolution occurred at most locations
+* Influence of organic carbon fluxes on total changes in dissolved inorganic carbon (DIC) (i.e., NCP compared to the sum of NCP and NCC) =  32% to 88% -> biogeochemical differences between reefs. 
+* Reefs with the largest relative percentage of NCP experienced the largest variability in seawater pH for a given change in DIC -> ability to elevate or suppress local pH relative to the open ocean.
+
+## Ian (2019) 
+
+* Reefs and inlets were sampled
+* Reefs: Elevated pCO2 in warmer wet season
+* Inlets: more dynamic -> periodic pulses of acidified water -> more acidification than reefs. 
+  - Negative correlation bw salinity and both TA, and DIC. Elevated TA and DIC in low salinity waters ->  carbonate dissolution as a result of organic matter decomposition?.
+  
+  
+

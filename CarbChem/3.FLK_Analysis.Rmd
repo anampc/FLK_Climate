@@ -273,13 +273,13 @@ write.csv(GPS.Sites, "meanSTP.csv")
 
 ```{r makeAmap, echo=FALSE}
 
-leaflet(FLK.data, height = '400px') %>% 
+leaflet(FLK.data[FLK.data$Year==2015,], height = '400px') %>% 
   addTiles() %>%
-  addProviderTiles(providers$Esri.WorldImagery)%>%
-  #addProviderTiles(providers$OpenStreetMap) %>% 
+  #addProviderTiles(providers$Esri.WorldImagery)%>%
+  addProviderTiles(providers$OpenStreetMap) %>% 
   #addMarkers(icon=coral.icon) %>% 
   addCircleMarkers(lng = ~Longitude, lat = ~Latitude, 
-                   stroke = TRUE, 
+                   #stroke = TRUE, 
                    radius = sqrt(GPS.Sites$number), 
                    fillOpacity = 1,
                    color = ~pal.gen(Zone),
@@ -345,6 +345,24 @@ leaflet(WS.GPS.Sites, height = '600px') %>%
 ```
 Map of the sites were samples are collected
 
+## Number of samples
+
+### By zone and location
+
+```{r, echo=FALSE}
+Cases_Loc_Depht<-WS.data %>% count(Location,
+                                  Zone,
+                                  sort = F)
+
+Cases_Loc_Depht<-as.data.frame(Cases_Loc_Depht %>%
+                   pivot_wider(names_from = Zone,
+                   values_from = n))
+write.csv(Cases_Loc_Depht, "Heidi.csv")
+
+kable(as.data.frame(Cases_Loc_Depht, format = "markdown"), 
+      longtable = TRUE)
+```
+
 # 2 Correlations and data problems
 
 ## 2.1 Sampling times
@@ -352,7 +370,7 @@ Map of the sites were samples are collected
 
 ```{r}
 
-All_ToD<- ggplot(WS.reef) + 
+All_ToD<- ggplot(WS.data) + 
   
   theme_bw() +
   scale_x_continuous(limits = c(0, 24),
@@ -399,7 +417,7 @@ ggMarginal(omega_dat, groupColour = TRUE)
 ```
 
 ```{r}
-All_ToD2<- ggplot(WS.reef, aes(ToD, Aragonite_Sat_W)) + 
+All_ToD2<- ggplot(WS.data, aes(ToD, Aragonite_Sat_W)) + 
   
   theme_bw() +
   scale_x_continuous(limits = c(0, 24),
@@ -430,7 +448,7 @@ There is clear stratification on the sampling times, but the meassured / estimat
 
 ```{r}
 
-Arg_Temp<- ggplot(WS.data) + theme_bw() +
+Arg_Temp<- ggplot(FLK.data) + theme_bw() +
   
   geom_smooth(aes(Temperature_C, Aragonite_Sat_W),
               linetype=2, method = "lm", color="black")+
@@ -708,6 +726,11 @@ TA_DIC +
   facet_grid(Zone~Sub_region)
 
 TA_DIC +
+    geom_point(aes (fill=Precipitation, shape=Zone),
+             size=2, alpha=0.5)+
+  facet_grid(Reference~Zone)
+
+TA_DIC +
     geom_point(aes (colour=factor(Year)),
              size=2, alpha=0.5)+
   facet_grid(Zone~Sub_region)
@@ -771,10 +794,12 @@ theme(legend.position="top",
           panel.grid = element_blank(),
           legend.box.background = element_rect(),
           panel.background =element_rect(fill = NA, color = "black")
-          ) +
-facet_grid(Zone~Sub_region)
-  
+          )
 Temp_months_all
+Temp_months_all + facet_grid(~Zone) 
+Temp_months_all + facet_grid(Zone~Sub_region)
+  
+Temp_months_all + facet_grid(Reference~Zone)
 
 #ggsave(file="FLK_results/Aragonite_months_all.svg", plot=Aragonite_months_all, dpi = 300, width=6, height=6.5)
 ```
@@ -819,8 +844,8 @@ Sal_months_all<- ggplot(WS.data,
   geom_point(aes(fill=Precipitation), shape=21, alpha=0.5, size =1)+ 
   annotate(geom = "rect", alpha = .2,
            xmin = 6.5, xmax = 7.5, ymin = 30, ymax = 33 )+
-  annotate(geom = "rect", alpha = .2, color="red",
-           xmin = 3.5, xmax = 4.5, ymin = 39, ymax = 40 )+
+  #annotate(geom = "rect", alpha = .2, color="red",
+           #xmin = 3.5, xmax = 4.5, ymin = 39, ymax = 40 )+
   
   theme(legend.position="top",
       legend.direction = "horizontal",
@@ -830,10 +855,10 @@ Sal_months_all<- ggplot(WS.data,
           panel.grid = element_blank(),
           legend.box.background = element_rect(),
           panel.background =element_rect(fill = NA, color = "black")
-          ) +
-facet_grid(Zone~Sub_region)
-  
+          )
 Sal_months_all
+Sal_months_all + facet_grid(~Zone)  
+Sal_months_all + facet_grid(Zone~Sub_region)
 
 #ggsave(file="FLK_results/Aragonite_months_all.svg", plot=Aragonite_months_all, dpi = 300, width=6, height=6.5)
 ```
@@ -931,6 +956,8 @@ Aragonite_mon_year<- ggplot(WS.data,
   #scale_fill_gradient(low = "red", high = "blue", na.value = NA)
   
 Aragonite_mon_year+facet_grid(Zone~Sub_region)
+
+Aragonite_mon_year+facet_grid(Reference~Zone)
 ```
 
 **Note:** August outliers are early years... so just declining trends overtime? 
@@ -1251,11 +1278,22 @@ Cases_WS<-WS.data %>% count(Month,
                             Sub_region,
                             Zone,
                             sort = F)
-
 Cases_WS<-as.data.frame(Cases_WS %>%
                    pivot_wider(names_from = Month,
                    values_from = n))
 write.csv(Cases_WS, "Cases_WS.csv")
+
+
+Cases_WS<-WS.data %>% count(Year,
+                            Sub_region,
+                            Zone,
+                            sort = F)
+
+Cases_WS<-as.data.frame(Cases_WS %>%
+                   pivot_wider(names_from = Year,
+                   values_from = n))
+write.csv(Cases_WS, "Cases_WS.csv")
+
 
 kable(as.data.frame(Cases_WS, format = "markdown"), 
       longtable = TRUE)
@@ -1271,6 +1309,8 @@ Cases_WS.MY<-as.data.frame(Cases_WS.MY %>%
 
 kable(as.data.frame(Cases_WS.MY, format = "markdown"), 
       longtable = TRUE)
+
+
 ```
 
 ## 4.1. nTA nDIC slopes
@@ -1403,7 +1443,7 @@ Not my favorite, but good if absolute values are important vs value-reference
     kable(TA_DIC_lm_reef[,1:8], format = "markdown",
           caption = "nTA vs nDIC equations", digits = 3)
     
-  #write.csv(TA_DIC_lm_reef, "FLK_results/nTA_nDIC_reef.csv")  
+  #   
 ```
 
 ### 4.1.2 Delta de nTA and nDIC with endpoint calculated by each month-year
@@ -1446,7 +1486,6 @@ WS.reef$dnTA_MY<-WS.reef$nTA-WS.reef$OnTA_my
 WS.reef$dnDIC_MY<-WS.reef$nDIC-WS.reef$OnDIC_my
 
 ```
-
 
 
 ```{r}
@@ -1973,14 +2012,14 @@ pCO2_all<- ggplot(WS.data [WS.data$Extreme=="Normal", ],
                #labels = date_format("%M/%Y"),
                #limits = c(-1,114),
                expand = c(0.01, 0.01),
-               breaks ="1 year")+
+               breaks ="2 year")+
 
 geom_smooth(method = "lm", aes(colour=Zone))+  
-geom_point(aes(fill=factor(Zone)), shape=21, alpha=0.5)+
+geom_point(aes(fill=factor(Zone)), shape=21, alpha=0.5, size=1)+
 geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)+
   
-theme(legend.position="top",
-      legend.direction = "horizontal",
+theme(#legend.position="top",
+      #legend.direction = "horizontal",
       legend.title = element_blank(),
           plot.background=element_blank(),
           axis.text.x = element_text(angle = 90, vjust = 0.8),
@@ -1989,10 +2028,44 @@ theme(legend.position="top",
           panel.background =element_rect(fill = NA, color = "black")
           )
 pCO2_all  
+#ggsave(file="FLK_results/pCO2_a.pdf", plot=pCO2_all, dpi = 300, width=6, height=4)
+
 #pCO2_all + facet_grid(~Zone)
-pCO2_all + facet_grid(~Sub_region)
-pCO2_all + facet_grid(~Precipitation)
-pCO2_all + facet_grid(~Season)
+pCO2_all_b<-pCO2_all + facet_grid(~Sub_region)
+#ggsave(file="FLK_results/pCO2_b.pdf", plot=pCO2_all_b, dpi = 300, width=6, height=4)
+
+pCO2_all_black<- ggplot(WS.data [WS.data$Extreme=="Normal", ],
+                          aes(x=Date, y=pCO2)) +
+  
+  theme_bw() +
+  scale_y_continuous(#limits = c(0,5.5),
+                       name=("pCO2") ,
+                       #breaks = seq(0, 5, 1),  
+                       expand = c(0.01, 0.01)) +
+  scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+               expand = c(0.01, 0.01),
+               breaks ="2 year")+
+
+geom_smooth(method = "lm", colour="black")+  
+geom_point(aes(fill=Precipitation), shape=21, alpha=0.5)+
+  
+theme(#legend.position="top",
+      #legend.direction = "horizontal",
+      legend.title = element_blank(),
+          plot.background=element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.8),
+          panel.grid = element_blank(),
+          legend.box.background = element_rect(),
+          panel.background =element_rect(fill = NA, color = "black")
+          )
+pCO2_all_black  
+
+pCO2_all_C<-pCO2_all_black + facet_grid(Zone~Sub_region)
+
+#ggsave(file="FLK_results/pCO2_d.pdf", plot=pCO2_all_C, dpi = 300, width=6, height=6)
+
 ```
 
 # 6 Omega LMERs
