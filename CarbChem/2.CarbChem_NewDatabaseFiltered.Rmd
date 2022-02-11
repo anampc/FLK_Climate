@@ -179,48 +179,38 @@ Locations <- FLK.data %>% select(Latitude,
                                 Longitude, 
                                 Sub_region, 
                                 SiteID)
-Locations$GPS<-paste(Locations$Latitude,
-                     "-", 
-                     Locations$Longitude)
-
+#3Locations$GPS<-paste(Locations$Latitude,
+                     #"-", 
+                     #Locations$Longitude)
 Locations<-unique(Locations)
 
-GPS.Sites <- ddply (FLK.data, .(Sub_region, SiteID),summarise,
-                Lat = mean (Latitude, na.rm = F), 
-                Lon = mean (Longitude, na.rm = F),
-                number = n())
-#write.csv(GPS.Sites, "FLK_results/meanSitePoints.csv")
-
-  #stations$Site<-as.factor(stations$Site)
-  #pal.gen <- colorFactor(palette = "Set1",
-  #                       domain = Locations$Location)
-  pal.gen <- colorFactor(palette = "Set1",
-                         domain = FLK.data$Zone)
+pal.gen <- colorFactor(palette = "Set1",
+                         domain = CC.data$Zone)
 ```
 
 
-```{r makeAmap, echo=FALSE}
+```{r AllMap, echo=FALSE}
 
-leaflet(FLK.data, height = '400px') %>% 
-  addTiles() %>%
-  #addProviderTiles(providers$Esri.WorldImagery)%>%
-  addProviderTiles(providers$OpenStreetMap) %>% 
-  #addMarkers(icon=coral.icon) %>% 
-  addCircleMarkers(lng = ~Longitude, lat = ~Latitude, 
-                   #stroke = TRUE, 
-                   radius = sqrt(GPS.Sites$number), 
-                   fillOpacity = 1,
-                   color = ~pal.gen(Zone),
-                   label = ~SiteID,
-                   labelOptions = labelOptions(
-                     noHide = F, direction = "bottom",
-                     textOnly = TRUE,
-                     style = list(
-        "color" = "white")))  %>%
-  addLegend(position = "topright",
-            pal = pal.gen, 
-            values = ~Zone, opacity = 1) %>%
-  fitBounds(lng1=-81.20, lat=26, lng2=-80.5, lat2=24)
+# leaflet(FLK.data, height = '400px') %>% 
+#   addTiles() %>%
+#   #addProviderTiles(providers$Esri.WorldImagery)%>%
+#   addProviderTiles(providers$OpenStreetMap) %>% 
+#   #addMarkers(icon=coral.icon) %>% 
+#   addCircleMarkers(lng = ~Longitude, lat = ~Latitude, 
+#                    #stroke = TRUE, 
+#                    radius = 2, 
+#                    fillOpacity = 1,
+#                    color = ~pal.gen(Zone),
+#                    label = ~CTDID,
+#                    labelOptions = labelOptions(
+#                      noHide = F, direction = "bottom",
+#                      textOnly = TRUE,
+#                      style = list(
+#         "color" = "white")))  %>%
+#   addLegend(position = "topright",
+#             pal = pal.gen, 
+#             values = ~Zone, opacity = 1) %>%
+#   fitBounds(lng1=-81.20, lat=26, lng2=-80.5, lat2=24)
   
 ```
 
@@ -231,48 +221,107 @@ leaflet(FLK.data, height = '400px') %>%
 
 ## 2.2 Average GPS point location
 
-```{r WS.Map, include=FALSE}
-# Map information
-
+```{r WS.POINTS, include=FALSE}
 WS.GPS.Sites <- ddply (FLK.data, .(Sub_region, Zone, SiteID),summarise,
-                Lat = mean (Latitude, na.rm = F), 
-                Lon = mean (Longitude, na.rm = F),
+                Lat = mean (Latitude, na.rm = T), 
+                Lon = mean (Longitude, na.rm = T),
                 number = n())
+#write.csv(WS.GPS.Sites, "FLK_results/1_meanSatationGPS.csv")
+```
 
-#Change color depending on type of data?
-  #stations$Site<-as.numeric(stations$Site)
-  # pal <- colorNumeric(palette = "YlOrRd", 
-                      #domain = stations$Site)
-  
-  #stations$Site<-as.factor(stations$Site)
-  #pal.gen <- colorFactor(palette = "Set1",
-  #                       domain = Locations$Location)
-  pal.gen <- colorFactor(palette = "Set1",
-                         domain = WS.GPS.Sites$Zone)
+```{r}
+Coordinates<-select(FLK.data, "CTDID", "Latitude", "Longitude", "SiteID")
+Coordinates<-join(Coordinates, WS.GPS.Sites, 
+                 type = "left", by="SiteID")
+Coordinates$Lat_diff <- abs(Coordinates$Latitude-Coordinates$Lat)
+Coordinates$Lon_diff <- abs(Coordinates$Longitude-Coordinates$Lon)
+Check.coordinates1 <- Coordinates[(Coordinates$Lat_diff>0.02), ]
+Check.coordinates2 <- Coordinates[(Coordinates$Lon_diff>0.02), ]
+Check.coordinates <- rbind(Check.coordinates1, Check.coordinates2)
+Check.coordinates <- unique(Check.coordinates)
+#write.csv(WS.GPS.Sites, "FLK_results/2_WrongGPS_points.csv")
 ```
 
 
+```{r Mean.Map, include=FALSE}
+# Map information
+pal.gen <- colorFactor(palette = "Set1",
+                         domain = WS.GPS.Sites$Zone)
+```
+
 ```{r WSmap, echo=FALSE}
 
-leaflet(WS.GPS.Sites, height = '600px') %>% 
-  addTiles() %>%
-  #addProviderTiles(providers$Esri.WorldImagery)%>%
-  addProviderTiles(providers$OpenStreetMap) %>% 
-  addCircleMarkers(lng = ~Lon, lat = ~Lat, 
-                   stroke = FALSE, 
-                   radius = 4, 
-                   fillOpacity = 1,
-                   color = ~pal.gen(Zone),
-                   label = ~SiteID,
-                   labelOptions = labelOptions(
-                     noHide = F, direction = "bottom",
-                     textOnly = TRUE,
-                     style = list(
-        "color" = "white")))  %>%
-  addLegend(position = "topright",
-            pal = pal.gen, 
-            values = ~Zone, opacity = 1) %>%
-  fitBounds(lng1=-81.20, lat=26, lng2=-80.5, lat2=24)
+# leaflet(WS.GPS.Sites, height = '600px') %>% 
+#   addTiles() %>%
+#   #addProviderTiles(providers$Esri.WorldImagery)%>%
+#   addProviderTiles(providers$OpenStreetMap) %>% 
+#   
+#   # Sub_regions
+#      addRectangles(
+#       lng1=-80.26, lat1=25.7,
+#       lng2=-80.02, lat2=25.25,
+#       opacity = 1,
+#       color = "black",
+#       weight=1,
+#       fillColor = "transparent",
+#       label = "Biscayne Bay",
+#       labelOptions = labelOptions(
+#                        noHide = T, direction = "right",
+#                        textOnly = F))  %>% 
+#     addRectangles(
+#       lng1=-80.6, lat1=25.20,
+#       lng2=-80.2, lat2=24.8,
+#       opacity = 1,
+#       color = "black",
+#       weight=1,
+#       fillColor = "transparent",
+#       label = "Upper Keys",
+#       labelOptions = labelOptions(
+#                        noHide = T, direction = "right",
+#                        offset = c(20, 20),
+#                        textOnly = F))  %>%
+#   
+#     addRectangles(
+#       lng1=-81.11, lat1=24.85,
+#       lng2=-80.61, lat2=24.55,
+#       opacity = 1,
+#       color = "black",
+#       weight=1,
+#       fillColor = "transparent",
+#       label = "Middel Keys",
+#       labelOptions = labelOptions(
+#                        noHide = T, direction = "right",
+#                         offset = c(15, 20),
+#                        textOnly = F)) %>% 
+#     addRectangles(
+#       lng1=-81.88, lat1=24.34,
+#       lng2=-81.14, lat2=24.72,
+#       opacity = 1,
+#       color = "black",
+#       weight=1,
+#       fillColor = "transparent",
+#       label = "Lower Keys",
+#       labelOptions = labelOptions(
+#                        noHide = T, direction = "right",
+#                          offset = c(20, 30),
+#                        textOnly = F)) %>% 
+#   #Stations  
+#   addCircleMarkers(lng = ~Lon, lat = ~Lat, 
+#                    stroke = FALSE, 
+#                    radius = 4, 
+#                    fillOpacity = 1,
+#                    color = ~pal.gen(Zone),
+#                    label = ~SiteID,
+#                    labelOptions = labelOptions(
+#                      noHide = F, direction = "bottom",
+#                      textOnly = TRUE,
+#                      style = list(
+#         "color" = "white")))  %>%
+#   
+#   addLegend(position = "topright",
+#             pal = pal.gen, 
+#             values = ~Zone, opacity = 1) %>%
+#   fitBounds(lng1=-81.20, lat=25.8, lng2=-80.5, lat2=24)
   
 ```
 
@@ -290,7 +339,7 @@ Cases_Loc_Zone<-FLK.data %>% count(Sub_region,
 Cases_Loc_Zone<-as.data.frame(Cases_Loc_Zone %>%
                    pivot_wider(names_from = Zone,
                    values_from = n))
-#write.csv(Cases_Loc_Zone, "FLK_results/SampleSizeFLK.csv")
+#write.csv(Cases_Loc_Zone, "FLK_results/SampleS_Region_zone.csv")
 
 kable(as.data.frame(Cases_Loc_Zone, format = "markdown"), 
       longtable = TRUE)
@@ -303,9 +352,9 @@ Cases_Reg_Year<-FLK.data %>% count(Year, Sub_region, sort = F)
 
 Cases_Reg_Year<-as.data.frame(Cases_Reg_Year %>%
     pivot_wider(names_from = Year, values_from = n))
-#write.csv(Cases_Reg_Year, "FLK_results/SampleYearFLK.csv")
+#write.csv(Cases_Reg_Year, "FLK_results/SampleS_Region_Year.csv")
 
-kable(as.data.frame(Cases_Reg_Year, format = "html"),  caption = "Samples collected in each year")
+kable(as.data.frame(Cases_Reg_Year, format = "html"),  caption = "Samples collected each year")
 ```
 
 ### By climatological season and region
@@ -315,29 +364,29 @@ Cases_Reg_season<-FLK.data %>% count(Season, Sub_region, sort = T)
 
 Cases_Reg_season<-as.data.frame(Cases_Reg_season %>%
     pivot_wider(names_from = Season, values_from = n))
-#write.csv(Cases_Reg_season, "FLK_results/SampleSeasonFLK.csv")
+#write.csv(Cases_Reg_season, "FLK_results/SampleS_RegionSeason.csv")
 
 kable(as.data.frame(Cases_Reg_season, format = "html"),
-      caption = "Samples collected in each season")
+      caption = "Samples collected in each seson")
 ```
 
 ### By Month-year
 
 ```{r, echo=FALSE}
 
-Cases_Month<-FLK.data %>% count(Year,
-                                Month, sort = F)
+Cases_Month<-FLK.data %>% count(Months,
+                                Year,
+                                sort = F)
 
 Cases_Month<-as.data.frame(Cases_Month %>%
     pivot_wider(names_from = Year, values_from = n))
 
 # Organize table
-  #Cases_Month<-Cases_Month %>% 
-  #    select(sort(names(.)))
-#write.csv(Cases_Month, "FLK_results/SampleMonthYearFLK.csv")
+ Cases_Month<-Cases_Month %>% 
+     select(sort(names(.)))
 
 kable(as.data.frame(Cases_Month, format = "html"), caption="Samples collected by year-month")
-#write.csv(Cases_Mission, "WS_samples.csv")
+#write.csv(Cases_Month, "FLK_results/SampleS_Month_Year.csv")
 ```
 
 ### By Month-region
@@ -350,10 +399,10 @@ Cases_Month_Location<-FLK.data %>% count(Sub_region,
 
 Cases_Month_Location<-as.data.frame(Cases_Month_Location %>%
     pivot_wider(names_from = Month, values_from = n))
-#write.csv(Cases_Month_Location, "FLK_results/SampleMonthZoneFLK.csv")
+#write.csv(Cases_Month_Location, "FLK_results/SampleS_Monthlocation.csv")
 
 kable(as.data.frame(Cases_Month_Location, format = "html"),
-      caption="Samples collected by month-Location")
+      caption="Samples collected by month-location")
 ```
 
 ### Per station during all sampling time
@@ -370,27 +419,28 @@ kable(as.data.frame(Cases_Site_FLK, format = "html"),
       caption = "Samples collected in SiteIDs")
 ```
 
-**Notes:** 
-
-* 
-
-
 # 3. TA and DIC salinity normalization
 
 ## Salinity standardizations 
 
 1. Used salinity Bottle first, if not available, salinity CTD
 
+```{r}
+#MeanSalinity<-mean(FLK.data[FLK.data$Zone=="Oceanic",]$BestSalinity)
+MeanSalinity<-mean(FLK.data$BestSalinity)
+```
+
+
 2. Calculate TA intercepts
 
 ```{r}
-    
-    # Individual LR for each region
-    TA_lm <- FLK.data %>%
-      group_by(Region) %>%
-      do(mod = lm(TA_umol_kg ~ BestSalinity,data = .))
+# TA_coef <- FLK.data %>% 
+#                 group_by(Region) %>%
+#                 do({model = lm(TA_umol_kg~BestSalinity, data=.)  # model
+#                     data.frame(tidy(model), # get coefficient info
+#                     glance(model))})        # get model info
 
-    TA_coef <- FLK.data %>% 
+TA_coef <- FLK.data[FLK.data$Zone=="Oceanic",] %>% 
                 group_by(Region) %>%
                 do({model = lm(TA_umol_kg~BestSalinity, data=.)  # model
                     data.frame(tidy(model), # get coefficient info
@@ -403,7 +453,14 @@ kable(as.data.frame(Cases_Site_FLK, format = "html"),
 ```{r}
 # 3.DIC normalization to intercept  
 
-    DIC_coef <- FLK.data %>% 
+    # DIC_coef <- FLK.data %>% 
+    #               group_by(Region) %>%
+    #               do({model = lm(DIC_umol_kg~BestSalinity, data=.)  
+    #               # create model
+    #               data.frame(tidy(model), # get coefficient info
+    #               glance(model))})        # get model info
+    
+    DIC_coef <- FLK.data[FLK.data$Zone=="Oceanic",] %>% 
                   group_by(Region) %>%
                   do({model = lm(DIC_umol_kg~BestSalinity, data=.)  
                   # create model
@@ -431,11 +488,11 @@ kable(as.data.frame(Cases_Site_FLK, format = "html"),
 ```{r}
 FLK.data$nTA<-(
     FLK.data$TA_umol_kg-FLK.data$TA_0)/
-    FLK.data$BestSalinity*35+FLK.data$TA_0
+    FLK.data$BestSalinity*MeanSalinity+FLK.data$TA_0
   
   FLK.data$nDIC<-(
     FLK.data$DIC_umol_kg-FLK.data$DIC_0)/
-    FLK.data$BestSalinity*35+FLK.data$DIC_0
+    FLK.data$BestSalinity*MeanSalinity+FLK.data$DIC_0
   
 #write.csv(FLK.data, "FLK_results/FLK.data_filtered_normalized.csv", row.names = F)
 ```
@@ -461,10 +518,10 @@ nTA_Sal<- ggplot(FLK.data) + theme_bw() +
   #                expand = c(0, 0),
   #                breaks = seq(1,6,1))+
   
-geom_point(aes (BestSalinity, TA_umol_kg, fill=Season), alpha=0.5, shape=21)+
+geom_point(aes (BestSalinity, TA_umol_kg, fill=Extreme), alpha=0.5, shape=21)+
 geom_smooth(aes(BestSalinity, TA_umol_kg), linetype=2, method = "lm", color="black")+
   
-geom_point(aes (BestSalinity, nTA, fill=Season), alpha=0.5, shape=24)+
+geom_point(aes (BestSalinity, nTA, fill=Extreme), alpha=0.5, shape=24)+
 geom_smooth(aes(BestSalinity, nTA), linetype=1, method = "lm")+  
 
 theme(legend.position="top",
@@ -477,7 +534,8 @@ theme(legend.position="top",
           legend.box.background = element_rect(),
           panel.background =element_rect(fill = NA, color = "black")
           )
-#nTA_Sal
+nTA_Sal + facet_wrap(~Zone)
+nTA_Sal+ facet_grid(Zone~Precipitation)
 #ggsave(file="Outputs/Figure_1_Experiment_design.svg", plot=Design, dpi = 300, width=6, height=4)
 ```
 
@@ -520,7 +578,8 @@ theme(legend.position="top",
           legend.box.background = element_rect(),
           panel.background =element_rect(fill = NA, color = "black")
           )
-#nDIC_Sal
+nDIC_Sal+ facet_wrap(~Zone)
+nDIC_Sal+ facet_grid(Zone~Season)
 
 #ggsave(file="Outputs/Figure_1_Experiment_design.svg", plot=Design, dpi = 300, width=6, height=4)
 ```
