@@ -185,7 +185,7 @@ Locations <- FLK.data %>% select(Latitude,
 Locations<-unique(Locations)
 
 pal.gen <- colorFactor(palette = "Set1",
-                         domain = CC.data$Zone)
+                         domain = FLK.data$Zone)
 ```
 
 
@@ -389,6 +389,25 @@ kable(as.data.frame(Cases_Month, format = "html"), caption="Samples collected by
 #write.csv(Cases_Month, "FLK_results/SampleS_Month_Year.csv")
 ```
 
+### By Season-year
+
+```{r, echo=FALSE}
+
+Cases_Season<-FLK.data %>% count(Season,
+                                Year,
+                                sort = F)
+
+Cases_Season<-as.data.frame(Cases_Season %>%
+    pivot_wider(names_from = Year, values_from = n))
+
+# Organize table
+ Cases_Season<-Cases_Season %>% 
+     select(sort(names(.)))
+
+kable(as.data.frame(Cases_Season, format = "html"), caption="Samples collected by year-month")
+#write.csv(Cases_Season, "FLK_results/SampleS_Season_Year.csv")
+```
+
 ### By Month-region
 
 ```{r, echo=FALSE}
@@ -434,17 +453,17 @@ MeanSalinity<-mean(FLK.data$BestSalinity)
 2. Calculate TA intercepts
 
 ```{r}
-# TA_coef <- FLK.data %>% 
+TA_coef <- FLK.data %>% 
+                 group_by(Region) %>%
+                 do({model = lm(TA_umol_kg~BestSalinity, data=.)  # model
+                     data.frame(tidy(model), # get coefficient info
+                    glance(model))})        # get model info
+
+# TA_coef <- FLK.data[FLK.data$Zone=="Oceanic",] %>% 
 #                 group_by(Region) %>%
 #                 do({model = lm(TA_umol_kg~BestSalinity, data=.)  # model
 #                     data.frame(tidy(model), # get coefficient info
 #                     glance(model))})        # get model info
-
-TA_coef <- FLK.data[FLK.data$Zone=="Oceanic",] %>% 
-                group_by(Region) %>%
-                do({model = lm(TA_umol_kg~BestSalinity, data=.)  # model
-                    data.frame(tidy(model), # get coefficient info
-                    glance(model))})        # get model info
     
 ```
 
@@ -453,19 +472,19 @@ TA_coef <- FLK.data[FLK.data$Zone=="Oceanic",] %>%
 ```{r}
 # 3.DIC normalization to intercept  
 
-    # DIC_coef <- FLK.data %>% 
+    DIC_coef <- FLK.data %>%
+                  group_by(Region) %>%
+                  do({model = lm(DIC_umol_kg~BestSalinity, data=.)
+                  # create model
+                  data.frame(tidy(model), # get coefficient info
+                  glance(model))})        # get model info
+    
+    # DIC_coef <- FLK.data[FLK.data$Zone=="Oceanic",] %>% 
     #               group_by(Region) %>%
     #               do({model = lm(DIC_umol_kg~BestSalinity, data=.)  
     #               # create model
     #               data.frame(tidy(model), # get coefficient info
     #               glance(model))})        # get model info
-    
-    DIC_coef <- FLK.data[FLK.data$Zone=="Oceanic",] %>% 
-                  group_by(Region) %>%
-                  do({model = lm(DIC_umol_kg~BestSalinity, data=.)  
-                  # create model
-                  data.frame(tidy(model), # get coefficient info
-                  glance(model))})        # get model info
 ```
 
 4. Normalize with Friss equation
@@ -559,12 +578,12 @@ nDIC_Sal<- ggplot(FLK.data) + theme_bw() +
   #                expand = c(0, 0),
   #                breaks = seq(1,6,1))+
   
-geom_point(aes (BestSalinity, DIC_umol_kg, fill=Season),
+geom_point(aes (BestSalinity, DIC_umol_kg, fill=Precipitation),
            alpha=0.5, shape=21)+
 geom_smooth(aes(BestSalinity, DIC_umol_kg),
             linetype=2, method = "lm", color="black")+
   
-geom_point(aes (BestSalinity, nDIC, fill=Season), alpha=0.5, shape=24)+
+geom_point(aes (BestSalinity, nDIC, fill=Precipitation), alpha=0.5, shape=24)+
 geom_smooth(aes(BestSalinity, nDIC), linetype=1, method = "lm")+  
 
  
@@ -600,9 +619,123 @@ FLK_parameters
 
 # Discuss very low r2 in these corrections
 
-# 4. nTA and nDIC relation
+```{r}
+nTA_TA<- ggplot(FLK.data, aes (TA_umol_kg, nTA)) + 
+  
+  scale_y_continuous(#limits = c(1700,2900),
+                     #expand = c(0, 0),
+                     #breaks = seq(1800, 2800, 100),
+                    name="nTA") +
+  scale_x_continuous(# limits = c(1600, 2600),
+                     # expand = c(0, 0),
+                     # breaks = seq(1500,2600,100),
+                      name="TA")+
+  geom_smooth(method = "lm", colour="black")+
+  MyTheme
+
+nTA_TA_ext<-nTA_TA +
+  scale_shape_manual(values=c(21,21,24, 24))+
+  geom_point(aes (fill=Extreme, shape=Zone), alpha=0.4)
+nTA_TA_ext
+
+nTA_TA_pre<-nTA_TA +
+  scale_shape_manual(values=c(21,21,24, 24))+
+  geom_point(aes (fill=Precipitation, shape=Zone), alpha=0.4)
+nTA_TA_pre
+```
+
+```{r}
+nDIC_DIC<- ggplot(FLK.data, aes (DIC_umol_kg, nDIC)) + 
+  
+  scale_y_continuous(#limits = c(1700,2900),
+                     #expand = c(0, 0),
+                     #breaks = seq(1800, 2800, 100),
+                    name="nDIC") +
+  scale_x_continuous(# limits = c(1600, 2600),
+                     # expand = c(0, 0),
+                     # breaks = seq(1500,2600,100),
+                      name="DIC")+
+  geom_smooth(method = "lm", colour="black")+
+  MyTheme
+
+nDIC_DIC_ext<-nDIC_DIC +
+  scale_shape_manual(values=c(21,21,24, 24))+
+  geom_point(aes (fill=Extreme, shape=Zone), alpha=0.4)
+nDIC_DIC_ext
+
+nDIC_DIC_pre<-nDIC_DIC +
+  scale_shape_manual(values=c(21,21,24, 24))+
+  geom_point(aes (fill=Precipitation, shape=Zone), alpha=0.4)
+nDIC_DIC_pre
+```
+
+# 4. TA and DIC relation
 
 ## 4.1 Region (all FLK samples)
+
+```{r}
+TA_DIC<- ggplot(FLK.data, aes (DIC_umol_kg, TA_umol_kg)) + 
+  
+  scale_y_continuous(#limits = c(1700,2900),
+                     #expand = c(0, 0),
+                     #breaks = seq(1800, 2800, 100),
+                    name="nTA") +
+  scale_x_continuous(# limits = c(1600, 2600),
+                     # expand = c(0, 0),
+                     # breaks = seq(1500,2600,100),
+                      name="nDIC")+
+MyTheme
+
+#TA_DIC+ 
+ #geom_point(aes (fill=Region, shape=Season), alpha=0.5)+
+ #scale_shape_manual(values=c(21, 22, 23, 24))
+
+#ggsave(file="Outputs/Figure_1_Experiment_design.svg", plot=Design, dpi = 300, width=6, height=4)
+```
+
+```{r, fig.height=8.8, fig.width=8.8}
+TA_DIC_ext<-TA_DIC +
+   scale_shape_manual(values=c(21,21,24, 24))+
+  geom_point(aes (fill=Extreme, shape=Zone), alpha=0.4)+
+  geom_smooth(method = "lm", colour="black")
+ 
+```
+
+```{r, fig.height=8.8, fig.width=8.8}
+TA_DIC_pre<-TA_DIC +
+  scale_shape_manual(values=c(21,21,24, 24))+
+  geom_point(aes (fill=Precipitation,  shape=Zone), alpha=0.4)+
+  geom_smooth(method = "lm", colour="black")
+ 
+```
+
+```{r}
+TA_DIC_parameters<-ggarrange(TA_DIC_ext, TA_DIC_pre,
+          #labels = c("DIC Friss regresion", "TA Friss regresion"),
+          ncol = 2, nrow = 1)
+
+TA_DIC_parameters
+```
+
+
+```{r}
+ # Individual LR for each region
+    TA_DIC_lm <- FLK.data %>%
+      group_by(Region) %>%
+      do(mod = lm(TA_umol_kg ~ DIC_umol_kg, data = .))
+
+    TA_DIC_coef <- FLK.data %>% 
+                    group_by(Region) %>%
+                    do({model = lm(TA_umol_kg~DIC_umol_kg, data=.)  
+                    # create model
+                    data.frame(tidy(model), # get coefficient info
+                    glance(model))})        # get model info
+
+    kable(as.data.frame(TA_DIC_coef[,1:8], format = "markdown"),
+          caption = "TA vs DIC equations", digits = 3)
+```
+
+## 4.2 Region normalized (all FLK samples)
 
 ```{r}
 nTA_nDIC<- ggplot(FLK.data, aes (nDIC, nTA)) + 
@@ -648,8 +781,6 @@ nTA_nDIC_parameters<-ggarrange(nTA_nDIC_ext, nTA_nDIC_pre,
 nTA_nDIC_parameters
 ```
 
-**Figure 2:** Linear regressions of total alkalinity (nTA) as a function of dissolved inorganic carbon (nDIC) for the Florida Keys.
-
 
 ```{r}
  # Individual LR for each region
@@ -668,7 +799,43 @@ nTA_nDIC_parameters
           caption = "nTA vs nDIC equations", digits = 3)
 ```
 
-## 4.2 By zone sub_region
+## 4.3 By zone sub_region
+
+```{r, fig.height=8.8, fig.width=8.8}
+TA_DIC_ext_zone<-TA_DIC_ext + facet_grid(Zone~Sub_region)
+TA_DIC_ext_zone
+```
+
+```{r, fig.height=8.8, fig.width=8.8}
+TA_DIC_pre_zone<-TA_DIC_pre +  facet_grid(Zone~Sub_region)
+TA_DIC_pre_zone
+```
+
+```{r}
+ # Individual LR for each Zone and Sub_region
+   
+    TA_DIC_coef_zone <- FLK.data %>% 
+                    group_by(Zone, Sub_region) %>%
+                    do({model = lm(TA_umol_kg ~ DIC_umol_kg, data=.)  
+                    # create model
+                    data.frame(tidy(model), # get coefficient info
+                    glance(model))})        # get model info
+
+    kable(as.data.frame(TA_DIC_coef_zone[,1:8], format = "markdown"),
+          caption = "nTA vs nDIC equations", digits = 3)
+```
+
+**Figure 2:** Linear regressions of total alkalinity (TA) as a function of dissolved inorganic carbon (DIC) for the Florida Keys.
+
+**Notes: **
+
+* Higher slopes in TA vs. DIC 
+  * -> a higher NCC:NCP
+  * -> calcifying (e.g., corals, sediments, and calcifying algae) relative to non-calcifying communities (e.g., fleshy algae)
+  
+* Intermediate slopes for mixed communities of calcifiers and non-calcifiers (Anthony et al., 2013; Page et al., 2016; Lantz et al., 2017). 
+
+## 4.4 By zone sub_region normalized
 
 ```{r, fig.height=8.8, fig.width=8.8}
 nTA_nDIC_ext_zone<-nTA_nDIC_ext + facet_grid(Zone~Sub_region)
@@ -697,14 +864,54 @@ nTA_nDIC_pre_zone
           caption = "nTA vs nDIC equations", digits = 3)
 ```
 
-**Notes: **
+## 4.5 Regions removing extreme events
 
-* Higher slopes in TA vs. DIC 
-  * -> a higher NCC:NCP
-  * -> calcifying (e.g., corals, sediments, and calcifying algae) relative to non-calcifying communities (e.g., fleshy algae)
+```{r, fig.height=8.8, fig.width=8.8}
+TA_DIC_Extreme<- ggplot() + 
+    scale_y_continuous(#limits = c(1700,2900),
+                     #expand = c(0, 0),
+                     #breaks = seq(1800, 2800, 100),
+                    name=(expression("TA "(~mu~"mol kg -1"))))+
+  scale_x_continuous(# limits = c(1600, 2600),
+                     # expand = c(0, 0),
+                     # breaks = seq(1500,2600,100),
+                      name="DIC")+
+  MyTheme +  facet_grid(Zone~Sub_region)
+
+TA_DIC_Extreme + 
+  geom_point(data=FLK.data, aes (DIC_umol_kg, TA_umol_kg, fill=Extreme), 
+             shape=21, alpha=0.8)+
+  geom_smooth(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+              aes (DIC_umol_kg, TA_umol_kg), method = "lm", colour="black")
+
+```
+
+```{r}
+TA_DIC_Extreme + 
+  scale_shape_manual(values=c(24, 23, 21))+
+  geom_point(data=FLK.data, aes (DIC_umol_kg, TA_umol_kg,
+                                 fill=Precipitation,
+                                 shape=Extreme),alpha=0.8, size=1)+
   
-* Intermediate slopes for mixed communities of calcifiers and non-calcifiers (Anthony et al., 2013; Page et al., 2016; Lantz et al., 2017). 
+  geom_smooth(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+              aes (DIC_umol_kg, TA_umol_kg), method = "lm", colour="black")
+```
 
+**Figure 1:** Linear regressions of total alkalinity (nTA, µmol kg−1) and dissolved inorganic carbon (nDIC, µmol kg−1)
+
+```{r}
+ # Individual LR for each Zone and Sub_region
+    
+    TA_DIC_coef_zone_noExtremes <- FLK.data[FLK.data$Extreme=="Normal", ] %>% 
+                    group_by(Zone, Sub_region) %>%
+                    do({model = lm(nTA~nDIC, data=.)  
+                    # create model
+                    data.frame(tidy(model), # get coefficient info
+                    glance(model))})        # get model info
+
+    kable(as.data.frame(TA_DIC_coef_zone_noExtremes[,1:8], format = "markdown"),
+          caption = "nTA vs nDIC equations without extreme events", digits = 3)
+```
 
 ## 4.3 Removing Extreme events
 
@@ -3267,6 +3474,3 @@ Measured: TA and DIC. Derived:pCO2, pH and aragonite
 * Reefs: Elevated pCO2 in warmer wet season
 * Inlets: more dynamic -> periodic pulses of acidified water -> more acidification than reefs. 
   - Negative correlation bw salinity and both TA, and DIC. Elevated TA and DIC in low salinity waters ->  carbonate dissolution as a result of organic matter decomposition?.
-  
-  
-
