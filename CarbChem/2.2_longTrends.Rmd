@@ -1,0 +1,218 @@
+---
+title: "2.2_Long_Trends"
+author: "Ana Palacio-Castro"
+date: "February 17, 2022"
+output: html_document
+---
+# Long term plots 
+
+```{r}
+Trends.data<-FLK.data[FLK.data$Year>2014, ]
+Trends.data<-Trends.data[Trends.data$Extreme=="Normal", ]
+
+Trends.ocean<-Trends.data[Trends.data$Zone=="Oceanic", ]
+Trends.offshore<-Trends.data[Trends.data$Zone=="Offshore", ]
+Trends.midchanel<-Trends.data[Trends.data$Zone=="Mid channel", ]
+Trends.inshore<-Trends.data[Trends.data$Zone=="Inshore", ]
+
+Long_plot<- ggplot(Trends.data) +
+        MyTheme +  
+        #facet_grid(Zone~Sub_region)+
+        scale_shape_manual(values=c(24, 25, 21))+
+        #geom_hline(yintercept = 0, color="gray")+
+        theme(axis.title.x = element_blank())
+        
+```
+
+## Temperature
+
+```{r, echo=FALSE, fig.height=8, fig.width=8}
+Temperature_all<- Long_plot+
+    scale_y_continuous(#limits = c(15,40),
+                       name=(expression("Temperature"~(degree*C))),
+                       breaks = seq(16, 40, 4),  
+                       expand = c(0.05, 0.05)) +
+    geom_smooth(aes (x=Date, y=Temperature_C), method = "lm")+
+    geom_point(aes (x=Date, y=Temperature_C, fill=Precipitation), 
+             alpha=0.8, size=1)+
+    geom_abline(slope = 0, intercept = mean_Op$OTem, color="grey")
+Temperature_all
+Temperature_all+facet_grid(~Zone)
+Temperature_all+facet_grid(Zone~Sub_region)
+```
+
+# Omega-All
+
+```{r, echo=FALSE, fig.height=8, fig.width=8}
+Omeaga_all<- Long_plot+
+    scale_y_continuous(#limits = c(15,40),
+                       #name=(expression("Temperature"~(degree*C))),
+                       breaks = seq(0, 10, 0.5),  
+                       expand = c(0.05, 0.05)) +
+    geom_smooth(aes (x=Date, y=Aragonite_Sat_W), method = "lm")+
+    geom_point(aes (x=Date, y=Aragonite_Sat_W, fill=Precipitation), 
+             alpha=0.8, size=1)+
+    geom_abline(slope = 0, intercept = mean_Op$OTem, color="grey")
+Omeaga_all
+Omeaga_all+facet_grid(~Zone)
+Omeaga_all+facet_grid(~Zone) +
+  geom_smooth(aes (x=Date, y=Aragonite_Sat_W, colour=Sub_region), method = "lm")
+
+```
+
+# pCO2-All
+
+
+```{r, echo=FALSE, fig.height=8, fig.width=8}
+PCO2_all<- Long_plot+
+    scale_y_continuous(#limits = c(15,40),
+                       #name=(expression("Temperature"~(degree*C))),
+                       breaks = seq(0, 10, 0.5),  
+                       expand = c(0.05, 0.05)) +
+    geom_smooth(aes (x=Date, y=Aragonite_Sat_W), method = "lm")+
+    geom_point(aes (x=Date, y=Aragonite_Sat_W, fill=Precipitation), 
+             alpha=0.8, size=1)+
+    geom_abline(slope = 0, intercept = mean_Op$OTem, color="grey")
+PCO2_all
+PCO2_all+facet_grid(~Zone)
+PCO2_all+facet_grid(~Zone) +
+  geom_smooth(aes (x=Date, y=Aragonite_Sat_W, colour=Sub_region), method = "lm")
+
+```
+
+
+## Inshore
+```{r}
+Reference_LM<-lmer(pCO2_uatm ~Year + Sub_region + (1|Month)+
+                                  #(1|Zone)+             
+                                  (1|SiteID), data=Trends.inshore)
+summary(Reference_LM) 
+summary(Reference_LM)    
+anova(Reference_LM)
+ranova(Reference_LM)
+
+```
+
+## Midchanel
+
+```{r}
+Reference_LM<-lmer(pCO2_uatm ~Year + Sub_region + (1|Month) + 
+                                  #(1|Zone)+             
+                                  #(1|Sub_region)+
+                                  (1|SiteID), data=Trends.midchanel)
+summary(Reference_LM) 
+summary(Reference_LM)    
+anova(Reference_LM)
+ranova(Reference_LM)
+
+
+Reference_LM<-lmer(pCO2_uatm ~Year + Sub_region + (1|Month)+
+                                  #(1|Zone)+             
+                                  #(1|Sub_region)+
+                                  (1|SiteID),
+                     data=Trends.offshore)
+summary(Reference_LM)  
+```
+
+
+```{r}
+Reference_LM<-lmer(TA_umol_kg ~Year + Sub_region + (1|Month)+
+                                  #(1|Zone)+             
+                                  (1|SiteID), data=Trends.inshore)
+summary(Reference_LM)    
+
+Reference_LM<-lmer(TA_umol_kg ~Year + Sub_region + (1|Month) + 
+                                  #(1|Zone)+             
+                                  #(1|Sub_region)+
+                                  (1|SiteID), data=Trends.midchanel)
+summary(Reference_LM)    
+
+Reference_LM<-lmer(TA_umol_kg ~Year + Sub_region + (1|Month),
+                                  #(1|Zone)+             
+                                  #(1|Sub_region)+
+                                  #(1|SiteID),
+                     data=Trends.offshore)
+summary(Reference_LM)  
+```
+
+
+```{r}
+Reference_LM<-lmer(DIC_umol_kg ~Year + Sub_region + (1|Month)+
+                                  #(1|Zone)+             
+                                  (1|SiteID), data=Trends.inshore)
+summary(Reference_LM)    
+
+Reference_LM<-lmer(DIC_umol_kg ~Year + Sub_region + (1|Month) + 
+                                  #(1|Zone)+             
+                                  #(1|Sub_region)+
+                                  (1|SiteID), data=Trends.midchanel)
+summary(Reference_LM)    
+
+Reference_LM<-lmer(DIC_umol_kg ~Year + Sub_region + (1|Month),
+                                  #(1|Zone)+             
+                                  #(1|Sub_region)+
+                                  #(1|SiteID),
+                     data=Trends.offshore)
+summary(Reference_LM)  
+```
+
+
+```{r}
+Reference_LM<-lmer(pH_calculated ~Year + Sub_region + (1|Month)+
+                                  #(1|Zone)+             
+                                  (1|SiteID), data=Trends.inshore)
+summary(Reference_LM)    
+
+Reference_LM<-lmer(pH_calculated ~Year + Sub_region + (1|Month) + 
+                                  #(1|Zone)+             
+                                  #(1|Sub_region)+
+                                  (1|SiteID), data=Trends.midchanel)
+summary(Reference_LM)    
+
+Reference_LM<-lmer(pH_calculated ~Year + Sub_region + (1|Month),
+                                  #(1|Zone)+             
+                                  #(1|Sub_region)+
+                                  #(1|SiteID),
+                     data=Trends.offshore)
+summary(Reference_LM)  
+```
+
+
+
+```{r}
+Reference_LM<-lmer(Aragonite_Sat_W~Year + Sub_region + (1|Month)+
+                                  #(1|Zone)+             
+                                  (1|SiteID), data=Trends.inshore)
+summary(Reference_LM)    
+
+Reference_LM<-lmer(Aragonite_Sat_W~Year + Sub_region + (1|Month) + 
+                                  #(1|Zone)+             
+                                  #(1|Sub_region)+
+                                  (1|SiteID), data=Trends.midchanel)
+summary(Reference_LM)    
+
+Reference_LM<-lmer(Aragonite_Sat_W~Year + Sub_region + (1|Month) + 
+                                  #(1|Zone)+             
+                                  #(1|Sub_region)+
+                                  (1|SiteID), data=Trends.offshore)
+summary(Reference_LM)    
+
+
+
+
+# Subregion is not significant
+
+summary(Reference_LM)    
+anova(Reference_LM)
+ranova(Reference_LM)
+#step(Reference_LM)
+
+OmegaLM_Open<-lm(Aragonite_Sat_W~Year * Season, data=WS.open)
+summary(OmegaLM_Open)    
+anova(OmegaLM_Open)
+
+par(mfrow=c(2,3))
+plot(OmegaLM_Open)
+acf(resid(OmegaLM_Open), main="acf(resid(Omega open))")
+par(mfrow=c(1,1))
+```

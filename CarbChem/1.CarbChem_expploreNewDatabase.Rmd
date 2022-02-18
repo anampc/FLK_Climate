@@ -180,7 +180,7 @@ Precipitation<-as.data.frame(precipitation[format(CC.data$ESTDate, "%m")])
 
 * This removes samples from Gulf of Mexico
 * Add reef zone: "Inshore", "Mid channel", "Offshore", "Oceanic"
-* Add reef subregion: "Biscayne", "UK", "MK", "LK"
+* Add reef subregion: "BB", "UK", "MK", "LK"
 
 ```{r}
  #Get only FLK data#
@@ -193,7 +193,7 @@ Precipitation<-as.data.frame(precipitation[format(CC.data$ESTDate, "%m")])
   FLK.data<-subset(FLK.data, FLK.data$Sub_region!="NA")
   
   FLK.data$Sub_region<-factor(FLK.data$Sub_region, levels = c(
-                        "Biscayne", "UK", "MK", "LK"))
+                        "BB", "UK", "MK", "LK"))
 
   FLK.data$Zone<-factor(FLK.data$Zone, levels = c(
                         "Inshore", "Mid channel", 
@@ -233,27 +233,27 @@ pal.gen <- colorFactor(palette = "Set1",
 
 ```{r AllMap, echo=FALSE}
 
-leaflet(FLK.data, height = '400px') %>% 
-  addTiles() %>%
-  #addProviderTiles(providers$Esri.WorldImagery)%>%
-  addProviderTiles(providers$OpenStreetMap) %>% 
-  #addMarkers(icon=coral.icon) %>% 
-  addCircleMarkers(lng = ~Longitude, lat = ~Latitude, 
-                   #stroke = TRUE, 
-                   radius = 2, 
-                   fillOpacity = 1,
-                   color = ~pal.gen(Zone),
-                   label = ~CTDID,
-                   labelOptions = labelOptions(
-                     noHide = F, direction = "bottom",
-                     textOnly = TRUE,
-                     style = list(
-        "color" = "white")))  %>%
-  addLegend(position = "topright",
-            pal = pal.gen, 
-            values = ~Zone, opacity = 1) %>%
-  fitBounds(lng1=-81.20, lat=26, lng2=-80.5, lat2=24)
-  
+# leaflet(FLK.data, height = '400px') %>% 
+#   addTiles() %>%
+#   #addProviderTiles(providers$Esri.WorldImagery)%>%
+#   addProviderTiles(providers$OpenStreetMap) %>% 
+#   #addMarkers(icon=coral.icon) %>% 
+#   addCircleMarkers(lng = ~Longitude, lat = ~Latitude, 
+#                    #stroke = TRUE, 
+#                    radius = 2, 
+#                    fillOpacity = 1,
+#                    color = ~pal.gen(Zone),
+#                    label = ~CTDID,
+#                    labelOptions = labelOptions(
+#                      noHide = F, direction = "bottom",
+#                      textOnly = TRUE,
+#                      style = list(
+#         "color" = "white")))  %>%
+#   addLegend(position = "topright",
+#             pal = pal.gen, 
+#             values = ~Zone, opacity = 1) %>%
+#   fitBounds(lng1=-81.20, lat=26, lng2=-80.5, lat2=24)
+#   
 ```
 
 **Figure:** Map of the sites where individual samples were collected
@@ -272,16 +272,16 @@ WS.GPS.Sites <- ddply (FLK.data, .(Sub_region, Zone, SiteID),summarise,
 ```
 
 ```{r}
-Coordinates<-select(FLK.data, "CTDID", "Latitude", "Longitude", "SiteID")
-Coordinates<-join(Coordinates, WS.GPS.Sites, 
-                 type = "left", by="SiteID")
-Coordinates$Lat_diff<-abs(Coordinates$Latitude-Coordinates$Lat)
-Coordinates$Lon_diff<-abs(Coordinates$Longitude-Coordinates$Lon)
-Check.coordinates1<- Coordinates[(Coordinates$Lat_diff>0.02), ]
-Check.coordinates2<- Coordinates[(Coordinates$Lon_diff>0.02), ]
-Check.coordinates<- rbind(Check.coordinates1, Check.coordinates2)
-Check.coordinates<-unique(Check.coordinates)
-#write.csv(WS.GPS.Sites, "FLK_results/2_WrongGPS_points.csv")
+# Coordinates<-select(FLK.data, "CTDID", "Latitude", "Longitude", "SiteID")
+# Coordinates<-join(Coordinates, WS.GPS.Sites, 
+#                  type = "left", by="SiteID")
+# Coordinates$Lat_diff<-abs(Coordinates$Latitude-Coordinates$Lat)
+# Coordinates$Lon_diff<-abs(Coordinates$Longitude-Coordinates$Lon)
+# Check.coordinates1<- Coordinates[(Coordinates$Lat_diff>0.02), ]
+# Check.coordinates2<- Coordinates[(Coordinates$Lon_diff>0.02), ]
+# Check.coordinates<- rbind(Check.coordinates1, Check.coordinates2)
+# Check.coordinates<-unique(Check.coordinates)
+# #write.csv(WS.GPS.Sites, "FLK_results/2_WrongGPS_points.csv")
 ```
 
 
@@ -293,78 +293,78 @@ pal.gen <- colorFactor(palette = "Set1",
 
 ```{r WSmap, echo=FALSE}
 
-leaflet(WS.GPS.Sites, height = '600px') %>% 
-  addTiles() %>%
-  #addProviderTiles(providers$Esri.WorldImagery)%>%
-  addProviderTiles(providers$OpenStreetMap) %>% 
-  
-  # Sub_regions
-     addRectangles(
-      lng1=-80.26, lat1=25.7,
-      lng2=-80.02, lat2=25.25,
-      opacity = 1,
-      color = "black",
-      weight=1,
-      fillColor = "transparent",
-      label = "Biscayne Bay",
-      labelOptions = labelOptions(
-                       noHide = T, direction = "right",
-                       textOnly = F))  %>% 
-    addRectangles(
-      lng1=-80.6, lat1=25.20,
-      lng2=-80.2, lat2=24.8,
-      opacity = 1,
-      color = "black",
-      weight=1,
-      fillColor = "transparent",
-      label = "Upper Keys",
-      labelOptions = labelOptions(
-                       noHide = T, direction = "right",
-                       offset = c(20, 20),
-                       textOnly = F))  %>%
-  
-    addRectangles(
-      lng1=-81.11, lat1=24.85,
-      lng2=-80.61, lat2=24.55,
-      opacity = 1,
-      color = "black",
-      weight=1,
-      fillColor = "transparent",
-      label = "Middel Keys",
-      labelOptions = labelOptions(
-                       noHide = T, direction = "right",
-                        offset = c(15, 20),
-                       textOnly = F)) %>% 
-    addRectangles(
-      lng1=-81.88, lat1=24.34,
-      lng2=-81.14, lat2=24.72,
-      opacity = 1,
-      color = "black",
-      weight=1,
-      fillColor = "transparent",
-      label = "Lower Keys",
-      labelOptions = labelOptions(
-                       noHide = T, direction = "right",
-                         offset = c(20, 30),
-                       textOnly = F)) %>% 
-  #Stations  
-  addCircleMarkers(lng = ~Lon, lat = ~Lat, 
-                   stroke = FALSE, 
-                   radius = 4, 
-                   fillOpacity = 1,
-                   color = ~pal.gen(Zone),
-                   label = ~SiteID,
-                   labelOptions = labelOptions(
-                     noHide = F, direction = "bottom",
-                     textOnly = TRUE,
-                     style = list(
-        "color" = "white")))  %>%
-  
-  addLegend(position = "topright",
-            pal = pal.gen, 
-            values = ~Zone, opacity = 1) %>%
-  fitBounds(lng1=-81.20, lat=25.8, lng2=-80.5, lat2=24)
-  
+# leaflet(WS.GPS.Sites, height = '600px') %>% 
+#   addTiles() %>%
+#   #addProviderTiles(providers$Esri.WorldImagery)%>%
+#   addProviderTiles(providers$OpenStreetMap) %>% 
+#   
+#   # Sub_regions
+#      addRectangles(
+#       lng1=-80.26, lat1=25.7,
+#       lng2=-80.02, lat2=25.25,
+#       opacity = 1,
+#       color = "black",
+#       weight=1,
+#       fillColor = "transparent",
+#       label = "Biscayne Bay",
+#       labelOptions = labelOptions(
+#                        noHide = T, direction = "right",
+#                        textOnly = F))  %>% 
+#     addRectangles(
+#       lng1=-80.6, lat1=25.20,
+#       lng2=-80.2, lat2=24.8,
+#       opacity = 1,
+#       color = "black",
+#       weight=1,
+#       fillColor = "transparent",
+#       label = "Upper Keys",
+#       labelOptions = labelOptions(
+#                        noHide = T, direction = "right",
+#                        offset = c(20, 20),
+#                        textOnly = F))  %>%
+#   
+#     addRectangles(
+#       lng1=-81.11, lat1=24.85,
+#       lng2=-80.61, lat2=24.55,
+#       opacity = 1,
+#       color = "black",
+#       weight=1,
+#       fillColor = "transparent",
+#       label = "Middel Keys",
+#       labelOptions = labelOptions(
+#                        noHide = T, direction = "right",
+#                         offset = c(15, 20),
+#                        textOnly = F)) %>% 
+#     addRectangles(
+#       lng1=-81.88, lat1=24.34,
+#       lng2=-81.14, lat2=24.72,
+#       opacity = 1,
+#       color = "black",
+#       weight=1,
+#       fillColor = "transparent",
+#       label = "Lower Keys",
+#       labelOptions = labelOptions(
+#                        noHide = T, direction = "right",
+#                          offset = c(20, 30),
+#                        textOnly = F)) %>% 
+#   #Stations  
+#   addCircleMarkers(lng = ~Lon, lat = ~Lat, 
+#                    stroke = FALSE, 
+#                    radius = 4, 
+#                    fillOpacity = 1,
+#                    color = ~pal.gen(Zone),
+#                    label = ~SiteID,
+#                    labelOptions = labelOptions(
+#                      noHide = F, direction = "bottom",
+#                      textOnly = TRUE,
+#                      style = list(
+#         "color" = "white")))  %>%
+#   
+#   addLegend(position = "topright",
+#             pal = pal.gen, 
+#             values = ~Zone, opacity = 1) %>%
+#   fitBounds(lng1=-81.20, lat=25.8, lng2=-80.5, lat2=24)
+#   
 ```
 
 **Figure:** Permanent location of WS stations
@@ -556,8 +556,10 @@ kable(as.data.frame(TA_coef[,1:8], format = "markdown"),
     
 ```{r, fig.height=8.8, fig.width=8.8}
 # 5. Chech normalization?
-nTA_Sal<- ggplot(FLK.data[FLK.data$Zone=="Oceanic",] ) + theme_bw() +
-#nTA_Sal<- ggplot(FLK.data) + theme_bw() +
+#nTA_Sal<- ggplot(FLK.data[FLK.data$Zone=="Oceanic",] ) + theme_bw() +
+  
+nTA_Sal<- ggplot(FLK.data) + theme_bw() +
+facet_grid(~Zone)+
   #scale_y_continuous(limits = c(1700,2900),
   #                     name="TA",
   #                     breaks = seq(1800, 2800, 200),
@@ -567,25 +569,25 @@ nTA_Sal<- ggplot(FLK.data[FLK.data$Zone=="Oceanic",] ) + theme_bw() +
   #                expand = c(0, 0),
   #                breaks = seq(1,6,1))+
   
-geom_point(aes (BestSalinity, TA_umol_kg, fill=Season), alpha=0.5, shape=21)+
-geom_smooth(aes(BestSalinity, TA_umol_kg), linetype=2, method = "lm", color="black")+
+  geom_point(aes (BestSalinity, TA_umol_kg, fill=Season), alpha=0.5, shape=21)+
+  geom_smooth(aes(BestSalinity, TA_umol_kg), linetype=2, method = "lm", color="black")+
+    
+  geom_point(aes (BestSalinity, nTA, fill=Season), alpha=0.5, shape=24)+
+  geom_smooth(aes(BestSalinity, nTA), linetype=1, method = "lm")+  
+    
+  #geom_point(aes (BestSalinity, n35TA, fill=Season), alpha=0.5, shape=25)+
+  #geom_smooth(aes(BestSalinity, n35TA), linetype=3, method = "lm")+  
   
-geom_point(aes (BestSalinity, nTA, fill=Season), alpha=0.5, shape=24)+
-geom_smooth(aes(BestSalinity, nTA), linetype=1, method = "lm")+  
-  
-#geom_point(aes (BestSalinity, n35TA, fill=Season), alpha=0.5, shape=25)+
-#geom_smooth(aes(BestSalinity, n35TA), linetype=3, method = "lm")+  
-
-theme(legend.position="top",
-          plot.background=element_blank(),
-          axis.text.x = element_text(angle = 90, vjust = 0.5),
-          panel.grid.major.y = element_blank(),
-          panel.grid.major.x = element_blank(),
-          panel.grid.minor.x = element_blank(),
-          panel.grid.minor.y = element_blank(),
-          legend.box.background = element_rect(),
-          panel.background =element_rect(fill = NA, color = "black")
-          )
+  theme(legend.position="top",
+            plot.background=element_blank(),
+            axis.text.x = element_text(angle = 90, vjust = 0.5),
+            panel.grid.major.y = element_blank(),
+            panel.grid.major.x = element_blank(),
+            panel.grid.minor.x = element_blank(),
+            panel.grid.minor.y = element_blank(),
+            legend.box.background = element_rect(),
+            panel.background =element_rect(fill = NA, color = "black")
+            )
 #nTA_Sal
 #ggsave(file="Outputs/Figure_1_Experiment_design.svg", plot=Design, dpi = 300, width=6, height=4)
 ```
@@ -601,8 +603,9 @@ kable(as.data.frame(DIC_coef[,1:8], format = "markdown"),
 ```
 
 ```{r, fig.height=8.8, fig.width=8.8}
-#nDIC_Sal<- ggplot(FLK.data) + theme_bw() +
-nDIC_Sal<-ggplot(FLK.data[FLK.data$Zone=="Oceanic",] ) + theme_bw() +
+nDIC_Sal<- ggplot(FLK.data) + theme_bw() +
+  facet_grid(~Zone)+
+#nDIC_Sal<-ggplot(FLK.data[FLK.data$Zone=="Oceanic",] ) + theme_bw() +
   #scale_y_continuous(limits = c(1700,2900),
   #                     name="TA",
   #                     breaks = seq(1800, 2800, 200),
@@ -612,16 +615,16 @@ nDIC_Sal<-ggplot(FLK.data[FLK.data$Zone=="Oceanic",] ) + theme_bw() +
   #                expand = c(0, 0),
   #                breaks = seq(1,6,1))+
   
-geom_point(aes (BestSalinity, DIC_umol_kg, fill=Season),
-           alpha=0.5, shape=21)+
-geom_smooth(aes(BestSalinity, DIC_umol_kg),
-            linetype=2, method = "lm", color="black")+
+  geom_point(aes (BestSalinity, DIC_umol_kg, fill=factor(Year)),
+             alpha=0.5, shape=21)+
+  geom_smooth(aes(BestSalinity, DIC_umol_kg),
+              linetype=2, method = "lm", color="black")+
+    
+  geom_point(aes (BestSalinity, nDIC, fill=factor(Year)), alpha=0.5, shape=24)+
+  geom_smooth(aes(BestSalinity, nDIC), linetype=1, method = "lm")+  
   
-geom_point(aes (BestSalinity, nDIC, fill=Season), alpha=0.5, shape=24)+
-geom_smooth(aes(BestSalinity, nDIC), linetype=1, method = "lm")+  
-
- 
-theme(legend.position="top",
+   
+  theme(legend.position="top",
           plot.background=element_blank(),
           axis.text.x = element_text(angle = 90, vjust = 0.5),
           panel.grid.major.y = element_blank(),
@@ -1360,6 +1363,10 @@ write.csv(Remove, "FLK_results/ValuesToRemove.csv", row.names = F)
 
 FLK.data_filtered<-FLK.data[!(FLK.data$CTDID %in% Remove$CTDID),]
 write.csv(FLK.data_filtered, "FLK_results/FLK_filtered.csv", row.names = F)
+```
+
+```{r}
+
 ```
 
 # 7. Notes/ideas

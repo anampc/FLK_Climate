@@ -123,12 +123,17 @@ FLK.data$nDIC<-NULL
     #                      (as.numeric(format(datetime, format = '%M')) / 60))
     
   FLK.data$Sub_region<-factor(FLK.data$Sub_region, levels = c(
-                          "Biscayne", "UK", "MK", "LK"))
+                          "BB", "UK", "MK", "LK"))
   
   FLK.data$Zone<-factor(FLK.data$Zone, levels = c(
                         "Inshore", "Mid channel", 
                         "Offshore", "Oceanic"))
-    FLK.data$Season<-factor(FLK.data$Season, levels = c(
+  FLK.data$Reference<-factor(FLK.data$Reference, levels = c(
+                        "BB_1", "BB_2", "UK_3", "UK_4", 
+                        "MK_5", "MK_6", "MK_7",
+                        "LK_8", "LK_9", "LK_10"))
+      
+  FLK.data$Season<-factor(FLK.data$Season, levels = c(
                         "Winter", "Spring", 
                         "Summer", "Fall"))
 
@@ -229,17 +234,19 @@ WS.GPS.Sites <- ddply (FLK.data, .(Sub_region, Zone, SiteID),summarise,
 #write.csv(WS.GPS.Sites, "FLK_results/1_meanSatationGPS.csv")
 ```
 
+Flag samples with coordinates that seem off from the permanent station 
+
 ```{r}
-Coordinates<-select(FLK.data, "CTDID", "Latitude", "Longitude", "SiteID")
-Coordinates<-join(Coordinates, WS.GPS.Sites, 
-                 type = "left", by="SiteID")
-Coordinates$Lat_diff <- abs(Coordinates$Latitude-Coordinates$Lat)
-Coordinates$Lon_diff <- abs(Coordinates$Longitude-Coordinates$Lon)
-Check.coordinates1 <- Coordinates[(Coordinates$Lat_diff>0.02), ]
-Check.coordinates2 <- Coordinates[(Coordinates$Lon_diff>0.02), ]
-Check.coordinates <- rbind(Check.coordinates1, Check.coordinates2)
-Check.coordinates <- unique(Check.coordinates)
-#write.csv(WS.GPS.Sites, "FLK_results/2_WrongGPS_points.csv")
+# Coordinates<-select(FLK.data, "CTDID", "Latitude", "Longitude", "SiteID")
+# Coordinates<-join(Coordinates, WS.GPS.Sites, 
+#                  type = "left", by="SiteID")
+# Coordinates$Lat_diff <- abs(Coordinates$Latitude-Coordinates$Lat)
+# Coordinates$Lon_diff <- abs(Coordinates$Longitude-Coordinates$Lon)
+# Check.coordinates1 <- Coordinates[(Coordinates$Lat_diff>0.02), ]
+# Check.coordinates2 <- Coordinates[(Coordinates$Lon_diff>0.02), ]
+# Check.coordinates <- rbind(Check.coordinates1, Check.coordinates2)
+# Check.coordinates <- unique(Check.coordinates)
+# #write.csv(Check.coordinates, "FLK_results/2_WrongGPS_points.csv", row.names=F)
 ```
 
 
@@ -251,81 +258,81 @@ pal.gen <- colorFactor(palette = "Set1",
 
 ```{r WSmap, echo=FALSE}
 
-# leaflet(WS.GPS.Sites, height = '600px') %>% 
-#   addTiles() %>%
-#   #addProviderTiles(providers$Esri.WorldImagery)%>%
-#   addProviderTiles(providers$OpenStreetMap) %>% 
-#   
-#   # Sub_regions
-#      addRectangles(
-#       lng1=-80.26, lat1=25.7,
-#       lng2=-80.02, lat2=25.25,
-#       opacity = 1,
-#       color = "black",
-#       weight=1,
-#       fillColor = "transparent",
-#       label = "Biscayne Bay",
-#       labelOptions = labelOptions(
-#                        noHide = T, direction = "right",
-#                        textOnly = F))  %>% 
-#     addRectangles(
-#       lng1=-80.6, lat1=25.20,
-#       lng2=-80.2, lat2=24.8,
-#       opacity = 1,
-#       color = "black",
-#       weight=1,
-#       fillColor = "transparent",
-#       label = "Upper Keys",
-#       labelOptions = labelOptions(
-#                        noHide = T, direction = "right",
-#                        offset = c(20, 20),
-#                        textOnly = F))  %>%
-#   
-#     addRectangles(
-#       lng1=-81.11, lat1=24.85,
-#       lng2=-80.61, lat2=24.55,
-#       opacity = 1,
-#       color = "black",
-#       weight=1,
-#       fillColor = "transparent",
-#       label = "Middel Keys",
-#       labelOptions = labelOptions(
-#                        noHide = T, direction = "right",
-#                         offset = c(15, 20),
-#                        textOnly = F)) %>% 
-#     addRectangles(
-#       lng1=-81.88, lat1=24.34,
-#       lng2=-81.14, lat2=24.72,
-#       opacity = 1,
-#       color = "black",
-#       weight=1,
-#       fillColor = "transparent",
-#       label = "Lower Keys",
-#       labelOptions = labelOptions(
-#                        noHide = T, direction = "right",
-#                          offset = c(20, 30),
-#                        textOnly = F)) %>% 
-#   #Stations  
-#   addCircleMarkers(lng = ~Lon, lat = ~Lat, 
-#                    stroke = FALSE, 
-#                    radius = 4, 
-#                    fillOpacity = 1,
-#                    color = ~pal.gen(Zone),
-#                    label = ~SiteID,
-#                    labelOptions = labelOptions(
-#                      noHide = F, direction = "bottom",
-#                      textOnly = TRUE,
-#                      style = list(
-#         "color" = "white")))  %>%
-#   
-#   addLegend(position = "topright",
-#             pal = pal.gen, 
-#             values = ~Zone, opacity = 1) %>%
-#   fitBounds(lng1=-81.20, lat=25.8, lng2=-80.5, lat2=24)
+leaflet(WS.GPS.Sites, height = '600px') %>%
+  addTiles() %>%
+  #addProviderTiles(providers$Esri.WorldImagery)%>%
+  addProviderTiles(providers$OpenStreetMap) %>%
+
+  # Sub_regions
+     addRectangles(
+      lng1=-80.26, lat1=25.7,
+      lng2=-80.02, lat2=25.25,
+      opacity = 1,
+      color = "black",
+      weight=1,
+      fillColor = "transparent",
+      label = "Biscayne Bay",
+      labelOptions = labelOptions(
+                       noHide = T, direction = "right",
+                       textOnly = F))  %>%
+    addRectangles(
+      lng1=-80.6, lat1=25.20,
+      lng2=-80.2, lat2=24.8,
+      opacity = 1,
+      color = "black",
+      weight=1,
+      fillColor = "transparent",
+      label = "Upper Keys",
+      labelOptions = labelOptions(
+                       noHide = T, direction = "right",
+                       offset = c(20, 20),
+                       textOnly = F))  %>%
+
+    addRectangles(
+      lng1=-81.11, lat1=24.85,
+      lng2=-80.61, lat2=24.55,
+      opacity = 1,
+      color = "black",
+      weight=1,
+      fillColor = "transparent",
+      label = "Middel Keys",
+      labelOptions = labelOptions(
+                       noHide = T, direction = "right",
+                        offset = c(15, 20),
+                       textOnly = F)) %>%
+    addRectangles(
+      lng1=-81.88, lat1=24.34,
+      lng2=-81.14, lat2=24.72,
+      opacity = 1,
+      color = "black",
+      weight=1,
+      fillColor = "transparent",
+      label = "Lower Keys",
+      labelOptions = labelOptions(
+                       noHide = T, direction = "right",
+                         offset = c(20, 30),
+                       textOnly = F)) %>%
+  #Stations
+  addCircleMarkers(lng = ~Lon, lat = ~Lat,
+                   stroke = FALSE,
+                   radius = 4,
+                   fillOpacity = 1,
+                   color = ~pal.gen(Zone),
+                   label = ~SiteID,
+                   labelOptions = labelOptions(
+                     noHide = F, direction = "bottom",
+                     textOnly = TRUE,
+                     style = list(
+        "color" = "white")))  %>%
+
+  addLegend(position = "topright",
+            pal = pal.gen,
+            values = ~Zone, opacity = 1) %>%
+  fitBounds(lng1=-81.20, lat=25.8, lng2=-80.5, lat2=24)
   
 ```
 
-**Figure:** Permanent location of WS stations
+# **Figure 1:** Permanent location of WS stations
 
 ## 2.3 Number of samples
 
@@ -373,7 +380,6 @@ kable(as.data.frame(Cases_Reg_season, format = "html"),
 ### By Month-year
 
 ```{r, echo=FALSE}
-
 Cases_Month<-FLK.data %>% count(Months,
                                 Year,
                                 sort = F)
@@ -392,7 +398,6 @@ kable(as.data.frame(Cases_Month, format = "html"), caption="Samples collected by
 ### By Season-year
 
 ```{r, echo=FALSE}
-
 Cases_Season<-FLK.data %>% count(Season,
                                 Year,
                                 sort = F)
@@ -449,42 +454,63 @@ kable(as.data.frame(Cases_Site_FLK, format = "html"),
 MeanSalinity<-mean(FLK.data$BestSalinity)
 ```
 
+```{r}
+TA_Sal<- ggplot(FLK.data) + MyTheme+
+  geom_point(aes (BestSalinity, TA_umol_kg, fill=Season), 
+             alpha=0.5, shape=21, size=1)+
+  geom_smooth(aes(BestSalinity, TA_umol_kg), 
+              linetype=2, method = "lm", color="black")
+TA_Sal
+TA_Sal + facet_wrap(~Zone)
+TA_Sal+ facet_grid(Zone~Season)
+#TA_Sal+ facet_grid(Zone~Precipitation)
+
+DIC_Sal<- ggplot(FLK.data) + MyTheme+
+  geom_point(aes (BestSalinity, DIC_umol_kg, fill=Season), 
+             alpha=0.5, shape=21, size=1)+
+  geom_smooth(aes(BestSalinity, DIC_umol_kg), 
+              linetype=2, method = "lm", color="black")
+DIC_Sal
+DIC_Sal + facet_wrap(~Zone)
+DIC_Sal+ facet_grid(Zone~Season)
+#ggsave(file="Outputs/Figure_1_Experiment_design.svg", plot=Design, dpi = 300, width=6, height=4)
+```
+
 
 2. Calculate TA intercepts
 
 ```{r}
-TA_coef <- FLK.data %>% 
+TA_coef_All <- FLK.data %>%
                  group_by(Region) %>%
                  do({model = lm(TA_umol_kg~BestSalinity, data=.)  # model
                      data.frame(tidy(model), # get coefficient info
                     glance(model))})        # get model info
 
-# TA_coef <- FLK.data[FLK.data$Zone=="Oceanic",] %>% 
-#                 group_by(Region) %>%
-#                 do({model = lm(TA_umol_kg~BestSalinity, data=.)  # model
-#                     data.frame(tidy(model), # get coefficient info
-#                     glance(model))})        # get model info
+TA_coef_Oce <- FLK.data[FLK.data$Zone=="Oceanic",] %>%
+                group_by(Region) %>%
+                do({model = lm(TA_umol_kg~BestSalinity, data=.)  # model
+                    data.frame(tidy(model), # get coefficient info
+                    glance(model))})        # get model info
     
 ```
 
 3. Calculate DIC intercepts 
 
 ```{r}
-# 3.DIC normalization to intercept  
 
-    DIC_coef <- FLK.data %>%
+    DIC_coef_All <- FLK.data %>%
                   group_by(Region) %>%
                   do({model = lm(DIC_umol_kg~BestSalinity, data=.)
                   # create model
                   data.frame(tidy(model), # get coefficient info
                   glance(model))})        # get model info
     
-    # DIC_coef <- FLK.data[FLK.data$Zone=="Oceanic",] %>% 
-    #               group_by(Region) %>%
-    #               do({model = lm(DIC_umol_kg~BestSalinity, data=.)  
-    #               # create model
-    #               data.frame(tidy(model), # get coefficient info
-    #               glance(model))})        # get model info
+    DIC_coef_Oce <- FLK.data[FLK.data$Zone=="Oceanic",] %>%
+                  group_by(Region) %>%
+                  do({model = lm(DIC_umol_kg~BestSalinity, data=.)
+                  # create model
+                  data.frame(tidy(model), # get coefficient info
+                  glance(model))})        # get model info
 ```
 
 4. Normalize with Friss equation
@@ -492,11 +518,11 @@ TA_coef <- FLK.data %>%
 ```{r}
 # 4. Normalize the data
 
-  TA_TO<-subset(TA_coef, term=="(Intercept)")
+  TA_TO<-subset(TA_coef_Oce, term=="(Intercept)")
   TA_TO<-as.data.frame(select(TA_TO, c(Region, estimate)))
   names(TA_TO)[2] <- "TA_0"
   
-  DIC_TO<-subset(DIC_coef, term=="(Intercept)")
+  DIC_TO<-subset(DIC_coef_Oce, term=="(Intercept)")
   DIC_TO<-as.data.frame(select(DIC_TO, c(Region, estimate)))
   names(DIC_TO)[2] <- "DIC_0"
     
@@ -505,13 +531,20 @@ TA_coef <- FLK.data %>%
 ```
 
 ```{r}
-FLK.data$nTA<-(
-    FLK.data$TA_umol_kg-FLK.data$TA_0)/
-    FLK.data$BestSalinity*MeanSalinity+FLK.data$TA_0
+  # 1. endmember and salinity (mean) normalization
+  FLK.data$nTA<-((
+    (FLK.data$TA_umol_kg-FLK.data$TA_0)/
+    FLK.data$BestSalinity)*MeanSalinity)+FLK.data$TA_0
   
-  FLK.data$nDIC<-(
-    FLK.data$DIC_umol_kg-FLK.data$DIC_0)/
-    FLK.data$BestSalinity*MeanSalinity+FLK.data$DIC_0
+  FLK.data$nDIC<-((
+    (FLK.data$DIC_umol_kg-FLK.data$DIC_0)/
+    FLK.data$BestSalinity)*MeanSalinity)+FLK.data$DIC_0
+  
+  # 2. TA and DIC 35 normalization
+    FLK.data$n35TA<-(FLK.data$TA_umol_kg/FLK.data$BestSalinity)*MeanSalinity
+    FLK.data$n35DIC<-(FLK.data$DIC_umol_kg/FLK.data$BestSalinity)*MeanSalinity
+    # FLK.data$n35TA<-(FLK.data$TA_umol_kg/FLK.data$BestSalinity)*35
+    # FLK.data$n35DIC<-(FLK.data$DIC_umol_kg/FLK.data$BestSalinity)*35
   
 #write.csv(FLK.data, "FLK_results/FLK.data_filtered_normalized.csv", row.names = F)
 ```
@@ -519,7 +552,9 @@ FLK.data$nTA<-(
 5. TA parameters to nTA
 
 ```{r}
-kable(as.data.frame(TA_coef[,1:8], format = "markdown"), caption = "Table 1: TA parameters for normalization", digits = 3)
+kable(as.data.frame(TA_coef_Oce[,1:8], format = "markdown"), caption = "Table 1: TA parameters for normalization - Ocean", digits = 3)
+
+kable(as.data.frame(TA_coef_All[,1:8], format = "markdown"), caption = "Table 1: TA parameters for normalization - all", digits = 3)
 
 #write.csv(TA_coef, "TA_coef.csv")
 
@@ -527,78 +562,52 @@ kable(as.data.frame(TA_coef[,1:8], format = "markdown"), caption = "Table 1: TA 
     
 ```{r, echo=F, fig.height=8.8, fig.width=8.8}
 # 5. Chech normalization?
-nTA_Sal<- ggplot(FLK.data) + theme_bw() +
-  #scale_y_continuous(limits = c(1700,2900),
-  #                     name="TA",
-  #                     breaks = seq(1800, 2800, 200),
-  #                     expand = c(0, 0)) +
-  # scale_x_continuous(name="Aragonite",
-  #                limits = c(0.5,6),
-  #                expand = c(0, 0),
-  #                breaks = seq(1,6,1))+
-  
-geom_point(aes (BestSalinity, TA_umol_kg, fill=Extreme), alpha=0.5, shape=21)+
-geom_smooth(aes(BestSalinity, TA_umol_kg), linetype=2, method = "lm", color="black")+
-  
-geom_point(aes (BestSalinity, nTA, fill=Extreme), alpha=0.5, shape=24)+
-geom_smooth(aes(BestSalinity, nTA), linetype=1, method = "lm")+  
+nTA_Sal<- ggplot(FLK.data) + MyTheme+
+    geom_point(aes (BestSalinity, TA_umol_kg, fill=Season), alpha=0.5, shape=21, size=1)+
+    geom_smooth(aes(BestSalinity, TA_umol_kg), linetype=2, method = "lm", color="black")+
+      
+    geom_point(aes (BestSalinity, nTA, fill=Season), alpha=0.5, shape=24, size=1)+
+    geom_smooth(aes(BestSalinity, nTA), linetype=1, method = "lm")+  
+      
+    geom_point(aes (BestSalinity, n35TA, fill=Season), alpha=0.5, shape=25, size=1)+
+    geom_smooth(aes(BestSalinity, n35TA), linetype=1, method = "lm",  color="red")
 
-theme(legend.position="top",
-          plot.background=element_blank(),
-          axis.text.x = element_text(angle = 90, vjust = 0.5),
-          panel.grid.major.y = element_blank(),
-          panel.grid.major.x = element_blank(),
-          panel.grid.minor.x = element_blank(),
-          panel.grid.minor.y = element_blank(),
-          legend.box.background = element_rect(),
-          panel.background =element_rect(fill = NA, color = "black")
-          )
 nTA_Sal + facet_wrap(~Zone)
-nTA_Sal+ facet_grid(Zone~Precipitation)
+#nTA_Sal+ facet_grid(Zone~Precipitation)
 #ggsave(file="Outputs/Figure_1_Experiment_design.svg", plot=Design, dpi = 300, width=6, height=4)
 ```
 
 6. DIC parameters to nDIC
 
 ```{r}
-    kable(as.data.frame(DIC_coef[,1:8], format = "markdown"), caption = "Table 2: DIC parameters for normalization", digits = 3)
+    kable(as.data.frame(DIC_coef_Oce[,1:8], format = "markdown"), caption = "Table 2: DIC parameters for normalization-Ocean", digits = 3)
+
+kable(as.data.frame(DIC_coef_All[,1:8], format = "markdown"), caption = "Table 2: DIC parameters for normalization-All", digits = 3)
 
 #write.csv(DIC_coef, "DIC_coef.csv")
     
 ```
 
 ```{r, echo=F, fig.height=8.8, fig.width=8.8}
-nDIC_Sal<- ggplot(FLK.data) + theme_bw() +
+nDIC_Sal<- ggplot(FLK.data) + MyTheme+
   #scale_y_continuous(limits = c(1700,2900),
   #                     name="TA",
   #                     breaks = seq(1800, 2800, 200),
   #                     expand = c(0, 0)) +
-  # scale_x_continuous(name="Aragonite",
-  #                limits = c(0.5,6),
-  #                expand = c(0, 0),
-  #                breaks = seq(1,6,1))+
-  
-geom_point(aes (BestSalinity, DIC_umol_kg, fill=Precipitation),
-           alpha=0.5, shape=21)+
+
+geom_point(aes (BestSalinity, DIC_umol_kg, fill=Season),
+           alpha=0.5, shape=21, size=1)+
 geom_smooth(aes(BestSalinity, DIC_umol_kg),
             linetype=2, method = "lm", color="black")+
   
-geom_point(aes (BestSalinity, nDIC, fill=Precipitation), alpha=0.5, shape=24)+
+geom_point(aes (BestSalinity, nDIC, fill=Season), alpha=0.5, shape=24, size=1)+
 geom_smooth(aes(BestSalinity, nDIC), linetype=1, method = "lm")+  
+  
+geom_point(aes (BestSalinity, n35DIC, fill=Season), alpha=0.5, shape=25, size=1)+
+geom_smooth(aes(BestSalinity, n35DIC), linetype=1, method = "lm",  color="red")
 
- 
-theme(legend.position="top",
-          plot.background=element_blank(),
-          axis.text.x = element_text(angle = 90, vjust = 0.5),
-          panel.grid.major.y = element_blank(),
-          panel.grid.major.x = element_blank(),
-          panel.grid.minor.x = element_blank(),
-          panel.grid.minor.y = element_blank(),
-          legend.box.background = element_rect(),
-          panel.background =element_rect(fill = NA, color = "black")
-          )
 nDIC_Sal+ facet_wrap(~Zone)
-nDIC_Sal+ facet_grid(Zone~Season)
+#nDIC_Sal+ facet_grid(Zone~Precipitation)
 
 #ggsave(file="Outputs/Figure_1_Experiment_design.svg", plot=Design, dpi = 300, width=6, height=4)
 ```
@@ -636,12 +645,17 @@ nTA_TA<- ggplot(FLK.data, aes (TA_umol_kg, nTA)) +
 nTA_TA_ext<-nTA_TA +
   scale_shape_manual(values=c(21,21,24, 24))+
   geom_point(aes (fill=Extreme, shape=Zone), alpha=0.4)
-nTA_TA_ext
+#nTA_TA_ext
 
 nTA_TA_pre<-nTA_TA +
   scale_shape_manual(values=c(21,21,24, 24))+
   geom_point(aes (fill=Precipitation, shape=Zone), alpha=0.4)
-nTA_TA_pre
+#nTA_TA_pre
+
+nTA_TA_plots<-ggarrange(nTA_TA_ext, nTA_TA_pre,
+          #labels = c("", ""),
+          ncol = 2, nrow = 1)
+nTA_TA_plots
 ```
 
 ```{r}
@@ -661,12 +675,17 @@ nDIC_DIC<- ggplot(FLK.data, aes (DIC_umol_kg, nDIC)) +
 nDIC_DIC_ext<-nDIC_DIC +
   scale_shape_manual(values=c(21,21,24, 24))+
   geom_point(aes (fill=Extreme, shape=Zone), alpha=0.4)
-nDIC_DIC_ext
+#nDIC_DIC_ext
 
 nDIC_DIC_pre<-nDIC_DIC +
   scale_shape_manual(values=c(21,21,24, 24))+
   geom_point(aes (fill=Precipitation, shape=Zone), alpha=0.4)
-nDIC_DIC_pre
+#nDIC_DIC_pre
+
+nDIC_DIC_plots<-ggarrange(nDIC_DIC_ext, nDIC_DIC_pre,
+          #labels = c("", ""),
+          ncol = 2, nrow = 1)
+nDIC_DIC_plots
 ```
 
 # 4. TA and DIC relation
@@ -679,11 +698,11 @@ TA_DIC<- ggplot(FLK.data, aes (DIC_umol_kg, TA_umol_kg)) +
   scale_y_continuous(#limits = c(1700,2900),
                      #expand = c(0, 0),
                      #breaks = seq(1800, 2800, 100),
-                    name="nTA") +
+                     expression(paste("TA (", mu, "mol ", kg^-1, ")")))+
   scale_x_continuous(# limits = c(1600, 2600),
                      # expand = c(0, 0),
                      # breaks = seq(1500,2600,100),
-                      name="nDIC")+
+                     expression(paste("DIC (", mu, "mol ", kg^-1, ")")))+
 MyTheme
 
 #TA_DIC+ 
@@ -743,11 +762,11 @@ nTA_nDIC<- ggplot(FLK.data, aes (nDIC, nTA)) +
   scale_y_continuous(#limits = c(1700,2900),
                      #expand = c(0, 0),
                      #breaks = seq(1800, 2800, 100),
-                    name="nTA") +
+                    name="Friss-nTA") +
   scale_x_continuous(# limits = c(1600, 2600),
                      # expand = c(0, 0),
                      # breaks = seq(1500,2600,100),
-                      name="nDIC")+
+                      name="Friss-nDIC")+
 MyTheme
 
 #TA_DIC+ 
@@ -781,6 +800,15 @@ nTA_nDIC_parameters<-ggarrange(nTA_nDIC_ext, nTA_nDIC_pre,
 nTA_nDIC_parameters
 ```
 
+```{r}
+
+TA_DIC_compare<-ggarrange(TA_DIC_ext, TA_DIC_pre, 
+                              nTA_nDIC_ext, nTA_nDIC_pre,
+          #labels = c("DIC Friss regresion", "TA Friss regresion"),
+          ncol = 2, nrow = 2)
+
+TA_DIC_compare
+```
 
 ```{r}
  # Individual LR for each region
@@ -864,101 +892,170 @@ nTA_nDIC_pre_zone
           caption = "nTA vs nDIC equations", digits = 3)
 ```
 
-## 4.5 Regions removing extreme events
+## 4.5 By Zone sub regions - removing extreme events
 
 ```{r, fig.height=8.8, fig.width=8.8}
 TA_DIC_Extreme<- ggplot() + 
-    scale_y_continuous(#limits = c(1700,2900),
+    scale_y_continuous(#limits = c(2100,2600),
                      #expand = c(0, 0),
-                     #breaks = seq(1800, 2800, 100),
-                    name=(expression("TA "(~mu~"mol kg -1"))))+
+                     #breaks = seq(2100, 2600, 200),
+                     expression(paste("TA (", mu, "mol ", kg^-1, ")")))+
   scale_x_continuous(# limits = c(1600, 2600),
                      # expand = c(0, 0),
-                     # breaks = seq(1500,2600,100),
-                      name="DIC")+
-  MyTheme +  facet_grid(Zone~Sub_region)
+                     #breaks = seq(1700,2400,200),
+                     expression(paste("DIC (", mu, "mol ", kg^-1, ")")))+
+  MyTheme
 
-TA_DIC_Extreme + 
+TA_DIC_Extreme_ex <-TA_DIC_Extreme+ 
   geom_point(data=FLK.data, aes (DIC_umol_kg, TA_umol_kg, fill=Extreme), 
-             shape=21, alpha=0.8)+
+             shape=21, alpha=0.8, size=1)+
   geom_smooth(data=FLK.data[FLK.data$Extreme=="Normal", ], 
-              aes (DIC_umol_kg, TA_umol_kg), method = "lm", colour="black")
+              aes (DIC_umol_kg, TA_umol_kg), method = "lm", colour="black")+
+  facet_grid(Zone~Sub_region)
+TA_DIC_Extreme_ex
 
 ```
 
 ```{r}
-TA_DIC_Extreme + 
+
+TA_DIC_Zone <- ddply (FLK.data, .(Zone),summarise,
+                TAmean = mean (TA_umol_kg, na.rm = T), 
+                DICmean = mean (DIC_umol_kg, na.rm = T))
+
+kable(as.data.frame(TA_DIC_Zone, format = "markdown"), caption = "mean TA/DIC by zone")
+
+TA_DIC_Extreme_pre<-TA_DIC_Extreme + 
+  geom_abline(intercept = -1700, slope=2, color="grey")+
+  geom_hline (yintercept = 2381.6, color="grey")+
+  scale_shape_manual(values=c(24, 25, 21))+
+  geom_point(data=FLK.data, aes (DIC_umol_kg, TA_umol_kg,
+                                 fill=Precipitation,
+                                 shape=Extreme),alpha=0.8, size=1)+
+    geom_smooth(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+              aes (DIC_umol_kg, TA_umol_kg), method = "lm", colour="black")+
+  facet_grid(Zone~Sub_region)
+TA_DIC_Extreme_pre
+
+#ggsave(file="FLK_results/Fig_2_TA_DIC.svg", plot=TA_DIC_Extreme_pre, dpi = 300, width=6, height=6.2)
+
+```
+
+# **Figure 2a:** Linear regressions of total alkalinity (TA; µmol kg−1) and dissolved inorganic carbon (DIC; µmol kg−1)
+
+```{r}
+# Individual LR for each Zone and Sub_region
+    
+TA_DIC_coef_zone_noExtremes <- FLK.data[FLK.data$Extreme=="Normal", ] %>% 
+                    group_by(Zone, Sub_region) %>%
+                    do({model = lm(nTA~nDIC, data=.)  
+                    # create model
+                    data.frame(tidy(model), # get coefficient info
+                    glance(model))})        # get model info
+
+kable(as.data.frame(TA_DIC_coef_zone_noExtremes[,1:8], 
+      format = "markdown"),
+      caption = "nTA vs nDIC equations without extreme events",
+      digits = 3)
+
+#write.csv(TA_DIC_coef_zone_noExtremes, "FLK_results/Fig_2_TA_DIC_coef_slopes_Subregion.csv", row.names = FALSE)
+    
+```
+
+## 4.6 By reef - Removing Extreme events
+
+```{r, fig.height=8.8, fig.width=8.8}
+TA_DIC_reef_ex <-TA_DIC_Extreme+ 
+  geom_point(data=FLK.data, aes (DIC_umol_kg, TA_umol_kg, fill=Extreme), 
+             shape=21, alpha=0.8, size=1)+
+  geom_smooth(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+              aes (DIC_umol_kg, TA_umol_kg), method = "lm", colour="black")+
+  facet_grid(Zone~Reference)
+TA_DIC_reef_ex
+
+```
+
+```{r}
+TA_DIC_reef_pre<-TA_DIC_Extreme + 
   scale_shape_manual(values=c(24, 23, 21))+
   geom_point(data=FLK.data, aes (DIC_umol_kg, TA_umol_kg,
                                  fill=Precipitation,
                                  shape=Extreme),alpha=0.8, size=1)+
-  
-  geom_smooth(data=FLK.data[FLK.data$Extreme=="Normal", ], 
-              aes (DIC_umol_kg, TA_umol_kg), method = "lm", colour="black")
+    geom_smooth(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+              aes (DIC_umol_kg, TA_umol_kg), method = "lm", colour="black")+
+  facet_grid(Zone~Reference)
+TA_DIC_reef_pre
+
+# TA_DIC_reef_pre<-TA_DIC_Extreme + 
+#   scale_shape_manual(values=c(24, 23, 21))+
+#   geom_point(data=FLK.data, aes (DIC_umol_kg, TA_umol_kg,
+#                                  fill=Precipitation,
+#                                  shape=Extreme),alpha=0.8, size=1)+
+#     geom_smooth(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+#               aes (DIC_umol_kg, TA_umol_kg, colour=factor(Reference)), 
+#               method = "lm", se=FALSE)+
+#   facet_grid(Zone~Sub_region)
+# TA_DIC_reef_pre
 ```
 
-**Figure 1:** Linear regressions of total alkalinity (nTA, µmol kg−1) and dissolved inorganic carbon (nDIC, µmol kg−1)
+**Figure 2:** Linear regressions of total alkalinity (TA; µmol kg−1) and dissolved inorganic carbon (DIC; µmol kg−1) by reef and zone
 
 ```{r}
- # Individual LR for each Zone and Sub_region
-    
-    TA_DIC_coef_zone_noExtremes <- FLK.data[FLK.data$Extreme=="Normal", ] %>% 
-                    group_by(Zone, Sub_region) %>%
+# Individual LR for each reef
+TA_DIC_coef_Reef_noExtremes <- FLK.data[FLK.data$Extreme=="Normal", ] %>% 
+                    group_by(Zone, Sub_region, Reference, Precipitation) %>%
                     do({model = lm(nTA~nDIC, data=.)  
                     # create model
                     data.frame(tidy(model), # get coefficient info
                     glance(model))})        # get model info
 
-    kable(as.data.frame(TA_DIC_coef_zone_noExtremes[,1:8], format = "markdown"),
-          caption = "nTA vs nDIC equations without extreme events", digits = 3)
+  kable(as.data.frame(TA_DIC_coef_Reef_noExtremes[,1:9],
+                      format = "markdown"),
+        caption = "TA vs DIC equations by reef without extreme events",
+        digits = 2)
+#write.csv (TA_DIC_coef_Reef_noExtremes, "FLK_results/Fig_2_TA_DIC_slopes_Reefs.csv", row.names = FALSE)
+  
+  TA_DIC_coef_Reef_noExtremes <- FLK.data[FLK.data$Extreme=="Normal", ] %>% 
+                    group_by(Zone, Sub_region, Transect, Precipitation) %>%
+                    do({model = lm(nTA~nDIC, data=.)  
+                    # create model
+                    data.frame(tidy(model), # get coefficient info
+                    glance(model))})        # get model info
+
+
 ```
 
-## 4.3 Removing Extreme events
+```{r}
+Slopes_reef<-subset(TA_DIC_coef_Reef_noExtremes, term!="(Intercept)")
 
-```{r, fig.height=8.8, fig.width=8.8}
-nTA_nDIC_Extreme<- ggplot() + 
-    scale_y_continuous(#limits = c(1700,2900),
+Slope_plot<-ggplot(data=Slopes_reef, aes (x =Sub_region, y =estimate)) +
+  MyTheme+
+  scale_shape_manual(values=c(22, 23, 25))+
+  geom_boxplot(aes())+
+  geom_jitter(aes(fill = factor(Precipitation), shape = Transect), width = 0.25)+
+  scale_y_continuous(#limits = c(1700,2900),
                      #expand = c(0, 0),
                      #breaks = seq(1800, 2800, 100),
-                    name="nTA") +
-  scale_x_continuous(# limits = c(1600, 2600),
-                     # expand = c(0, 0),
-                     # breaks = seq(1500,2600,100),
-                      name="nDIC")+
-  MyTheme +  facet_grid(Zone~Sub_region)+
-  geom_smooth(data=FLK.data[FLK.data$Extreme=="Normal", ], 
-              aes (nDIC, nTA), method = "lm", colour="black")
+                     expression(paste("TA vs DIC slope")))+
+  facet_grid(Zone~.)+
+  theme(legend.title = element_blank())
+Slope_plot
 
-nTA_nDIC_Extreme + 
-  geom_point(data=FLK.data, aes (nDIC, nTA, fill=Extreme), 
-             shape=21, alpha=0.8)
 ```
 
-# Discuss if including extreme events on nDIC nTA slopes
+# **Figure 2b:** TA (µmol kg−1) vs DIC (µmol kg−1) slopes
 
-```{r}
-nTA_nDIC_Extreme + 
-  geom_point(data=FLK.data, aes (nDIC, nTA, fill=Precipitation), 
-             shape=21, alpha=0.8)
+```{r,  echo=FALSE}
+FLK_slopes<-ggarrange(TA_DIC_Extreme_pre, Slope_plot,
+          #labels = c("DIC Friss regresion", "TA Friss regresion"),
+          ncol = 2, nrow = 1, widths = c(4, 1.5))
+FLK_slopes
+
+#ggsave(file="FLK_results/Fig_2_FLK_slopes.svg", plot=FLK_slopes, dpi = 300, width=6, height=6.2)
+  
 ```
 
-**Figure 1:** Linear regressions of total alkalinity (nTA, µmol kg−1) and dissolved inorganic carbon (nDIC, µmol kg−1)
+# **Figure 2:** TA (µmol kg−1) vs DIC (µmol kg−1) slopes per season and reef
 
-```{r}
- # Individual LR for each Zone and Sub_region
-    
-    TA_DIC_coef_zone_noExtremes <- FLK.data[FLK.data$Extreme=="Normal", ] %>% 
-                    group_by(Zone, Sub_region) %>%
-                    do({model = lm(nTA~nDIC, data=.)  
-                    # create model
-                    data.frame(tidy(model), # get coefficient info
-                    glance(model))})        # get model info
-
-    kable(as.data.frame(TA_DIC_coef_zone_noExtremes[,1:8], format = "markdown"),
-          caption = "nTA vs nDIC equations without extreme events", digits = 3)
-```
-
-# Discuss  nTA - nDIC slope results
 
 **Notes: **
 * Inshore: UK has lowest slope- expected? 
@@ -977,7 +1074,17 @@ Temp.Season <- ddply (FLK.data, .(Season, Zone),summarise,
                 Tmean = mean (Temperature_C, na.rm = T), 
                 Tsd = sd (Temperature_C, na.rm = T))
 
-kable(as.data.frame(Temp.Season, format = "markdown"), caption = "Temperature by season")
+kable(as.data.frame(Temp.Season, format = "markdown"),
+      caption = "Temperature by season", digits = 2)
+
+Temp.Season <- ddply (FLK.data, .(Precipitation, Zone),summarise,
+                Tmin = min (Temperature_C, na.rm = T), 
+                Tmax = max (Temperature_C, na.rm = T),
+                Tmean = mean (Temperature_C, na.rm = T), 
+                Tsd = sd (Temperature_C, na.rm = T))
+
+kable(as.data.frame(Temp.Season, format = "markdown"),
+      caption = "Temperature by precipitation", digits = 2)
 
 ```
 
@@ -1007,30 +1114,96 @@ Temperature_All +
 
 ```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
 Temperature_month<- ggplot(FLK.data) +
+  scale_y_continuous(#limits = c(15,40),
+                       name=(expression("Temperature"~(degree*C))),
+                       breaks = seq(16, 40, 4),  
+                       expand = c(0.1, 0.1)) +
+  MyTheme +  facet_grid(Zone~Sub_region)
+
+# Temperature_month +
+#   geom_boxplot(aes (x=Month, y=Temperature_C))+
+#   geom_point(aes (x=Month, y=Temperature_C, fill=Extreme), 
+#              shape=21, size = 1, alpha=0.5)
+
+Temperature_month<-Temperature_month +
+    geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+                 aes (x=Month, y=Temperature_C))+
+    scale_shape_manual(values=c(24, 25, 21))+
+    geom_point(data=FLK.data, aes (x=Month, y=Temperature_C, 
+                                 fill=Precipitation, shape=Extreme), 
+             alpha=0.8, size=1)
+
+```
+
+```{r}
+Temperature_reg <-ggplot()+
+  geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+               aes (x=Sub_region, y=Temperature_C))+
+  scale_shape_manual(values=c(24, 25, 21))+
+  #scale_shape_manual(values=c(24, 23, 25, 21))+
+  geom_jitter(data=FLK.data, aes (x=Sub_region, y=Temperature_C, 
+                                 fill=Precipitation, shape=Extreme), 
+             alpha=0.8, size=1, width = 0.15)+ 
+  scale_y_continuous(#limits = c(15,40),
+                       name=(expression("Temperature"~(degree*C))),
+                       breaks = seq(16, 40, 4),  
+                       expand = c(0.1, 0.1)) +
+  MyTheme
+Temperature_reg +facet_grid(Zone~Season)
+Temperature_reg +facet_grid(Zone~.)
+```
+
+```{r}
+Temperature_zone <-ggplot()+
+  geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+               aes (x=Zone, y=Temperature_C))+
+  #scale_shape_manual(values=c(24, 25, 21))+
+  scale_shape_manual(values=c(24, 23, 25, 21))+
+  geom_jitter(data=FLK.data, aes (x=Zone, y=Temperature_C, 
+                                 fill=Precipitation, shape=Sub_region), 
+             alpha=0.8, size=1, width = 0.25)+ 
+  scale_y_continuous(#limits = c(15,40),
+                       name=(expression("Temperature"~(degree*C))),
+                       breaks = seq(16, 40, 4),  
+                       expand = c(0.1, 0.1)) +
+  MyTheme
+Temperature_zone+facet_grid(Season~Sub_region)
+Temperature_zone+facet_grid(~Season)
+
+
+```
+
+
+```{r}
+Temperature_season <-ggplot()+
+  geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+               aes (x=Season, y=Temperature_C))+
+  scale_shape_manual(values=c(24, 25, 21))+
+  #scale_shape_manual(values=c(24, 23, 25, 21))+
+  geom_jitter(data=FLK.data, aes (x=Season, y=Temperature_C, 
+                                 fill=Precipitation, shape=Extreme), 
+             alpha=0.5, size=1, show.legend = FALSE, width = 0.15)+ 
   
   scale_y_continuous(#limits = c(15,40),
                        name=(expression("Temperature"~(degree*C))),
-                       breaks = seq(16, 40, 3),  
+                       breaks = seq(16, 40, 4),  
                        expand = c(0.1, 0.1)) +
-  MyTheme +  facet_grid(Zone~Sub_region)
+  facet_grid(Zone~Region)+MyTheme+ ggtitle("Stats per season")
+#Temperature_season
+
 ```
 
-```{r}
-Temperature_month +
-  geom_boxplot(aes (x=Month, y=Temperature_C))+
-  geom_point(aes (x=Month, y=Temperature_C, fill=Extreme), 
-             shape=21, size = 1, alpha=0.5)
+```{r,  echo=FALSE}
+Sea_Temp<-ggarrange(Temperature_month, Temperature_season,
+          labels = c("a", "b"),
+          ncol = 2, nrow = 1, widths = c(4, 1.3))
+Sea_Temp
+
+#ggsave(file="FLK_results/Fig_S1_Seas_Temp.svg", plot=Sea_Temp, dpi = 300, width=7.5, height=6.2)
   
 ```
 
-```{r}
-Temperature_month +
-  geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
-               aes (x=Month, y=Temperature_C))+
-  geom_point(aes (x=Month, y=Temperature_C, fill=Precipitation), 
-             shape=21, size = 1, alpha=0.5)
-  
-```
+# **Figure S1:** Seasonality_temperature
 
 ## 5.2 Salinity 
 
@@ -1062,14 +1235,14 @@ SAl_All<- ggplot(FLK.data) +
                breaks ="6 months")+
   MyTheme 
 SAl_All +
-  geom_point(aes (Date, Temperature_C, fill=Season), shape=21, alpha=0.8)
+  geom_point(aes (Date, BestSalinity, fill=Season), shape=21, alpha=0.8)
 
 ```
 
 ### Monthly 
 
 ```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
-Sal_All<- ggplot(FLK.data) + 
+Sal_month<- ggplot(FLK.data) + 
    scale_y_continuous(#limits = c(15,40),
                        #expand = c(0, 0),
                         name="Salinity",
@@ -1077,38 +1250,102 @@ Sal_All<- ggplot(FLK.data) +
                         ) +
   MyTheme +
   facet_grid(Zone~Sub_region)
+
+# Sal_month +
+#   geom_boxplot(aes (x=Month, y=BestSalinity))+
+#   geom_point(aes (x=Month, y=BestSalinity, fill=Extreme), 
+#              shape=21, size = 1, alpha=0.5)
+
+Sal_month<-Sal_month +
+    geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+                 aes (x=Month, y=BestSalinity))+
+    scale_shape_manual(values=c(24, 25, 21))+
+    geom_point(data=FLK.data, aes (x=Month, y=BestSalinity, 
+                                 fill=Precipitation, shape=Extreme), 
+             alpha=0.8, size=1)
 ```
 
 ```{r}
-Sal_All +
-  geom_boxplot(aes (x=Month, y=BestSalinity))+
-  geom_point(aes (x=Month, y=BestSalinity, fill=Extreme), 
-             shape=21, size = 1, alpha=0.5)
-```
-
-```{r}
-Sal_All +
+Sal_reg <-ggplot()+
   geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
-               aes (x=Month, y=BestSalinity))+
-  geom_point(aes (x=Month, y=BestSalinity, fill=Precipitation), 
-             shape=21, size = 1, alpha=0.5)
+               aes (x=Sub_region, y=BestSalinity))+
+  scale_shape_manual(values=c(24, 25, 21))+
+  #scale_shape_manual(values=c(24, 23, 25, 21))+
+  geom_jitter(data=FLK.data, aes (x=Sub_region, y=BestSalinity, 
+                                 fill=Precipitation, shape=Extreme), 
+             alpha=0.5, size=0.8, width = 0.15)+ 
+  scale_y_continuous(#limits = c(15,40),
+                       name=(expression("Salinity")),
+                       breaks = seq(16, 40, 4),  
+                       expand = c(0.1, 0.1)) +
+  MyTheme
+Sal_reg +facet_grid(Zone~Season)
+Salinity_region<-Sal_reg +facet_grid(Zone~.)
 ```
+
+```{r}
+Sal_Zone <-ggplot()+
+  geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+               aes (x=Zone, y=BestSalinity))+
+  #scale_shape_manual(values=c(24, 25, 21))+
+  scale_shape_manual(values=c(24, 23, 25, 21))+
+  geom_jitter(data=FLK.data, aes (x=Zone, y=BestSalinity, 
+                                 fill=Precipitation, shape=Sub_region), 
+             alpha=0.8, size=1, width = 0.25)+ 
+  scale_y_continuous(#limits = c(15,40),
+                       name=(expression("Salinity")),
+                       breaks = seq(16, 40, 4),  
+                       expand = c(0.1, 0.1)) +
+  MyTheme
+Sal_Zone+facet_grid(Season~Sub_region)
+Sal_Zone+facet_grid(~Sub_region)
+
+```
+
+```{r}
+Sal_season <-ggplot()+
+  geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+               aes (x=Season, y=BestSalinity))+
+  scale_shape_manual(values=c(24, 25, 21))+
+  #scale_shape_manual(values=c(24, 23, 25, 21))+
+  geom_jitter(data=FLK.data, aes (x=Season, y=BestSalinity, 
+                                 fill=Precipitation, shape=Extreme), 
+             alpha=0.5, size=1, show.legend = FALSE, width = 0.15)+ 
+  scale_y_continuous(#limits = c(15,40),
+                       #expand = c(0, 0),
+                        name="Salinity",
+                        breaks = seq(20, 40, 2)) +
+  facet_grid(Zone~Region)+MyTheme+ ggtitle("Stats per season")
+#Sal_season
+```
+
+
+```{r,  echo=FALSE}
+Sea_Sal<-ggarrange(Sal_month, Salinity_region,
+          labels = c("a", "b"),
+          ncol = 2, nrow = 1, widths = c(4, 1.3))
+Sea_Sal
+
+#ggsave(file="FLK_results/Fig_S2_Seas_Sal.svg", plot=Sea_Sal, dpi = 300, width=7.5, height=6.2)
+  
+```
+
 
 !### Salinity - Temperature correlations and outliers
 
 ```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
-Sal_Temp<- ggplot(FLK.data) + MyTheme+
-  scale_x_continuous(limits = c(15,40),
-                       name=(expression("Temperature"~(degree*C))),
-                       breaks = seq(16, 36, 2),
-                       expand = c(0, 0)) +
-  scale_y_continuous(name="Salinity",
-                 #limits = c(0.5,6),
-                 #expand = c(0, 0),
-                 breaks = seq(1,40,2))+
-  geom_abline(slope = 0, intercept = 30, color="red", linetype=2)+
-  geom_abline(slope = 0, intercept = 39, color="red", linetype=2)+
-  geom_vline(xintercept = 33, color="red", linetype=2)
+# Sal_Temp<- ggplot(FLK.data) + MyTheme+
+#   scale_x_continuous(limits = c(15,40),
+#                        name=(expression("Temperature"~(degree*C))),
+#                        breaks = seq(16, 36, 2),
+#                        expand = c(0, 0)) +
+#   scale_y_continuous(name="Salinity",
+#                  #limits = c(0.5,6),
+#                  #expand = c(0, 0),
+#                  breaks = seq(1,40,2))+
+#   geom_abline(slope = 0, intercept = 30, color="red", linetype=2)+
+#   geom_abline(slope = 0, intercept = 39, color="red", linetype=2)+
+#   geom_vline(xintercept = 33, color="red", linetype=2)
 
 ```
 
@@ -1185,21 +1422,104 @@ Omega_month<- ggplot(FLK.data) +
   geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)+
   MyTheme +
   facet_grid(Zone~Sub_region)
-```
 
-```{r}
-Omega_month +
-  geom_boxplot(aes (x=Month, y=Aragonite_Sat_W))+
-  geom_point(aes (x=Month, y=Aragonite_Sat_W, fill=Extreme), 
-             shape=21, size = 1, alpha=0.5)
-```
+# Omega_month +
+#   geom_boxplot(aes (x=Month, y=Aragonite_Sat_W))+
+#   geom_point(aes (x=Month, y=Aragonite_Sat_W, fill=Extreme), 
+#              shape=21, size = 1, alpha=0.5)
 
-```{r}
-Omega_month +
+Omega_month<-Omega_month +
   geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
                aes (x=Month, y=Aragonite_Sat_W))+
   geom_point(aes (x=Month, y=Aragonite_Sat_W, fill=Precipitation), 
              shape=21, size = 1, alpha=0.5)
+Omega_month
+```
+
+```{r}
+Omega_reg <-ggplot()+
+  geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+               aes (x=Sub_region, y=Aragonite_Sat_W))+
+  scale_shape_manual(values=c(24, 25, 21))+
+  #scale_shape_manual(values=c(24, 23, 25, 21))+
+  geom_jitter(data=FLK.data, aes (x=Sub_region, y=Aragonite_Sat_W, 
+                                 fill=Precipitation, shape=Extreme), 
+             alpha=0.8, size=1, width = 0.15)+ 
+  scale_y_continuous(#limits = c(1,5.5),
+                       name=(expression ("Aragonite saturation state "~Omega)),
+                       breaks = seq(1, 5, 1),
+                       expand = c(0.02, 0.02)
+                        ) +
+  MyTheme
+Omega_reg_seas<-Omega_reg +facet_grid(Zone~Season)
+Omega_region<-Omega_reg +facet_grid(Zone~.)
+Omega_region
+```
+
+```{r}
+Omega_Zone <-ggplot()+
+  geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+               aes (x=Zone, y=Aragonite_Sat_W))+
+  scale_shape_manual(values=c(24, 25, 21))+
+  #scale_shape_manual(values=c(24, 23, 25, 21))+
+  geom_jitter(data=FLK.data, aes (x=Zone, y=Aragonite_Sat_W, 
+                                 fill=Precipitation, shape=Extreme), 
+             alpha=0.8, size=1, width = 0.25)+ 
+  scale_y_continuous(#limits = c(1,5.5),
+                       name=(expression ("Aragonite saturation state "~Omega)),
+                       breaks = seq(1, 5, 1),
+                       expand = c(0.02, 0.02))+
+  MyTheme
+Omega_Zone+facet_grid(Season~Sub_region)
+Omega_Zone+facet_grid(~Sub_region)
+```
+
+```{r}
+Omega_season <-ggplot()+
+  geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+               aes (x=Season, y=Aragonite_Sat_W))+
+  scale_shape_manual(values=c(24, 25, 21))+
+  #scale_shape_manual(values=c(24, 23, 25, 21))+
+  geom_jitter(data=FLK.data, aes (x=Season, y=Aragonite_Sat_W, 
+                                 fill=Precipitation, shape=Extreme), 
+             alpha=0.5, size=1, show.legend = FALSE, width = 0.15)+ 
+  scale_y_continuous(#limits = c(15,40),
+                       #expand = c(0, 0),
+                        name="Salinity",
+                        breaks = seq(20, 40, 2)) +
+  facet_grid(Zone~Region)+MyTheme+ ggtitle("Stats per season")
+#Omega_season
+
+Omega_season <-ggplot()+
+  geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+               aes (x=Zone, y=Aragonite_Sat_W))+
+  scale_shape_manual(values=c(24, 25, 21))+
+  #scale_shape_manual(values=c(24, 23, 25, 21))+
+  geom_jitter(data=FLK.data, aes (x=Zone, y=Aragonite_Sat_W, 
+                                 fill=Precipitation, shape=Extreme), 
+             alpha=0.5, size=1, show.legend = FALSE, width = 0.15)+ 
+  scale_y_continuous(#limits = c(15,40),
+                       #expand = c(0, 0),
+                        name="Salinity",
+                        breaks = seq(20, 40, 2)) +
+  facet_grid(Season~Sub_region)+MyTheme+ ggtitle("Stats per season")
+#Omega_season
+```
+
+
+```{r,  echo=FALSE}
+Sea_Omega1<-ggarrange(Omega_month, Omega_region,
+          labels = c("a", "b"),
+          ncol = 2, nrow = 1, widths = c(4, 1.3))
+Sea_Omega1
+
+Sea_Omega2<-ggarrange(Omega_reg_seas, Omega_region,
+          labels = c("a", "b"),
+          ncol = 2, nrow = 1, widths = c(4, 1.3))
+Sea_Omega2
+
+#ggsave(file="FLK_results/Fig_S2_Seas_Sal.svg", plot=Sea_Sal, dpi = 300, width=7.5, height=6.2)
+  
 ```
 
 ## 5.4 TA
@@ -1267,23 +1587,108 @@ nTA_month<- ggplot(FLK.data) +
                         ) +
   MyTheme +
   facet_grid(Zone~Sub_region)
-```
+# 
+# nTA_month +
+#   geom_boxplot(aes (x=Month, y=nTA))+
+#   geom_point(aes (x=Month, y=nTA, fill=Extreme), 
+#              shape=21, size = 1, alpha=0.5)
 
-```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
-nTA_month +
-  geom_boxplot(aes (x=Month, y=nTA))+
-  geom_point(aes (x=Month, y=nTA, fill=Extreme), 
-             shape=21, size = 1, alpha=0.5)
-```
-
-```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
-nTA_month +
+nTA_month<-nTA_month +
   geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
                aes (x=Month, y=nTA))+
-  geom_point(aes (x=Month, y=nTA, fill=Precipitation), 
-             shape=21, size = 1, alpha=0.5)
+  scale_shape_manual(values=c(24, 25, 21))+
+  #scale_shape_manual(values=c(24, 23, 25, 21))+
+  geom_point(data=FLK.data, aes (x=Month, y=nTA, 
+                                 fill=Precipitation, shape=Extreme), 
+             alpha=0.8, size=1)
 ```
 
+```{r}
+nTA_reg <-ggplot()+
+  geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+               aes (x=Sub_region, y=nTA))+
+  scale_shape_manual(values=c(24, 25, 21))+
+  geom_jitter(data=FLK.data, aes (x=Sub_region, y=nTA, 
+                                 fill=Precipitation, 
+                                 shape=Extreme),
+              size=0.8, alpha=0.5)+ 
+  scale_y_continuous(#limits = c(1,5.5),
+                       name=(expression ("nTA")),
+                       breaks = seq(2000, 2800, 200),
+                       expand = c(0.02, 0.02)) +
+  MyTheme
+nTA_seas<-nTA_reg +facet_grid(Zone~Season)
+nTA_seas
+nTA_region<-nTA_reg +facet_grid(Zone~Region)
+nTA_region
+```
+
+```{r}
+nTA_Zone <-ggplot()+
+  geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+               aes (x=Zone, y=nTA))+
+  scale_shape_manual(values=c(24, 25, 21))+
+  #scale_shape_manual(values=c(24, 23, 25, 21))+
+  geom_jitter(data=FLK.data, aes (x=Zone, y=nTA, 
+                                 fill=Precipitation, shape=Extreme), 
+             alpha=0.8, size=1, width = 0.25)+ 
+ scale_y_continuous(#limits = c(1,5.5),
+                       name=(expression ("nTA")),
+                       breaks = seq(2000, 2800, 200),
+                       expand = c(0.02, 0.02)
+                        ) + MyTheme
+nTA_Zone+facet_grid(Season~Sub_region)
+nTA_Zone+facet_grid(~Sub_region)
+```
+
+```{r}
+nTA_season <-ggplot()+
+  geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+               aes (x=Season, y=nTA))+
+  scale_shape_manual(values=c(24, 25, 21))+
+  geom_jitter(data=FLK.data, aes (x=Season, y=nTA, 
+                                 fill=Precipitation, shape=Extreme), 
+             alpha=0.5, size=1, show.legend = FALSE, width = 0.15)+ 
+ scale_y_continuous(#limits = c(1,5.5),
+                       name=(expression ("nTA")),
+                       breaks = seq(2000, 2800, 200),
+                       expand = c(0.02, 0.02)
+                        ) + 
+  facet_grid(Zone~Region)+MyTheme+
+  ggtitle("Stats per season")
+#nTA_season
+
+nTA_season <-ggplot()+
+  geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+               aes (x=Zone, y=nTA))+
+  scale_shape_manual(values=c(24, 25, 21))+
+  #scale_shape_manual(values=c(24, 23, 25, 21))+
+  geom_jitter(data=FLK.data, aes (x=Zone, y=nTA, 
+                                 fill=Precipitation, shape=Extreme), 
+             alpha=0.5, size=1, show.legend = FALSE, width = 0.15)+ 
+   scale_y_continuous(#limits = c(1,5.5),
+                       name=(expression ("nTA")),
+                       breaks = seq(2000, 2800, 200),
+                       expand = c(0.02, 0.02)
+                        ) + 
+  facet_grid(Season~Sub_region)+MyTheme+ ggtitle("Stats per season")
+#nTA_season
+```
+
+```{r,  echo=FALSE}
+Sea_nTA1<-ggarrange(nTA_month, nTA_region,
+          labels = c("a", "b"),
+          ncol = 2, nrow = 1, widths = c(4, 1.3))
+Sea_nTA1
+
+Sea_nTA2<-ggarrange(nTA_seas, nTA_region,
+          labels = c("a", "b"),
+          ncol = 2, nrow = 1, widths = c(4, 1.3))
+Sea_nTA2
+
+#ggsave(file="FLK_results/Fig_S3_Seas_TA.svg", plot=Sea_Sal, dpi = 300, width=7.5, height=6.2)
+  
+```
 
 ## 5.5 DIC
 
@@ -1530,33 +1935,6 @@ FLK.data_filtered<-FLK.data[FLK.data$Extreme=="Normal",]
 write.csv(FLK.data_filtered, "FLK.data_filtered2.csv", row.names = FALSE)
 ```
 
-```{r, echo=FALSE}
-Temp.Season <- ddply (FLK.data_filtered,
-                     .(Zone, Sub_region, Season),summarise,
-                mean = mean (Temperature_C, na.rm = T), 
-                sd = sd (Temperature_C, na.rm = T))
-
-Temp.Season <- gather(Temp.Season, statistics, value, mean:sd, factor_key=TRUE)
-Temp.Season <- spread(Temp.Season, Season, value)
-
-kable(as.data.frame(Temp.Season, format = "markdown"),
-      caption = "Temperature by season, region and zone", digits=1)
-```
-
-```{r, echo=FALSE}
-pCO2.Season <- ddply (FLK.data_filtered,
-                     .(Zone, Sub_region, Season),summarise,
-                mean = mean (pCO2_uatm, na.rm = T), 
-                #med = median (pCO2_uatm, na.rm = T),
-                sd = sd (pCO2_uatm, na.rm = T))
-
-pCO2.Season <- gather(pCO2.Season, statistics, value, mean:sd, factor_key=TRUE)
-pCO2.Season <- spread(pCO2.Season, Season, value)
-
-kable(as.data.frame(pCO2.Season, format = "markdown"),
-      caption = "pCO2 by season, region and zone", digits=1)
-```
-
 # 7 Oceanic-offshore corrections - SEASONAL PATTERNS WITH endpoint
 
 ```{r, echo=FALSE}
@@ -1609,34 +1987,27 @@ WS.open<-subset(FLK.data_filtered, FLK.data_filtered$Zone=="Offshore"|FLK.data_f
 mean_Open<- ddply (WS.open, .(Sub_region),
                           summarise,
                 nTA_O = mean (nTA, na.rm = T),
-                nDIC_O = mean (nDIC, na.rm = T)
+                nDIC_O = mean (nDIC, na.rm = T),
+                TA_O = mean (TA_umol_kg, na.rm = T),
+                DIC_O = mean (DIC_umol_kg, na.rm = T)
                 )
 mean_Open
 ```
 
 ```{r}
-TA_DIC_Inshore<- ggplot(subset(FLK.data_filtered, Zone!="Mid channel"), 
-                        aes (nDIC, nTA)) + 
-  
-  theme_bw() +
-  scale_y_continuous(limits = c(1990,2810),
+WS.reef<-subset(FLK.data_filtered, FLK.data_filtered$Zone=="Mid channel"|FLK.data_filtered$Zone=="Inshore")
+
+TA_DIC_Reef<- ggplot(WS.reef, aes (nDIC, nTA)) + 
+  MyTheme +
+  scale_y_continuous(#limits = c(1990,2810),
                      expand = c(0.01, 0.01),
                      breaks = seq(1800, 2800, 200),
                     name="nTA") +
-  scale_x_continuous(limits = c(1790, 2410),
+  scale_x_continuous(#limits = c(1780, 2410),
                       expand = c(0.01, 0.01),
                       breaks = seq(1800,2400,100),
                       name="nDIC")+
   
-  
-theme(legend.position="top",
-          plot.background=element_blank(),
-          axis.text.x = element_text(angle = 90, vjust = 0.5),
-          panel.grid = element_blank(),
-          legend.box.background = element_rect(),
-          panel.background =element_rect(fill = NA, 
-                                         color = "black")
-          )+
   geom_point(aes (fill=Precipitation, shape=Zone),
              size=1, alpha=0.8)+
   scale_shape_manual(values=c(21, 24, 24))+
@@ -1652,57 +2023,16 @@ theme(legend.position="top",
   
   geom_smooth(data=subset(FLK.data_filtered, Zone=="Inshore"),
               method = "lm", colour="black") +
-  facet_grid(~Sub_region)
-
+  facet_grid(Zone~Sub_region)
+TA_DIC_Reef
 ```
 
 ```{r}
-TA_DIC_Midchannel<- ggplot(subset(FLK.data_filtered, Zone!="Inshore"), 
-                           aes (nDIC, nTA)) + 
-  
-  theme_bw() +
-  scale_y_continuous(limits = c(1990,2810),
-                     expand = c(0.01, 0.01),
-                     breaks = seq(1800, 2800, 200),
-                    name="nTA") +
-  scale_x_continuous(limits = c(1790, 2410),
-                      expand = c(0.01, 0.01),
-                      breaks = seq(1800,2400,100),
-                      name="nDIC")+
-  
-theme(legend.position="top",
-          plot.background=element_blank(),
-          axis.text.x = element_text(angle = 90, vjust = 0.5),
-          panel.grid = element_blank(),
-          legend.box.background = element_rect(),
-          panel.background =element_rect(fill = NA, 
-                                         color = "black")
-          )+
-  geom_point(aes (fill=Precipitation, shape=Zone),
-             size=1, alpha=0.8)+
-    scale_shape_manual(values=c(21, 24, 24))+
-  
-  geom_abline(slope = 0, intercept =mean_Open$nTA_O, 
-              linetype=2, colour="gray")+
-  geom_vline(xintercept = mean_Open$nDIC_O,
-             linetype=2, colour="gray")+
-  
-  geom_point(data=mean_Open,
-             aes (x=nDIC_O, y=nTA_O),
-             size=3, alpha=1, shape=24, fill="black")+
-    
-  geom_smooth(data=subset(FLK.data_filtered, Zone=="Mid channel"),
-              method = "lm", colour="black") +
-  facet_grid(~Sub_region)
-
-```
-
-```{r}
-FLK_slopes<-ggarrange(TA_DIC_Inshore,TA_DIC_Midchannel,
-          labels = c("Inshore", "Midchannel"),
-          ncol = 1, nrow = 2)
-
-FLK_slopes
+# FLK_slopes<-ggarrange(TA_DIC_Inshore,TA_DIC_Midchannel,
+#           labels = c("Inshore", "Midchannel"),
+#           ncol = 1, nrow = 2)
+# 
+# FLK_slopes
 
 #ggsave(file="FLK_results/nTA_nDIC.svg", plot=FLK_slopes, dpi = 300, width=6, height=5.5)
 
@@ -1713,18 +2043,18 @@ Not my favorite, but good if absolute values are important vs value-reference
 ```{r}
  # Individual LR for each region
     
-TA_DIC_lm_reef <- as.data.frame(FLK.data_filtered  %>% 
+nTA_nDIC_lm_reef <- as.data.frame(FLK.data_filtered  %>% 
                     group_by(Zone, Sub_region) %>%
                     do({model = lm(nTA~nDIC, data=.)  
                     # create model
                     data.frame(tidy(model), # get coefficient info
                     glance(model))}))        # get model info
 
-    TA_DIC_lm_reef<-filter(TA_DIC_lm_reef, Zone!="Offshore")
-    TA_DIC_lm_reef<-filter(TA_DIC_lm_reef, Zone!="Oceanic")
+    nTA_nDIC_lm_reef<-filter(nTA_nDIC_lm_reef, Zone!="Offshore")
+    nTA_nDIC_lm_reef<-filter(nTA_nDIC_lm_reef, Zone!="Oceanic")
 
-    kable(TA_DIC_lm_reef[,1:8], format = "markdown",
-          caption = "nTA vs nDIC equations", digits = 3)
+    kable(nTA_nDIC_lm_reef[,1:8], format = "markdown",
+          caption = "nTA vs nDIC equations", digits = 2)
 ```
 
 ### 7.1.2 Delta de nTA and nDIC with endpoint calculated by each month-year
@@ -1743,6 +2073,17 @@ TA_DIC_lm_reef <- as.data.frame(FLK.data_filtered  %>%
 
 ```{r}
 # Get the oceanic / offshore mean values per month-year and subtract them from the reef data
+
+TA.MY.open <- ddply (WS.open, .(Sub_region, MY, Month),summarise,
+                OTA_my = mean (TA_umol_kg, na.rm = T),
+                sd = sd (TA_umol_kg, na.rm = T),
+                number = n())
+
+DIC.MY.open <- ddply (WS.open, .(Sub_region, MY, Month),summarise,
+                ODIC_my = mean (DIC_umol_kg, na.rm = T),
+                #sd = sd (nDIC, na.rm = T),
+                number = n())
+
 nTA.MY.open <- ddply (WS.open, .(Sub_region, MY, Month),summarise,
                 OnTA_my = mean (nTA, na.rm = T),
                 sd = sd (nTA, na.rm = T),
@@ -1759,10 +2100,18 @@ WS.reef<-join(WS.reef,nTA.MY.open[,-6],
 WS.reef<-join(WS.reef, nDIC.MY.open, 
                  type = "left", by=c("MY", "Month", "Sub_region"))
 
+WS.reef<-join(WS.reef,TA.MY.open[,-6], 
+                 type = "left", by=c("MY", "Month", "Sub_region"))
 
+WS.reef<-join(WS.reef, DIC.MY.open, 
+                 type = "left", by=c("MY", "Month", "Sub_region"))
+
+# Delta TA
+WS.reef$dTA_MY<-WS.reef$TA_umol_kg-WS.reef$OTA_my
+# Delta DIC
+WS.reef$dDIC_MY<-WS.reef$DIC_umol_kg-WS.reef$ODIC_my
 # Delta nTA
 WS.reef$dnTA_MY<-WS.reef$nTA-WS.reef$OnTA_my
-
 # Delta nDIC
 WS.reef$dnDIC_MY<-WS.reef$nDIC-WS.reef$OnDIC_my
 
@@ -1975,6 +2324,34 @@ kable(as.data.frame(dDIC.Season.Region, format = "markdown"), caption = "delta o
 
 ***NOTES: **: Calfitication (delta nTA is kind of stable during summer and fall, but DIC (respiration?) increases during the fall and drops Omega?
 
+
+```{r, echo=FALSE}
+Temp.Season <- ddply (FLK.data_filtered,
+                     .(Zone, Sub_region, Season),summarise,
+                mean = mean (Temperature_C, na.rm = T), 
+                sd = sd (Temperature_C, na.rm = T))
+
+Temp.Season <- gather(Temp.Season, statistics, value, mean:sd, factor_key=TRUE)
+Temp.Season <- spread(Temp.Season, Season, value)
+
+kable(as.data.frame(Temp.Season, format = "markdown"),
+      caption = "Temperature by season, region and zone", digits=1)
+```
+
+```{r, echo=FALSE}
+pCO2.Season <- ddply (FLK.data_filtered,
+                     .(Zone, Sub_region, Season),summarise,
+                mean = mean (pCO2_uatm, na.rm = T), 
+                #med = median (pCO2_uatm, na.rm = T),
+                sd = sd (pCO2_uatm, na.rm = T))
+
+pCO2.Season <- gather(pCO2.Season, statistics, value, mean:sd, factor_key=TRUE)
+pCO2.Season <- spread(pCO2.Season, Season, value)
+
+kable(as.data.frame(pCO2.Season, format = "markdown"),
+      caption = "pCO2 by season, region and zone", digits=1)
+```
+
 # 8. Long Term trends in FLK (Al zones) using linear models
 
 This approach is not optimum because of strong seasonality. Especially in the reef. However it is useful to compare the long term predictions with the ones from gam models. 
@@ -2003,7 +2380,7 @@ Aragonite_all<- ggplot(FLK.data_filtered,
 
 Aragonite_all  
 Aragonite_all + facet_grid(~Zone)
-Aragonite_all + facet_grid(Sub_region~Zone)
+Aragonite_all + facet_grid(Zone~Sub_region)
 #Aragonite_all + facet_grid(Zone~Precipitation)
 ```
 
@@ -2113,7 +2490,7 @@ pH_all+ facet_grid(Zone~Sub_region)
 ### Raw data
 
 ```{r}
-Aragonite_open <- ggplot(WS.open, aes(x=Date, y=Aragonite_Sat_W)) +
+Aragonite_open <- ggplot(Trends.ocean, aes(x=Date, y=Aragonite_Sat_W)) +
   MyTheme+
   scale_y_continuous(#limits = c(0,5.5),
                        name=("Aragonite Saturation - Offshore") ,
@@ -2129,18 +2506,120 @@ Aragonite_open <- ggplot(WS.open, aes(x=Date, y=Aragonite_Sat_W)) +
   geom_point(aes(fill=factor(Precipitation)), shape=21, alpha=0.5)+
   geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)
 
-Aragonite_open 
+Aragonite_open + facet_grid(~Zone)
 Aragonite_open + facet_grid(~Precipitation)
 Aragonite_open + facet_grid(~Season)
 ```
 
 ### Model
 
+
 ```{r}
-Reference_LM<-lmer(Aragonite_Sat_W~Year * Season +
+Reference_LM<-lmer(pCO2_uatm ~Year + Sub_region + (1|Month)+
+                                  #(1|Zone)+             
+                                  (1|SiteID), data=Trends.inshore)
+summary(Reference_LM)    
+
+Reference_LM<-lmer(pCO2_uatm ~Year + Sub_region + (1|Month) + 
                                   #(1|Zone)+             
                                   #(1|Sub_region)+
-                                  (1|SiteID), data=WS.open)
+                                  (1|SiteID), data=Trends.midchanel)
+summary(Reference_LM)    
+
+Reference_LM<-lmer(pCO2_uatm ~Year + Sub_region + (1|Month)+
+                                  #(1|Zone)+             
+                                  #(1|Sub_region)+
+                                  (1|SiteID),
+                     data=Trends.offshore)
+summary(Reference_LM)  
+```
+
+
+```{r}
+Reference_LM<-lmer(TA_umol_kg ~Year + Sub_region + (1|Month)+
+                                  #(1|Zone)+             
+                                  (1|SiteID), data=Trends.inshore)
+summary(Reference_LM)    
+
+Reference_LM<-lmer(TA_umol_kg ~Year + Sub_region + (1|Month) + 
+                                  #(1|Zone)+             
+                                  #(1|Sub_region)+
+                                  (1|SiteID), data=Trends.midchanel)
+summary(Reference_LM)    
+
+Reference_LM<-lmer(TA_umol_kg ~Year + Sub_region + (1|Month),
+                                  #(1|Zone)+             
+                                  #(1|Sub_region)+
+                                  #(1|SiteID),
+                     data=Trends.offshore)
+summary(Reference_LM)  
+```
+
+
+```{r}
+Reference_LM<-lmer(DIC_umol_kg ~Year + Sub_region + (1|Month)+
+                                  #(1|Zone)+             
+                                  (1|SiteID), data=Trends.inshore)
+summary(Reference_LM)    
+
+Reference_LM<-lmer(DIC_umol_kg ~Year + Sub_region + (1|Month) + 
+                                  #(1|Zone)+             
+                                  #(1|Sub_region)+
+                                  (1|SiteID), data=Trends.midchanel)
+summary(Reference_LM)    
+
+Reference_LM<-lmer(DIC_umol_kg ~Year + Sub_region + (1|Month),
+                                  #(1|Zone)+             
+                                  #(1|Sub_region)+
+                                  #(1|SiteID),
+                     data=Trends.offshore)
+summary(Reference_LM)  
+```
+
+
+```{r}
+Reference_LM<-lmer(pH_calculated ~Year + Sub_region + (1|Month)+
+                                  #(1|Zone)+             
+                                  (1|SiteID), data=Trends.inshore)
+summary(Reference_LM)    
+
+Reference_LM<-lmer(pH_calculated ~Year + Sub_region + (1|Month) + 
+                                  #(1|Zone)+             
+                                  #(1|Sub_region)+
+                                  (1|SiteID), data=Trends.midchanel)
+summary(Reference_LM)    
+
+Reference_LM<-lmer(pH_calculated ~Year + Sub_region + (1|Month),
+                                  #(1|Zone)+             
+                                  #(1|Sub_region)+
+                                  #(1|SiteID),
+                     data=Trends.offshore)
+summary(Reference_LM)  
+```
+
+
+
+```{r}
+Reference_LM<-lmer(Aragonite_Sat_W~Year + Sub_region + (1|Month)+
+                                  #(1|Zone)+             
+                                  (1|SiteID), data=Trends.inshore)
+summary(Reference_LM)    
+
+Reference_LM<-lmer(Aragonite_Sat_W~Year + Sub_region + (1|Month) + 
+                                  #(1|Zone)+             
+                                  #(1|Sub_region)+
+                                  (1|SiteID), data=Trends.midchanel)
+summary(Reference_LM)    
+
+Reference_LM<-lmer(Aragonite_Sat_W~Year + Sub_region + (1|Month) + 
+                                  #(1|Zone)+             
+                                  #(1|Sub_region)+
+                                  (1|SiteID), data=Trends.offshore)
+summary(Reference_LM)    
+
+
+
+
 # Subregion is not significant
 
 summary(Reference_LM)    
