@@ -32,3 +32,6 @@ vignettes/*.pdf
 **/*.eds
 **/*.xls
 **/*.xlsx
+*.svg
+*.odt
+*.ods
