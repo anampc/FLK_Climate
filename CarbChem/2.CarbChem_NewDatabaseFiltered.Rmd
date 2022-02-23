@@ -62,16 +62,17 @@ theme(legend.position="top",
 
 ```{r, include=FALSE}
 # 1. Get data
-FLK.data<-read.csv("FLK_results/FLK_filtered.csv", header = T)
+FLK.data<-read.csv("FLK_results/FLK_filtered_ve3.csv", header = T)
+str(FLK.data)
 #FLK.data$Region<-NULL
-FLK.data$Mission<-NULL
 FLK.data$Location<-NULL
-FLK.data$Sample_Depth_m<-NULL
 
 FLK.data$TA_0<-NULL
 FLK.data$DIC_0<-NULL
 FLK.data$nTA<-NULL
 FLK.data$nDIC<-NULL
+FLK.data$n35TA<-NULL
+FLK.data$n35DIC<-NULL
 
   #summary(FLK.data)
   str(FLK.data)
@@ -112,16 +113,6 @@ FLK.data$nDIC<-NULL
     FLK.data$Months<-factor(FLK.data$Months, levels = month.name)
     FLK.data$Date<-as.Date(FLK.data$Date)
     
-  ## Add time variables 
-
-    # FLK.data <- transform(FLK.data,
-    #                    SiteID = factor(SiteID),
-    #                    MY = format(datetime, format = '%Y-%m'),
-    #                    MoY = as.numeric(format(datetime, format = '%m')),
-    #                    #DoY = as.numeric(format(datetime, format = '%j')),
-    #                    ToD = as.numeric(format(datetime, format = '%H')) +
-    #                      (as.numeric(format(datetime, format = '%M')) / 60))
-    
   FLK.data$Sub_region<-factor(FLK.data$Sub_region, levels = c(
                           "BB", "UK", "MK", "LK"))
   
@@ -139,21 +130,6 @@ FLK.data$nDIC<-NULL
 
 summary(FLK.data)
 
-   # Numerical data
-    # CC.data$Latitude <-as.numeric((as.character(CC.data$Latitude)))
-    # CC.data$Longitude <-as.numeric((as.character(CC.data$Longitude)))
-   
-    # CC.data$Temperature_C <-
-    #    as.numeric((as.character(CC.data$Temperature_C)))
-    # Temperature_NA2<-CC.data[(is.na(CC.data$Temperature_C)),]
-  
-    # CC.data$TA <-as.numeric((as.character(CC.data$TA)))
-    # CC.data$DIC <-as.numeric((as.character(CC.data$DIC)))
-    
-    # CC.data$pH <-as.numeric((as.character(CC.data$pH)))
-    # CC.data$pCO2 <-as.numeric((as.character(CC.data$pCO2)))
-    # CC.data$Aragonite_Sat_W<-
-    #   as.numeric((as.character(CC.data$Aragonite_Sat_W)))
 ```
 
 ## Seasonality
@@ -613,7 +589,6 @@ nDIC_Sal+ facet_wrap(~Zone)
 ```
 
 ```{r,  echo=FALSE}
-library(ggpubr)
 FLK_parameters<-ggarrange(nTA_Sal, nDIC_Sal,
           #labels = c("DIC Friss regresion", "TA Friss regresion"),
           ncol = 2, nrow = 1)
@@ -2435,7 +2410,7 @@ nTA_all + facet_grid(~Zone)
 nTA_all + facet_grid(Zone~Sub_region)
 ```
 
-## 8.5 pCO2
+## 8.5 pCO2 - all data
 
 ```{r}
 pCO2_all<- ggplot(FLK.data_filtered,
@@ -2460,7 +2435,7 @@ pCO2_all+ facet_grid(Zone~Sub_region)
 
 ```
 
-## 8.6 pH
+## 8.6 pH - - all data
 
 ```{r}
 pH_all<- ggplot(FLK.data_filtered,

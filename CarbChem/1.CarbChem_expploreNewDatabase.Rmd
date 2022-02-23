@@ -30,7 +30,7 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, options(kni
     library(dplyr)
     library(broom)
 
-    #library(ggpubr)
+    library(ggpubr)
     library(ggthemes)
     library(gridExtra)
     library(ggExtra)
@@ -58,12 +58,12 @@ theme(legend.position="top",
 
 ```{r, include=FALSE}
 # 1. Get data
-CC.data<-read.csv("Data/ws-mysql-v2.csv", header = T)
+CC.data<-read.csv("Data/ws-mysql-v3.csv", header = T)
   #summary(CC.data)
   str((CC.data))
   summary(CC.data$Location)
   Sites<-as.data.frame(unique(CC.data$SiteID))
-  CC.data$SiteID[CC.data$SiteID=="LK"]<-"21LK"
+  #CC.data$SiteID[CC.data$SiteID=="LK"]<-"21LK"
   CC.data$SiteID[CC.data$SiteID=="WS cruise"]<-"WS"
   # Sites<-as.data.frame(unique(CC.data$SiteID))
   
@@ -233,14 +233,14 @@ pal.gen <- colorFactor(palette = "Set1",
 
 ```{r AllMap, echo=FALSE}
 
-# leaflet(FLK.data, height = '400px') %>% 
+# leaflet(FLK.data, height = '400px') %>%
 #   addTiles() %>%
 #   #addProviderTiles(providers$Esri.WorldImagery)%>%
-#   addProviderTiles(providers$OpenStreetMap) %>% 
-#   #addMarkers(icon=coral.icon) %>% 
-#   addCircleMarkers(lng = ~Longitude, lat = ~Latitude, 
-#                    #stroke = TRUE, 
-#                    radius = 2, 
+#   addProviderTiles(providers$OpenStreetMap) %>%
+#   #addMarkers(icon=coral.icon) %>%
+#   addCircleMarkers(lng = ~Longitude, lat = ~Latitude,
+#                    #stroke = TRUE,
+#                    radius = 2,
 #                    fillOpacity = 1,
 #                    color = ~pal.gen(Zone),
 #                    label = ~CTDID,
@@ -250,10 +250,10 @@ pal.gen <- colorFactor(palette = "Set1",
 #                      style = list(
 #         "color" = "white")))  %>%
 #   addLegend(position = "topright",
-#             pal = pal.gen, 
+#             pal = pal.gen,
 #             values = ~Zone, opacity = 1) %>%
 #   fitBounds(lng1=-81.20, lat=26, lng2=-80.5, lat2=24)
-#   
+
 ```
 
 **Figure:** Map of the sites where individual samples were collected
@@ -268,12 +268,12 @@ WS.GPS.Sites <- ddply (FLK.data, .(Sub_region, Zone, SiteID),summarise,
                 Lat = mean (Latitude, na.rm = T), 
                 Lon = mean (Longitude, na.rm = T),
                 number = n())
-#write.csv(WS.GPS.Sites, "FLK_results/1_meanSatationGPS.csv")
+#write.csv(WS.GPS.Sites, "FLK_results/1_meanSatationGPS_v3.csv")
 ```
 
 ```{r}
 # Coordinates<-select(FLK.data, "CTDID", "Latitude", "Longitude", "SiteID")
-# Coordinates<-join(Coordinates, WS.GPS.Sites, 
+# Coordinates<-join(Coordinates, WS.GPS.Sites,
 #                  type = "left", by="SiteID")
 # Coordinates$Lat_diff<-abs(Coordinates$Latitude-Coordinates$Lat)
 # Coordinates$Lon_diff<-abs(Coordinates$Longitude-Coordinates$Lon)
@@ -281,7 +281,7 @@ WS.GPS.Sites <- ddply (FLK.data, .(Sub_region, Zone, SiteID),summarise,
 # Check.coordinates2<- Coordinates[(Coordinates$Lon_diff>0.02), ]
 # Check.coordinates<- rbind(Check.coordinates1, Check.coordinates2)
 # Check.coordinates<-unique(Check.coordinates)
-# #write.csv(WS.GPS.Sites, "FLK_results/2_WrongGPS_points.csv")
+#write.csv(Check.coordinates, "FLK_results/2_CheckGPS_points_v3.csv")
 ```
 
 
@@ -558,36 +558,18 @@ kable(as.data.frame(TA_coef[,1:8], format = "markdown"),
 # 5. Chech normalization?
 #nTA_Sal<- ggplot(FLK.data[FLK.data$Zone=="Oceanic",] ) + theme_bw() +
   
-nTA_Sal<- ggplot(FLK.data) + theme_bw() +
+nTA_Sal<- ggplot(FLK.data) + MyTheme+
 facet_grid(~Zone)+
-  #scale_y_continuous(limits = c(1700,2900),
-  #                     name="TA",
-  #                     breaks = seq(1800, 2800, 200),
-  #                     expand = c(0, 0)) +
-  # scale_x_continuous(name="Aragonite",
-  #                limits = c(0.5,6),
-  #                expand = c(0, 0),
-  #                breaks = seq(1,6,1))+
-  
+ 
   geom_point(aes (BestSalinity, TA_umol_kg, fill=Season), alpha=0.5, shape=21)+
   geom_smooth(aes(BestSalinity, TA_umol_kg), linetype=2, method = "lm", color="black")+
     
   geom_point(aes (BestSalinity, nTA, fill=Season), alpha=0.5, shape=24)+
-  geom_smooth(aes(BestSalinity, nTA), linetype=1, method = "lm")+  
+  geom_smooth(aes(BestSalinity, nTA), linetype=1, method = "lm")
     
   #geom_point(aes (BestSalinity, n35TA, fill=Season), alpha=0.5, shape=25)+
   #geom_smooth(aes(BestSalinity, n35TA), linetype=3, method = "lm")+  
-  
-  theme(legend.position="top",
-            plot.background=element_blank(),
-            axis.text.x = element_text(angle = 90, vjust = 0.5),
-            panel.grid.major.y = element_blank(),
-            panel.grid.major.x = element_blank(),
-            panel.grid.minor.x = element_blank(),
-            panel.grid.minor.y = element_blank(),
-            legend.box.background = element_rect(),
-            panel.background =element_rect(fill = NA, color = "black")
-            )
+
 #nTA_Sal
 #ggsave(file="Outputs/Figure_1_Experiment_design.svg", plot=Design, dpi = 300, width=6, height=4)
 ```
@@ -603,44 +585,23 @@ kable(as.data.frame(DIC_coef[,1:8], format = "markdown"),
 ```
 
 ```{r, fig.height=8.8, fig.width=8.8}
-nDIC_Sal<- ggplot(FLK.data) + theme_bw() +
+nDIC_Sal<- ggplot(FLK.data) + MyTheme+
   facet_grid(~Zone)+
 #nDIC_Sal<-ggplot(FLK.data[FLK.data$Zone=="Oceanic",] ) + theme_bw() +
-  #scale_y_continuous(limits = c(1700,2900),
-  #                     name="TA",
-  #                     breaks = seq(1800, 2800, 200),
-  #                     expand = c(0, 0)) +
-  # scale_x_continuous(name="Aragonite",
-  #                limits = c(0.5,6),
-  #                expand = c(0, 0),
-  #                breaks = seq(1,6,1))+
-  
-  geom_point(aes (BestSalinity, DIC_umol_kg, fill=factor(Year)),
+  geom_point(aes (BestSalinity, DIC_umol_kg, fill=factor(Season)),
              alpha=0.5, shape=21)+
   geom_smooth(aes(BestSalinity, DIC_umol_kg),
               linetype=2, method = "lm", color="black")+
     
-  geom_point(aes (BestSalinity, nDIC, fill=factor(Year)), alpha=0.5, shape=24)+
-  geom_smooth(aes(BestSalinity, nDIC), linetype=1, method = "lm")+  
-  
-   
-  theme(legend.position="top",
-          plot.background=element_blank(),
-          axis.text.x = element_text(angle = 90, vjust = 0.5),
-          panel.grid.major.y = element_blank(),
-          panel.grid.major.x = element_blank(),
-          panel.grid.minor.x = element_blank(),
-          panel.grid.minor.y = element_blank(),
-          legend.box.background = element_rect(),
-          panel.background =element_rect(fill = NA, color = "black")
-          )
+  geom_point(aes (BestSalinity, nDIC, fill=factor(Season)), alpha=0.5, shape=24)+
+  geom_smooth(aes(BestSalinity, nDIC), linetype=1, method = "lm")
 #nDIC_Sal
 
 #ggsave(file="Outputs/Figure_1_Experiment_design.svg", plot=Design, dpi = 300, width=6, height=4)
 ```
 
 ```{r}
-library(ggpubr)
+
 FLK_parameters<-ggarrange(nTA_Sal, nDIC_Sal,
           #labels = c("DIC Friss regresion", "TA Friss regresion"),
           ncol = 2, nrow = 1)
@@ -1296,7 +1257,7 @@ nDIC_all +
 
 ```
 
-```{r.  echo=FALSE, fig.height=8.8, fig.width=8.8}
+```{r,  echo=FALSE, fig.height=8.8, fig.width=8.8}
 nDIC_all + 
   geom_point(aes (Date, nDIC, fill=Extreme), shape=21, alpha=0.8)+
   geom_abline(slope = 0, intercept = 2100, color="gray", linetype=2)+
@@ -1352,17 +1313,114 @@ Arg_nDIC +
 **NOTE:** Review Omega calculations for 2011 -  Very high values for normal DIC and TA -  including offshore and ocean samples
 
 
+## 5.6 pH
+
+### Season stats 
+
+```{r, echo=FALSE}
+head(FLK.data)
+pH.Season <- ddply (FLK.data, .(Season, Zone),summarise,
+                pH_min = min (pH_calculated, na.rm = T), 
+                pH_max = max (pH_calculated, na.rm = T),
+                pH_mean = mean (pH_calculated, na.rm = T), 
+                pH_sd = sd (pH_calculated, na.rm = T))
+kable(as.data.frame(pH.Season, format = "markdown"), caption = "pH by season")
+
+```
+
+### Overview - outliers
+
+```{r,  echo=FALSE, fig.height=8.0, fig.width=8.8}
+pH_all<- ggplot(FLK.data) +
+    scale_y_continuous(#limits = c(0,5.5),
+                       name=("pH calculated") ,
+                       #breaks = seq(0, 5, 1),  
+                       expand = c(0.01, 0.01)) +
+    scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+               expand = c(0.02, 0.02),
+               breaks ="6 months")+
+    MyTheme
+    #geom_abline(slope = 0, intercept = 3, color="gray", linetype=2)
+
+pH_all + 
+  geom_point(aes (Date, pH_calculated, fill=Season), shape=21, alpha=0.8)
+
+```
+
+```{r,  echo=FALSE, fig.height=8.8, fig.width=8.8}
+pH_all + 
+  geom_point(aes (Date, pH_calculated, fill=Extreme), shape=21, alpha=0.8)+
+  geom_abline(slope = 0, intercept = 2100, color="gray", linetype=2)+
+  geom_abline(slope = 0, intercept = 2200, color="red", linetype=1)+
+  geom_abline(slope = 0, intercept = 2000, color="red", linetype=1)+
+  facet_grid(~Zone)
+```
+
+### Monthly 
+
+```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
+pH_month<- ggplot(FLK.data) +
+  scale_y_continuous(#limits = c(0,5.5),
+                       name=("pH calculated") ,
+                       #breaks = seq(0, 5, 1),  
+                       expand = c(0.02, 0.02)) +
+  scale_x_continuous(name="Month",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+               #expand = c(0, 0),
+               breaks =seq(0,12,2))+
+  
+  geom_point(aes (MoY, pH_calculated, fill=Extreme), shape=21, alpha=0.8)+
+  MyTheme +  facet_grid(Zone~Sub_region)
+pH_month
+```
+
+### pH issues
+```{r}
+pH_low<-FLK.data[FLK.data$pH_calculated<7.95 & FLK.data$Zone=="Oceanic", ]
+pH_low$Problem<-"pH(low_for_ocean)"
+```
+
+
+### Omega - nDIC scatterplot and outliers
+
+```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
+Arg_pH<- ggplot(FLK.data) + 
+  geom_smooth(aes(pH_calculated, Aragonite_Sat_W), linetype=2, 
+              method = "lm", color="black")+
+  MyTheme
+```
+
+```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
+Arg_pH +
+    geom_point(aes (pH_calculated, Aragonite_Sat_W, fill=Precipitation),
+               alpha=0.5, shape=21)+
+    facet_wrap(~Zone)
+  
+Arg_pH +  
+  geom_point(aes (pH_calculated, Aragonite_Sat_W, fill=Extreme), 
+             alpha=0.5, shape=21)+
+  facet_wrap(~Zone)
+
+```
+
+**NOTE:** Review Omega calculations for August 2011 -  Very high values for normal DIC and TA -  including offshore and ocean samples
+
 # 6 Remove outliers
 
 ```{r}
-Remove<-rbind(Salinity_Check, Omega_Check, TA_Check)
+Remove<-rbind(Salinity_Check, Omega_Check, TA_Check, pH_low)
 Remove <-Remove %>% 
         filter(!duplicated(CTDID))
 
-write.csv(Remove, "FLK_results/ValuesToRemove.csv", row.names = F)
+#write.csv(Remove, "FLK_results/ValuesToRemove_V3.csv", row.names = F)
 
 FLK.data_filtered<-FLK.data[!(FLK.data$CTDID %in% Remove$CTDID),]
-write.csv(FLK.data_filtered, "FLK_results/FLK_filtered.csv", row.names = F)
+FLK.data_filtered<-FLK.data_filtered%>% select (- (ncrmp_flag: seacarb_id))
+#str(FLK.data_filtered)
+#write.csv(FLK.data_filtered, "FLK_results/FLK_filtered_ve3.csv", row.names = F)
 ```
 
 ```{r}
