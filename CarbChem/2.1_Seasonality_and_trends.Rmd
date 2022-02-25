@@ -57,6 +57,7 @@ theme(legend.position="top",
           panel.grid.minor.x = element_blank(),
           panel.grid.minor.y = element_blank(),
           legend.box.background = element_rect(),
+          legend.title = element_blank(),
           panel.background =element_rect(fill = NA, 
                                          color = "black"))#+
   #guides(fill=guide_legend(nrow=2,byrow=TRUE), shape=guide_legend(nrow=3,byrow=TRUE))
@@ -66,22 +67,28 @@ theme(legend.position="top",
 
 ```{r, include=FALSE}
 # 1. Get data
-FLK.data<-read.csv("FLK_results/FLK_filtered_ve3.csv", header = T)
-FLK.data$Location<-NULL
+  FLK.data<-read.csv("FLK_results/FLK_filtered_ve3.csv", header = T)
 
-FLK.data$TA_0<-NULL
-FLK.data$DIC_0<-NULL
-FLK.data$nTA<-NULL
-FLK.data$nDIC<-NULL
-FLK.data$Sample_frequency<-NULL
-FLK.data$Survey_design <-NULL
-
+  FLK.data$Location<-NULL
+  FLK.data$TA_0<-NULL
+  FLK.data$DIC_0<-NULL
+  FLK.data$nTA<-NULL
+  FLK.data$nDIC<-NULL
+  FLK.data$n35TA<-NULL
+  FLK.data$n35DIC<-NULL
+  FLK.data$Survey_design <-NULL
+  FLK.data$Sample_frequency<-NULL
+  FLK.data$Sample_Depth_m<-NULL
+  FLK.data$Conductivity_Sm<-NULL
+  FLK.data$Pressure_db<-NULL
+  FLK.data$Density_Sigmat<-NULL
+  #head(FLK.data)
 
 # 2. Format variables
   # Date/times
     # Year
     FLK.data$Year<-as.numeric(FLK.data$Year)
-    summary(FLK.data$Year)
+    #summary(FLK.data$Year)
 
     FLK.data$Month<-factor(FLK.data$Month, 
                           levels = c("Apr", "May","Jun",
@@ -118,15 +125,6 @@ FLK.data$Survey_design <-NULL
 
 * Wet: May - October
 * Dry: November - April
-
-
-## Remove extreme events?
-
-```{r}
-# Label and filter extreme events
-  FLK.data$Extreme<-as.factor(FLK.data$Extreme)
-  summary(FLK.data$Extreme)
-```
 
 # 2. Check data available
 
@@ -393,6 +391,17 @@ kable(as.data.frame(Cases_Site_FLK, format = "html"),
       caption = "Samples collected in SiteIDs")
 ```
 
+## Remove extreme events?
+
+```{r}
+# Label and filter extreme events
+  FLK.data$Extreme<-as.factor(FLK.data$Extreme)
+  summary(FLK.data$Extreme)
+  FLK.data_filtered<-FLK.data[FLK.data$Extreme=="Normal",]
+  
+```
+
+
 # 3. TA and DIC salinity normalization
 
 ## Salinity standardizations 
@@ -445,13 +454,13 @@ MeanSalinity<-mean(FLK.data$BestSalinity)
 
 2. Calculate TA intercepts
 
-```{r}
+```{r, echo=FALSE, fig.height=4, fig.width=8}
 # TA_coef <- FLK.data %>% 
 #                  group_by(Region) %>%
 #                  do({model = lm(TA_umol_kg~BestSalinity, data=.)  # model
 #                      data.frame(tidy(model), # get coefficient info
 #                     glance(model))})        # get model info
-TA_coef <- FLK.data[FLK.data$Zone=="Oceanic",] %>%
+TA_coef <- FLK.data_filtered[FLK.data_filtered$Zone=="Oceanic",] %>%
                 group_by(Region) %>%
                 do({model = lm(TA_umol_kg~BestSalinity, data=.)  # model
                     data.frame(tidy(model), # get coefficient info
@@ -464,17 +473,19 @@ TA_coef <- FLK.data[FLK.data$Zone=="Oceanic",] %>%
 #                     glance(model))})        # get model info
 
 TA_coe <- lmodel2(TA_umol_kg~BestSalinity,
-                            data=FLK.data[FLK.data$Zone=="Oceanic",])
+            data=FLK.data_filtered[FLK.data_filtered$Zone=="Oceanic",])
+TA_coe
+
 par(mfrow=c(1,3))
-plot(TA_coe, "OLS")
-plot(TA_coe, "MA")
-plot(TA_coe, "SMA")
+  plot(TA_coe, "OLS")
+  plot(TA_coe, "MA")
+  plot(TA_coe, "SMA")
 par(mfrow=c(1,1))
 ```
 
 3. Calculate DIC intercepts 
 
-```{r}
+```{r, echo=FALSE, fig.height=4, fig.width=8}
 # 3.DIC normalization to intercept  
 
     # DIC_coef <- FLK.data %>%
@@ -484,7 +495,7 @@ par(mfrow=c(1,1))
     #               data.frame(tidy(model), # get coefficient info
     #               glance(model))})        # get model info
     
-    DIC_coef <- FLK.data[FLK.data$Zone=="Oceanic",] %>%
+ DIC_coef <- FLK.data_filtered[FLK.data_filtered$Zone=="Oceanic",] %>%
                   group_by(Region) %>%
                   do({model = lm(DIC_umol_kg~BestSalinity, data=.)
                   # create model
@@ -492,30 +503,34 @@ par(mfrow=c(1,1))
                   glance(model))})        # get model info
 
   DIC_coe <- lmodel2(DIC_umol_kg~BestSalinity,
-                            data=FLK.data[FLK.data$Zone=="Oceanic",])
-    par(mfrow=c(1,3))
+                data=FLK.data_filtered[FLK.data_filtered$Zone=="Oceanic",])
+  DIC_coe
+  
+  par(mfrow=c(1,3))
     plot(DIC_coe, "OLS")
     plot(DIC_coe, "MA")
     plot(DIC_coe, "SMA")
-    par(mfrow=c(1,1))
+  par(mfrow=c(1,1))
 ```
 
-4. Normalize with Friss equation
+4. Add TA and DIC endmembers (S=0) to data frame
 
 ```{r}
 # 4. Add endmember intercepts
 
-  TA_TO<-subset(TA_coef, term=="(Intercept)")
-  TA_TO<-as.data.frame(select(TA_TO, c(Region, estimate)))
-  names(TA_TO)[2] <- "TA_0"
+  TA_SO<-subset(TA_coef, term=="(Intercept)")
+  TA_SO<-as.data.frame(select(TA_SO, c(Region, estimate)))
+  names(TA_SO)[2] <- "TA_0"
   
-  DIC_TO<-subset(DIC_coef, term=="(Intercept)")
-  DIC_TO<-as.data.frame(select(DIC_TO, c(Region, estimate)))
-  names(DIC_TO)[2] <- "DIC_0"
+  DIC_SO<-subset(DIC_coef, term=="(Intercept)")
+  DIC_SO<-as.data.frame(select(DIC_SO, c(Region, estimate)))
+  names(DIC_SO)[2] <- "DIC_0"
     
-  Intercepts<-join(TA_TO, DIC_TO, by="Region", type="full")
+  Intercepts<-join(TA_SO, DIC_SO, by="Region", type="full")
   FLK.data<-join(FLK.data, Intercepts, by="Region", type="left")
 ```
+
+5. Normalize with (1) Friss equation and (2) mean salinity
 
 ```{r}
   # 5. endmember and salinity (mean) normalization
@@ -536,7 +551,7 @@ par(mfrow=c(1,1))
 #write.csv(FLK.data, "FLK_results/FLK.data_filtered_normalized.csv", row.names = F)
 ```
 
-5. TA parameters to nTA
+6. TA parameters to nTA (S=0)
 
 ```{r}
 kable(as.data.frame(TA_coef[,1:8], format = "markdown"), 
@@ -546,7 +561,7 @@ kable(as.data.frame(TA_coef[,1:8], format = "markdown"),
 
 ```
     
-```{r, echo=F, fig.height=8.8, fig.width=8.8}
+```{r, echo=F, fig.height=4, fig.width=8.8}
 # 5. Chech normalization?
 nTA_Sal<- ggplot(FLK.data) + MyTheme+
   
@@ -566,7 +581,7 @@ nTA_Sal<- ggplot(FLK.data) + MyTheme+
               linetype=1, method = "lm",  color="red")  
 ```
 
-6. DIC parameters to nDIC
+7. DIC parameters to nDIC (S=0)
 
 ```{r}
 kable(as.data.frame(DIC_coef[,1:8], format = "markdown"), 
@@ -596,7 +611,7 @@ nDIC_Sal<- ggplot(FLK.data) + MyTheme+
               linetype=1, method = "lm",  color="red")
 ```
 
-```{r,  echo=FALSE}
+```{r,echo=FALSE, fig.height=4, fig.width=8}
 FLK_parameters<-ggarrange(nTA_Sal, nDIC_Sal,
           #labels = c("DIC Friss regresion", "TA Friss regresion"),
           ncol = 2, nrow = 1)
@@ -611,7 +626,7 @@ FLK_parameters
 
 ### TA vs Friss salinity normalized TA
 
-```{r}
+```{r, echo=FALSE, fig.height=4, fig.width=8}
 nTA_TA<- ggplot(FLK.data, aes (TA_umol_kg, nTA)) + 
   
   scale_y_continuous(#limits = c(1700,2900),
@@ -641,9 +656,11 @@ nTA_TA_plots<-ggarrange(nTA_TA_ext, nTA_TA_pre,
 nTA_TA_plots
 ```
 
+**Figure Supp 2:** Linear regressions of Friss normalized total alkalinity (nTA, µmol kg−1) as a function of measured Total Alcalinity (TA, µmol kg−1)
+
 ### DIC vs Friss salinity normalized DIC
 
-```{r}
+```{r, echo=FALSE, fig.height=4, fig.width=8}
 nDIC_DIC<- ggplot(FLK.data, aes (DIC_umol_kg, nDIC)) + 
   
   scale_y_continuous(#limits = c(1700,2900),
@@ -673,9 +690,11 @@ nDIC_DIC_plots<-ggarrange(nDIC_DIC_ext, nDIC_DIC_pre,
 nDIC_DIC_plots
 ```
 
+**Figure Supp 3:** Linear regressions of Friss normalized Dissolved Inorganc Carbon (nDIC, µmol kg−1) as a function of measured Dissolved Inorganc Carbon (DIC, µmol kg−1)
+
 ### TA vs Salinity normalized TA  
 
-```{r}
+```{r, echo=FALSE, fig.height=4, fig.width=8}
 n35TA_TA<- ggplot(FLK.data, aes (TA_umol_kg, n35TA)) + 
   
   scale_y_continuous(#limits = c(1700,2900),
@@ -701,9 +720,11 @@ n35TA_TA_plots<-ggarrange(n35TA_TA_ext, n35TA_TA_pre,
 n35TA_TA_plots
 ```
 
+**Figure Supp 4:** Linear regressions of mean salinity normalized total alkalinity (n35TA, µmol kg−1) as a function of measured Total Alcalinity (TA, µmol kg−1)
+
 ### DIC vs Salinity normalized DIC
 
-```{r}
+```{r, echo=FALSE, fig.height=4, fig.width=8}
 n35DIC_DIC<- ggplot(FLK.data, aes (DIC_umol_kg, n35DIC)) + 
   
   scale_y_continuous(#limits = c(1700,2900),
@@ -729,13 +750,15 @@ nDIC_DIC_plots<-ggarrange(n35DIC_DIC_ext, n35DIC_DIC_pre,
 nDIC_DIC_plots
 ```
 
-### TA - salinity normalized TA vs Salinity
+**Figure Supp 5:** Linear regressions of mean salinity normalized Dissolved Inorganc Carbon (n35DIC, µmol kg−1) as a function of measured Dissolved Inorganc Carbon (DIC, µmol kg−1)
 
-```{r}
+### Differences vs Salinity
+
+```{r, echo=FALSE, fig.height=4, fig.width=4}
 TAdiff<- ggplot(FLK.data, aes (BestSalinity, TA_umol_kg-n35TA)) + 
   
   scale_y_continuous(#limits = c(1700,2900),
-                    name="TA - nTA") +
+                    name="TA - n35TA") +
   scale_x_continuous(# limits = c(1600, 2600),
                      name="Salinity")+
   geom_smooth(method = "lm", colour="black")+
@@ -744,7 +767,8 @@ TAdiff<- ggplot(FLK.data, aes (BestSalinity, TA_umol_kg-n35TA)) +
 TAdiff_pre<-TAdiff +
   scale_shape_manual(values=c(21,21,24, 24))+
   geom_point(aes (fill=Precipitation, shape=Zone), alpha=0.4)
-ggExtra::ggMarginal(
+
+TAdiff<-ggExtra::ggMarginal(
   p = TAdiff_pre,
   type = 'boxplot',
   margins = 'both',
@@ -754,9 +778,7 @@ ggExtra::ggMarginal(
 )
 ```
 
-### DIC - salinity normalized DIC vs Salinity
-
-```{r}
+```{r, echo=FALSE, fig.height=4, fig.width=4}
 DICdiff<- ggplot(FLK.data, aes (BestSalinity, DIC_umol_kg-n35DIC)) + 
   
   scale_y_continuous(#limits = c(1700,2900),
@@ -769,7 +791,8 @@ DICdiff<- ggplot(FLK.data, aes (BestSalinity, DIC_umol_kg-n35DIC)) +
 DICdiff_pre<-DICdiff +
   scale_shape_manual(values=c(21,21,24, 24))+
   geom_point(aes (fill=Precipitation, shape=Zone), alpha=0.4)
-ggExtra::ggMarginal(
+
+DICdiff_pre<-ggExtra::ggMarginal(
   p = DICdiff_pre,
   type = 'boxplot',
   margins = 'both',
@@ -780,54 +803,19 @@ ggExtra::ggMarginal(
 
 ```
 
-# 4. Data for endmember comparissions
+```{r, echo=FALSE, fig.height=4, fig.width=8}
+Difference_plots<-ggarrange(TAdiff, DICdiff_pre,
+          #labels = c("A", "B"),
+          ncol = 2, nrow = 1)
+Difference_plots
+```
+
+**Figure Supp 6:** Linear regressions of (A) TA-n35TA and (B) DIC-nDIC as a function of Salinity
+
+# 4. Endmember comparissions
 
 ```{r}
-# Endmember comparisons
-  FLK.data_filtered<-FLK.data[FLK.data$Extreme=="Normal",]
-
-  # Reef
-  WS.reef<-subset(FLK.data, FLK.data$Zone!="Oceanic")
-  WS.reef$Date<-as.Date(WS.reef$Date, "%Y-%m-%d")
-  # WS.reef<-subset(FLK.data, 
-  #                 FLK.data$Zone=="Mid channel"|
-  #                 FLK.data$Zone=="Inshore")
-  # WS.reef$Date<-as.Date(WS.reef$Date, "%Y-%m-%d")
-  #summary(WS.reef)
-  
-  # Open
-  # WS.open<-subset(FLK.data,
-  #                 FLK.data$Zone=="Offshore"|
-  #                 FLK.data$Zone=="Oceanic")
-  # WS.open$Date<-as.Date(WS.open$Date, "%Y-%m-%d")
-  WS.open<-subset(FLK.data,
-                  FLK.data$Zone=="Oceanic")
-  WS.open$Date<-as.Date(WS.open$Date, "%Y-%m-%d")
-  #summary(WS.open)
-
-  mean_Open<- ddply (WS.open, .(MY, Month),
-                            summarise,
-                  OnTA_my = mean (n35TA, na.rm = T),
-                  OnDIC_my = mean (n35DIC, na.rm = T),
-                  OTA_my = mean (TA_umol_kg, na.rm = T),
-                  ODIC_my = mean (DIC_umol_kg, na.rm = T),
-                  OpCO2_O = mean (pCO2_uatm , na.rm = T),
-                  OpH_O = mean (pH_calculated, na.rm = T),
-                  OAra_O = mean (Aragonite_Sat_W , na.rm = T)
-                  )
-  mean_Op<- ddply (WS.open, .(Region),
-                            summarise,
-                  OTem = mean (Temperature_C, na.rm = T), 
-                  OSal = mean (BestSalinity, na.rm = T), 
-                  OnTA = mean (n35TA, na.rm = T),
-                  OnDIC = mean (n35DIC, na.rm = T),
-                  OTA = mean (TA_umol_kg, na.rm = T),
-                  ODIC = mean (DIC_umol_kg, na.rm = T),
-                  OpCO2 = mean (pCO2_uatm , na.rm = T),
-                  OpH = mean (pH_calculated, na.rm = T),
-                  OAra = mean (Aragonite_Sat_W , na.rm = T)
-                  )
-  
+FLK.data_filtered<-FLK.data[FLK.data$Extreme=="Normal",]
 ```
 
 ## 4.1 TA and DIC relation
@@ -843,7 +831,8 @@ TA_DIC<- ggplot(FLK.data, aes (DIC_umol_kg, TA_umol_kg)) +
                      # expand = c(0, 0),
                      # breaks = seq(1500,2600,100),
                      expression(paste("DIC (", mu, "mol ", kg^-1, ")")))+
-  facet_grid(Zone~Sub_region)+ MyTheme
+  facet_grid(Zone~Sub_region)+ MyTheme+
+  guides(fill=guide_legend(override.aes=list(shape=21)))
 
 ```
 
@@ -891,7 +880,8 @@ nTA_nDIC<- ggplot(FLK.data, aes (n35DIC, n35TA)) +
                      # expand = c(0, 0),
                      # breaks = seq(1500,2600,100),
                       name="Salinity-nDIC")+
-  facet_grid(Zone~Sub_region) + MyTheme
+  facet_grid(Zone~Sub_region) + MyTheme+
+  guides(fill=guide_legend(override.aes=list(shape=21)))
 
 ```
 
@@ -946,7 +936,7 @@ TA_DIC_Zone <- ddply (FLK.data[FLK.data$Extreme=="Normal", ], .(Zone),summarise,
 
 TA_DIC_Ocean<-TA_DIC_Zone[TA_DIC_Zone$Zone=="Oceanic", ]
 
-kable(as.data.frame(TA_DIC_Zone, format = "markdown"), caption = "mean TA/DIC by zone")
+kable(as.data.frame(TA_DIC_Zone, format = "markdown"), caption = "Mean TA/DIC by zone")
 ```
 
 ```{r}
@@ -956,21 +946,21 @@ TA_DIC_Extreme_pre<-TA_DIC +
   scale_shape_manual(values=c(24, 25, 21))+
   geom_point(data=FLK.data, aes (DIC_umol_kg, TA_umol_kg,
                                  fill=Precipitation, shape=Extreme),
-             alpha=0.8, size=1)+
-    geom_smooth(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+                            alpha=0.8, size=1)+
+  geom_smooth(data=FLK.data[FLK.data$Extreme=="Normal", ], 
               aes(DIC_umol_kg, TA_umol_kg), method = "lm", colour="black")+
   
-    # geom_abline(slope = 0, intercept =TA_DIC_Ocean$TAmean, 
-    #           linetype=2, colour="gray")+
-    # geom_vline(xintercept = TA_DIC_Ocean$DICmean,
-    #          linetype=2, colour="gray")+
-    geom_point(aes(x=TA_DIC_Ocean$DICmean, y=TA_DIC_Ocean$TAmean),
+  # geom_abline(slope = 0, intercept =TA_DIC_Ocean$TAmean, 
+  #           linetype=2, colour="gray")+
+  # geom_vline(xintercept = TA_DIC_Ocean$DICmean,
+  #          linetype=2, colour="gray")+
+  geom_point(aes(x=TA_DIC_Ocean$DICmean, y=TA_DIC_Ocean$TAmean),
              size=3, alpha=1, shape=21, fill="black")
-TA_DIC_Extreme_pre
+#TA_DIC_Extreme_pre
 
 ```
 
-**Figure 2a:** Linear regressions of total alkalinity (TA; µmol kg−1) and dissolved inorganic carbon (DIC; µmol kg−1)
+<!-- **Figure 2a:** Linear regressions of total alkalinity (TA; µmol kg−1) and dissolved inorganic carbon (DIC; µmol kg−1) -->
 
 
 ```{r}
@@ -1012,7 +1002,7 @@ nTA_nDIC_Extreme_pre<-nTA_nDIC +
     #          linetype=2, colour="gray")+
     geom_point(aes(x=TA_DIC_Ocean$nDICmean, y=TA_DIC_Ocean$nTAmean),
              size=3, alpha=1, shape=21, fill="black")
-nTA_nDIC_Extreme_pre
+#nTA_nDIC_Extreme_pre
 
 ```
 
@@ -1044,7 +1034,7 @@ kable(as.data.frame(nTA_nDIC_coef_zone_noExtremes[,1:8],
 ```{r, fig.height=8, fig.width=8.8}
 TA_DIC_reef_pre<-TA_DIC_Extreme_pre + 
   facet_grid(Zone~Reference)
-TA_DIC_reef_pre
+#TA_DIC_reef_pre
 ```
 
 **Figure Sup:** Linear regressions of total alkalinity (TA; µmol kg−1) and dissolved inorganic carbon (DIC; µmol kg−1) by reef and zone
@@ -1089,6 +1079,7 @@ Slope_plot<-ggplot(data=Slopes_reef, aes (x =Sub_region, y =estimate)) +
                      #breaks = seq(1800, 2800, 100),
                      expression(paste("TA vs DIC slope")))+
   facet_grid(Zone~Region)+
+  guides(fill=FALSE)+
   theme(legend.title = element_blank())
 #Slope_plot
 
@@ -1098,7 +1089,7 @@ Slope_plot<-ggplot(data=Slopes_reef, aes (x =Sub_region, y =estimate)) +
 
 ```{r,  echo=FALSE}
 FLK_slopes<-ggarrange(TA_DIC_Extreme_pre, Slope_plot,
-          #labels = c("DIC Friss regresion", "TA Friss regresion"),
+          labels = c("A", "B"),
           ncol = 2, nrow = 1, widths = c(4, 1.5))
 FLK_slopes
 
@@ -1113,7 +1104,7 @@ FLK_slopes
 ```{r, fig.height=8, fig.width=8.8}
 nTA_nDIC_reef_pre<-nTA_nDIC_Extreme_pre +
   facet_grid(Zone~Reference)
-nTA_nDIC_reef_pre
+#nTA_nDIC_reef_pre
 ```
 
 <!-- **Figure S:** Linear regressions of total alkalinity (nTA; µmol kg−1) and dissolved inorganic carbon (nDIC; µmol kg−1) by reef and zone -->
@@ -1156,6 +1147,7 @@ nSlopes_reef<-ggplot(data=nSlopes_reef, aes (x =Sub_region, y =estimate)) +
                      #breaks = seq(1800, 2800, 100),
                      expression(paste("nTA vs nDIC slope")))+
   facet_grid(Zone~Region)+
+   guides(fill=FALSE)+
   theme(legend.title = element_blank())
 #nSlopes_reef
 
@@ -1177,193 +1169,85 @@ FLK_nslopes
 
 # 5 Seasonal plots
 
-## 5.1 Month plots 
+## Data for endmember comparisons
 
 ```{r}
-Month_ploth<- ggplot(FLK.data) +
-        MyTheme +  
-        facet_grid(Zone~Sub_region)+
-        scale_shape_manual(values=c(24, 25, 21))+
-        guides(fill=guide_legend(override.aes=list(shape=21)))+
-        theme(axis.title.x = element_blank() )
-```
-
-### Temperature
-
-```{r, echo=FALSE, fig.height=8, fig.width=8}
-Temperature_month<- Month_ploth+
-   geom_abline(slope = 0, intercept = mean_Op$OTem, color="grey")+
-   scale_y_continuous(#limits = c(15,40),
-                       name=(expression("Temperature"~(degree*C))),
-                       breaks = seq(16, 40, 4),  
-                       expand = c(0.05, 0.05)) +
- 
-    geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
-                 aes (x=Month, y=Temperature_C))+
-    
-    geom_point(data=FLK.data, aes (x=Month, y=Temperature_C, 
-                                 shape=Extreme, fill=Precipitation), 
-             alpha=0.8, size=1)
-Temperature_month
-```
-
-### Salinity
-
-```{r, echo=FALSE, fig.height=8, fig.width=8}
-Sal_month<- Month_ploth+
-   geom_abline(slope = 0, intercept = mean_Op$OSal, color="grey")+
-   scale_y_continuous(#limits = c(15,40),
-                       name=(expression("Salinity")),
-                       breaks = seq(15, 40, 2),  
-                       expand = c(0.05, 0.05)) +
+# Reef
+  WS.reef<-subset(FLK.data, FLK.data$Zone!="Oceanic")
+  WS.reef$Date<-as.Date(WS.reef$Date, "%Y-%m-%d")
   
-    geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
-                 aes (x=Month, y=BestSalinity))+
-    
-    geom_point(data=FLK.data, aes (x=Month, y=BestSalinity, 
-                                 fill=Precipitation, shape=Extreme), 
-             alpha=0.8, size=1)
-Sal_month
+# Open
+  WS.open<-subset(FLK.data_filtered,
+                  FLK.data_filtered$Zone=="Oceanic")
+  WS.open$Date<-as.Date(WS.open$Date, "%Y-%m-%d")
+  #summary(WS.open)
 ```
 
-### TA
 
-```{r, echo=FALSE, fig.height=8, fig.width=8}
-TA_month<- Month_ploth+
-   geom_abline(slope = 0, intercept = mean_Op$OTA, color="grey")+
-   scale_y_continuous(#limits = c(1700,2900),
-                     expand = c(0.05, 0.05),
-                     #breaks = seq(1800, 2800, 100),
-                     name=expression(paste("TA (", mu, "mol ", kg^-1, ")")))+
+```{r}
+# Mean ocean values by month - year 
+  mean_Open_MY<- ddply (WS.open, .(MY, Month),
+                            summarise,
+                  OTem_my = mean (Temperature_C, na.rm = T),  
+                  OSal_my = mean (BestSalinity, na.rm = T), 
+                  
+                  OTA_my = mean (TA_umol_kg, na.rm = T),
+                  OnTA_my = mean (n35TA, na.rm = T),
+                  
+                  ODIC_my = mean (DIC_umol_kg, na.rm = T),
+                  OnDIC_my = mean (n35DIC, na.rm = T),
+                  
+                  OpCO2_O = mean (pCO2_uatm , na.rm = T),
+                  OpH_O = mean (pH_calculated, na.rm = T),
+                  OAra_O = mean (Aragonite_Sat_W , na.rm = T)
+                  )
+
+# Mean ocean values by month
+  mean_OpM <- mean_Open_MY %>%
+              group_by(Month) %>%
+              summarise(
+                  OTem_m = mean (OTem_my, na.rm = T), 
+                  OSal_m = mean (OSal_my, na.rm = T), 
+                  
+                  OTA_m = mean (OTA_my, na.rm = T),
+                  OnTA_m = mean (OnTA_my, na.rm = T),
+                  
+                  OnDIC_m = mean (OnDIC_my, na.rm = T),
+                  ODIC_m = mean (ODIC_my, na.rm = T),
+                  
+                  OpCO2_m = mean (OpCO2_O , na.rm = T),
+                  OpH_m = mean (OpH_O, na.rm = T),
+                  OAra_m = mean (OAra_O, na.rm = T),
+                  n = n()
+                  )
+   #mean_OpM
   
-    geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
-                 aes (x=Month, y=TA_umol_kg))+
-    
-    geom_point(data=FLK.data, aes (x=Month, y=TA_umol_kg, 
-                                 fill=Precipitation, shape=Extreme), 
-             alpha=0.8, size=1)
-TA_month
+ # Mean ocean values by year    
+  mean_Op<- mean_OpM %>%
+            summarise(
+                  OTem = mean (OTem_m, na.rm = T), 
+                  OSal  = mean (OSal_m, na.rm = T), 
+                  
+                  OTA = mean (OTA_m, na.rm = T),
+                  OnTA = mean (OnTA_m, na.rm = T),
+                  
+                  OnDIC = mean (OnDIC_m, na.rm = T),
+                  ODIC = mean (ODIC_m, na.rm = T),
+                  
+                  OpCO2 = mean (OpCO2_m, na.rm = T),
+                  OpH = mean (OpH_m, na.rm = T),
+                  OAra = mean (OAra_m, na.rm = T),
+                  n = n()
+                  )
 ```
 
-### nTA
 
-```{r, echo=FALSE, fig.height=8, fig.width=8}
-nTA_month<- Month_ploth+
-     geom_abline(slope = 0, intercept = mean_Op$OnTA, color="grey")+
-    scale_y_continuous(#limits = c(1700,2900),
-                     expand = c(0.05, 0.05),
-                     #breaks = seq(1800, 2800, 100),
-                     name=expression(paste("nTA (", mu, "mol ", kg^-1, ")")))+
-  
-    geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
-                 aes (x=Month, y=n35TA))+
-    
-    geom_point(data=FLK.data, aes (x=Month, y=n35TA, 
-                                 fill=Precipitation, shape=Extreme), 
-             alpha=0.8, size=1)
-nTA_month
-```
-
-### DIC
-
-```{r, echo=FALSE, fig.height=8, fig.width=8}
-DIC_month<- Month_ploth+
-    geom_abline(slope = 0, intercept = mean_Op$ODIC, color="grey")+
-    scale_y_continuous(#limits = c(1700,2900),
-                     expand = c(0.05, 0.05),
-                     #breaks = seq(1800, 2800, 100),
-                     name=expression(paste("DIC (", mu, "mol ", kg^-1, ")")))+
-  
-    geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
-                 aes (x=Month, y=DIC_umol_kg))+
-    
-    geom_point(data=FLK.data, aes (x=Month, y=DIC_umol_kg, 
-                                 fill=Precipitation, shape=Extreme), 
-             alpha=0.8, size=1)
-DIC_month
-```
-
-### nDIC
-
-```{r, echo=FALSE, fig.height=8, fig.width=8}
-nDIC_month<- Month_ploth+
-     geom_abline(slope = 0, intercept = mean_Op$OnDIC, color="grey")+
-    scale_y_continuous(#limits = c(1700,2900),
-                     expand = c(0.05, 0.05),
-                     #breaks = seq(1800, 2800, 100),
-                     name=expression(paste("nDIC (", mu, "mol ", kg^-1, ")")))+
-  
-    geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
-                 aes (x=Month, y=n35DIC))+
-    
-    geom_point(data=FLK.data, aes (x=Month, y=n35DIC, 
-                                 fill=Precipitation, shape=Extreme), 
-             alpha=0.8, size=1)
-nDIC_month
-```
-
-### pCO2
-
-```{r, echo=FALSE, fig.height=8, fig.width=8}
-pCO2_month<- Month_ploth+
-     geom_abline(slope = 0, intercept = mean_Op$OpCO2, color="grey")+
-  scale_y_continuous(#limits = c(1,5.5),
-                       name=expression(paste(pCO[2], " (", mu, " atm)")),
-                       breaks = seq(200, 600, 100),
-                       expand = c(0.05, 0.05)
-                        ) +
-    geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
-                 aes (x=Month, y=pCO2_uatm))+
-    
-    geom_point(data=FLK.data, aes (x=Month, y=pCO2_uatm, 
-                                 fill=Precipitation, shape=Extreme), 
-             alpha=0.8, size=1)
-pCO2_month
-```
-
-### pH
-
-```{r, echo=FALSE, fig.height=8, fig.width=8}
-pH_month<- Month_ploth +
-    geom_abline(slope = 0, intercept = mean_Op$OpH, color="grey")+
-    scale_y_continuous(#limits = c(1,5.5),
-                       name=(expression ("pH")),
-                       breaks = seq(0, 9, 0.1),
-                       expand = c(0.05, 0.05)
-                        ) +
-  
-    geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
-                 aes (x=Month, y=pH_calculated))+
-    
-    geom_point(data=FLK.data, aes (x=Month, y=pH_calculated, 
-                                 fill=Precipitation, shape=Extreme), 
-             alpha=0.8, size=1)
-pH_month
-```
-
-### Omega
-
-```{r, echo=FALSE, fig.height=8, fig.width=8}
-Omega_month<- Month_ploth+
-    geom_abline(slope = 0, intercept = mean_Op$OAra, color="grey")+
-   scale_y_continuous(#limits = c(1,5.5),
-                       name=(expression ("Aragonite saturation state "~Omega)),
-                       breaks = seq(1, 5, 1),
-                       expand = c(0.05, 0.05)
-                        ) +
-  
-    geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
-                 aes (x=Month, y=Aragonite_Sat_W))+
-    geom_point(data=FLK.data, aes (x=Month, y=Aragonite_Sat_W, 
-                fill=Precipitation, shape=Extreme), 
-                alpha=0.8, size=1)
-Omega_month
-```
+## 5.1 Month raw values 
 
 ### Months stats
 
 ```{r}
-  Month_Stats<- ddply (FLK.data_filtered, .(Zone, Sub_region, Month),
+Month_Stats<- ddply (FLK.data_filtered, .(Zone, Sub_region, Season, Month, Region),
                             summarise,
                        
                   Tem_mean = mean (Temperature_C, na.rm = T),
@@ -1382,207 +1266,409 @@ Omega_month
                   nDIC_sd = sd (n35DIC, na.rm = T),
                   
                   DIC_mean = mean (DIC_umol_kg, na.rm = T),
-                  DIC_sd = mean (DIC_umol_kg, na.rm = T),
+                  DIC_sd = sd (DIC_umol_kg, na.rm = T),
                   
                   pCO2_mean = mean (pCO2_uatm , na.rm = T),
                   pCO2_sd = sd (pCO2_uatm , na.rm = T),
                   
                   pH_mean = mean (pH_calculated, na.rm = T),
-                  pH_sd = mean (pH_calculated, na.rm = T),
+                  pH_sd = sd (pH_calculated, na.rm = T),
                   
                   Ara_mean = mean (Aragonite_Sat_W , na.rm = T),
-                  Ara_sd = mean (Aragonite_Sat_W , na.rm = T)
+                  Ara_sd = sd (Aragonite_Sat_W , na.rm = T)
                   )
 Month_Stats<-Month_Stats %>% 
- mutate_if(is.numeric, round, digits=2)
+ mutate_if(is.numeric, round, digits=3)
 Month_Stats
 ```
 
-## 5.2 Season plots 
-
+### Month Plots 
 ```{r}
-Season_plot<- ggplot(FLK.data) +
+Month_ploth<- ggplot(FLK.data) +
         MyTheme +  
-        facet_grid(Zone~Season)+
+        facet_grid(Zone~Sub_region)+
         scale_shape_manual(values=c(24, 25, 21))+
         guides(fill=guide_legend(override.aes=list(shape=21)))+
-        theme(axis.title.x = element_blank())
+        theme(axis.title.x = element_blank() )
 
-par(mfrow=c(1,2))
+Year_ploth<- ggplot(Month_Stats) +
+        MyTheme +  
+        theme(axis.title.x = element_blank())+
+        facet_grid(Zone~Region)
+        #scale_shape_manual(values=c(24, 25, 21))+
+        #guides(fill=guide_legend(override.aes=list(shape=21)))+
+        #theme(axis.title.x = element_blank() )
 ```
 
-### Temperature
+#### Temperature
 
-```{r, echo=FALSE, fig.height=8, fig.width=4}
-Temperature_season<- Season_plot+
-    geom_abline(slope = 0, intercept = mean_Op$OTem, color="grey")+
-    scale_y_continuous(#limits = c(15,40),
+```{r, echo=FALSE, fig.height=8, fig.width=8}
+Temperature_month<- Month_ploth+
+   geom_abline(slope = 0, intercept = mean_Op$OTem, color="grey")+
+   scale_y_continuous(#limits = c(15,40),
                        name=(expression("Temperature"~(degree*C))),
                        breaks = seq(16, 40, 4),  
                        expand = c(0.05, 0.05)) +
  
     geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
-                 aes (x=Sub_region , y=Temperature_C))+
+                 aes (x=Month, y=Temperature_C))+
     
-    geom_point(data=FLK.data, aes (x=Sub_region, y=Temperature_C, 
-                                 fill=Precipitation, shape=Extreme), 
-             alpha=0.5, size=0.8)
-Temperature_season
+    geom_point(data=FLK.data, aes (x=Month, y=Temperature_C, 
+                                 shape=Extreme, fill=Precipitation), 
+             alpha=0.8, size=1)
+#Temperature_month
+
+Tem_Y<- Year_ploth+
+    geom_abline(slope = 0, intercept = mean_Op$OTem, color="grey")+
+    scale_y_continuous(#limits = c(15,40),
+                       name=(expression("Temperature"~(degree*C))),
+                       breaks = seq(16, 40, 2),  
+                       expand = c(0.1, 0.1)) +
+  
+    geom_boxplot(aes (x=Sub_region, y=Tem_mean))+
+    
+    geom_point(aes (x=Sub_region, y=Tem_mean, fill=Season), 
+             shape=21, alpha=0.8, size=1.5)
+#Tem_Y
 ```
 
-### Salinity
+```{r, echo=FALSE, fig.height=8, fig.width=8}
+Temperature_my<-ggarrange(Temperature_month, Tem_Y,
+          #labels = c("DIC Friss regresion", "TA Friss regresion"),
+          ncol = 2, nrow = 1, widths = c(4, 1.5))
+Temperature_my
+```
 
-```{r, echo=FALSE, fig.height=8, fig.width=4}
-Sal_season<- Season_plot+
-    scale_y_continuous(#limits = c(15,40),
+#### Salinity
+
+```{r, echo=FALSE, fig.height=8, fig.width=8}
+Sal_month<- Month_ploth+
+   geom_abline(slope = 0, intercept = mean_Op$OSal, color="grey")+
+   scale_y_continuous(#limits = c(15,40),
                        name=(expression("Salinity")),
                        breaks = seq(15, 40, 2),  
                        expand = c(0.05, 0.05)) +
-    geom_abline(slope = 0, intercept = mean_Op$OSal, color="grey")+
+  
     geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
-                 aes (x=Sub_region, y=BestSalinity))+
-    
-    geom_point(data=FLK.data, aes (x=Sub_region, y=BestSalinity, 
+                 aes (x=Month, y=BestSalinity))+
+  
+    # annotate("point",
+    #        x = c(1, 4, 7, 10),
+    #        y = min(FLK.data$BestSalinity))+ 
+
+    geom_point(data=FLK.data, aes (x=Month, y=BestSalinity, 
                                  fill=Precipitation, shape=Extreme), 
-            alpha=0.5, size=0.8)
-Sal_season
+             alpha=0.8, size=1)
+#Sal_month
+
+Sal_Y<- Year_ploth+
+    geom_abline(slope = 0, intercept = mean_Op$OSal, color="grey")+
+    scale_y_continuous(#limits = c(15,40),
+                       name=(expression("Salinity")),
+                       breaks = seq(15, 40, 1),  
+                       expand = c(0.05, 0.05)) +
+  
+    geom_boxplot(aes (x=Sub_region, y=Sal_mean))+
+    
+    geom_point(aes (x=Sub_region, y=Sal_mean, fill=Season), 
+             shape=21, alpha=0.8, size=1.5)
+#Sal_Y
 ```
 
-### TA
 
-```{r, echo=FALSE, fig.height=8, fig.width=4}
-TA_season<- Season_plot+
-    scale_y_continuous(#limits = c(1700,2900),
+```{r, echo=FALSE, fig.height=8, fig.width=8}
+Sal_my<-ggarrange(Sal_month, Sal_Y,
+          #labels = c("DIC Friss regresion", "TA Friss regresion"),
+          ncol = 2, nrow = 1, widths = c(4, 1.5))
+Sal_my
+```
+
+#### TA
+
+```{r, echo=FALSE, fig.height=8, fig.width=8}
+TA_month<- Month_ploth+
+   geom_abline(slope = 0, intercept = mean_Op$OTA, color="grey")+
+   scale_y_continuous(#limits = c(1700,2900),
                      expand = c(0.05, 0.05),
                      #breaks = seq(1800, 2800, 100),
                      name=expression(paste("TA (", mu, "mol ", kg^-1, ")")))+
-    geom_abline(slope = 0, intercept = mean_Op$OTA, color="grey")+
+  
     geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
-                 aes (x=Sub_region, y=TA_umol_kg))+
+                 aes (x=Month, y=TA_umol_kg))+
     
-    geom_point(data=FLK.data, aes (x=Sub_region, y=TA_umol_kg, 
+    geom_point(data=FLK.data, aes (x=Month, y=TA_umol_kg, 
                                  fill=Precipitation, shape=Extreme), 
-             alpha=0.5, size=0.8)
-TA_season
+             alpha=0.8, size=1)
+#TA_month
+
+TA_Y<- Year_ploth+
+    geom_abline(slope = 0, intercept = mean_Op$OTA, color="grey")+
+     scale_y_continuous(#limits = c(1700,2900),
+                     expand = c(0.05, 0.05),
+                     #breaks = seq(1800, 2800, 100),
+                     name=expression(paste("TA (", mu, "mol ", kg^-1, ")")))+
+  
+    geom_boxplot(aes (x=Sub_region, y=TA_mean))+
+    
+    geom_point(aes (x=Sub_region, y=TA_mean, fill=Season), 
+             shape=21, alpha=0.8, size=1.5)
+#TA_Y
 ```
 
-### n35TA
 
-```{r, echo=FALSE, fig.height=8, fig.width=4}
-nTA_season<- Season_plot+
- 
-   scale_y_continuous(#limits = c(1700,2900),
+```{r, echo=FALSE, fig.height=8, fig.width=8}
+TA_my<-ggarrange(TA_month, TA_Y,
+          #labels = c("DIC Friss regresion", "TA Friss regresion"),
+          ncol = 2, nrow = 1, widths = c(4, 1.5))
+TA_my
+```
+
+#### nTA
+
+```{r, echo=FALSE, fig.height=8, fig.width=8}
+nTA_month<- Month_ploth+
+     geom_abline(slope = 0, intercept = mean_Op$OnTA, color="grey")+
+    scale_y_continuous(#limits = c(1700,2900),
                      expand = c(0.05, 0.05),
                      #breaks = seq(1800, 2800, 100),
                      name=expression(paste("nTA (", mu, "mol ", kg^-1, ")")))+
-    geom_abline(slope = 0, intercept = mean_Op$OnTA, color="grey")+
-    geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
-                 aes (x=Sub_region, y=n35TA))+
-    
-    geom_point(data=FLK.data, aes (x=Sub_region, y=n35TA, 
-                    fill=Precipitation, shape=Extreme), 
-             alpha=0.5, size=0.8)
-nTA_season
-```
-
-### DIC
-
-```{r, echo=FALSE, fig.height=8, fig.width=4}
-DIC_season<- Season_plot+
-    scale_y_continuous(#limits = c(1700,2900),
-                    expand = c(0.05, 0.05),
-                     #breaks = seq(1800, 2800, 100),
-                     name=expression(paste("DIC (", mu, "mol ", kg^-1, ")")))+
-    geom_abline(slope = 0, intercept = mean_Op$ODIC, color="grey")+
-    geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
-                 aes (x=Sub_region, y=DIC_umol_kg))+
-    
-    geom_point(data=FLK.data, aes (x=Sub_region, y=DIC_umol_kg, 
-                                 fill=Precipitation, shape=Extreme), 
-             alpha=0.5, size=0.8)
-
-DIC_season
-```
-
-### nDIC
-
-```{r, echo=FALSE, fig.height=8, fig.width=4}
-nDIC_season<- Season_plot+
- 
-   scale_y_continuous(#limits = c(1700,2900),
-                      expand = c(0.05, 0.05),
-                     #breaks = seq(1800, 2800, 100),
-                     name=expression(paste("nDIC (", mu, "mol ", kg^-1, ")")))+
-    geom_abline(slope = 0, intercept = mean_Op$OnDIC, color="grey")+
   
     geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
-                 aes (x=Sub_region, y=n35DIC))+
+                 aes (x=Month, y=n35TA))+
     
-    geom_point(data=FLK.data, aes (x=Sub_region, y=n35DIC, 
+    geom_point(data=FLK.data, aes (x=Month, y=n35TA, 
                                  fill=Precipitation, shape=Extreme), 
-             alpha=0.5, size=0.8)
-nDIC_season
+             alpha=0.8, size=1)
+#nTA_month
+
+nTA_Y<- Year_ploth+
+    geom_abline(slope = 0, intercept = mean_Op$OnTA, color="grey")+
+     scale_y_continuous(#limits = c(1700,2900),
+                     expand = c(0.05, 0.05),
+                     #breaks = seq(1800, 2800, 100),
+                     name=expression(paste("nTA (", mu, "mol ", kg^-1, ")")))+
+  
+    geom_boxplot(aes (x=Sub_region, y=nTA_mean))+
+    
+    geom_point(aes (x=Sub_region, y=nTA_mean, fill=Season), 
+             shape=21, alpha=0.8, size=1.5)
+#nTA_Y
 ```
 
-### pCO2
 
-```{r, echo=FALSE, fig.height=8, fig.width=4}
-pCO2_season<- Season_plot+
-   scale_y_continuous(#limits = c(1,5.5),
-                       name=expression(paste(pCO[2], "(", mu, " atm)")),
-                       breaks = seq(200, 700, 100),
-                        expand = c(0.05, 0.05)
-                        ) +
-    geom_abline(slope = 0, intercept = mean_Op$OpCO2, color="grey")+
+```{r, echo=FALSE, fig.height=8, fig.width=8}
+nTA_my<-ggarrange(nTA_month, nTA_Y,
+          #labels = c("DIC Friss regresion", "TA Friss regresion"),
+          ncol = 2, nrow = 1, widths = c(4, 1.5))
+nTA_my
+```
+
+#### DIC
+
+```{r, echo=FALSE, fig.height=8, fig.width=8}
+DIC_month<- Month_ploth+
+    geom_abline(slope = 0, intercept = mean_Op$ODIC, color="grey")+
+    scale_y_continuous(#limits = c(1700,2900),
+                     expand = c(0.05, 0.05),
+                     #breaks = seq(1800, 2800, 100),
+                     name=expression(paste("DIC (", mu, "mol ", kg^-1, ")")))+
+  
     geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
-                 aes (x=Sub_region, y=pCO2_uatm))+
-    geom_point(data=FLK.data, aes (x=Sub_region, y=pCO2_uatm, 
+                 aes (x=Month, y=DIC_umol_kg))+
+    
+    geom_point(data=FLK.data, aes (x=Month, y=DIC_umol_kg, 
                                  fill=Precipitation, shape=Extreme), 
-             alpha=0.5, size=0.8)
-pCO2_season
+             alpha=0.8, size=1)
+#DIC_month
+
+DIC_Y<- Year_ploth+
+    geom_abline(slope = 0, intercept = mean_Op$ODIC, color="grey")+
+     scale_y_continuous(#limits = c(1700,2900),
+                     expand = c(0.05, 0.05),
+                     #breaks = seq(1800, 2800, 100),
+                     name=expression(paste("DIC (", mu, "mol ", kg^-1, ")")))+
+  
+    geom_boxplot(aes (x=Sub_region, y=DIC_mean))+
+    
+    geom_point(aes (x=Sub_region, y=DIC_mean, fill=Season), 
+             shape=21, alpha=0.8, size=1.5)
+#DIC_Y
 ```
 
-### pH
 
-```{r, echo=FALSE, fig.height=8, fig.width=4}
-pH_season<- Season_plot+
+```{r, echo=FALSE, fig.height=8, fig.width=8}
+DIC_my<-ggarrange(DIC_month, DIC_Y,
+          #labels = c("DIC Friss regresion", "TA Friss regresion"),
+          ncol = 2, nrow = 1, widths = c(4, 1.5))
+DIC_my
+```
+
+#### nDIC
+
+```{r, echo=FALSE, fig.height=8, fig.width=8}
+nDIC_month<- Month_ploth+
+     geom_abline(slope = 0, intercept = mean_Op$OnDIC, color="grey")+
+    scale_y_continuous(#limits = c(1700,2900),
+                     expand = c(0.05, 0.05),
+                     #breaks = seq(1800, 2800, 100),
+                     name=expression(paste("nDIC (", mu, "mol ", kg^-1, ")")))+
+  
+    geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+                 aes (x=Month, y=n35DIC))+
+    
+    geom_point(data=FLK.data, aes (x=Month, y=n35DIC, 
+                                 fill=Precipitation, shape=Extreme), 
+             alpha=0.8, size=1)
+#nDIC_month
+
+nDIC_Y<- Year_ploth+
+    geom_abline(slope = 0, intercept = mean_Op$OnDIC, color="grey")+
+     scale_y_continuous(#limits = c(1700,2900),
+                     expand = c(0.05, 0.05),
+                     #breaks = seq(1800, 2800, 100),
+                     name=expression(paste("nDIC (", mu, "mol ", kg^-1, ")")))+
+  
+    geom_boxplot(aes (x=Sub_region, y=nDIC_mean))+
+    
+    geom_point(aes (x=Sub_region, y=nDIC_mean, fill=Season), 
+             shape=21, alpha=0.8, size=1.5)
+#nDIC_Y
+```
+
+
+```{r, echo=FALSE, fig.height=8, fig.width=8}
+nDIC_my<-ggarrange(nDIC_month, nDIC_Y,
+          #labels = c("DIC Friss regresion", "TA Friss regresion"),
+          ncol = 2, nrow = 1, widths = c(4, 1.5))
+nDIC_my
+```
+
+#### pCO2
+
+```{r, echo=FALSE, fig.height=8, fig.width=8}
+pCO2_month<- Month_ploth+
+     geom_abline(slope = 0, intercept = mean_Op$OpCO2, color="grey")+
+  scale_y_continuous(#limits = c(1,5.5),
+                       name=expression(paste(pCO[2], " (", mu, " atm)")),
+                       breaks = seq(200, 600, 100),
+                       expand = c(0.05, 0.05)
+                        ) +
+    geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+                 aes (x=Month, y=pCO2_uatm))+
+    
+    geom_point(data=FLK.data, aes (x=Month, y=pCO2_uatm, 
+                                 fill=Precipitation, shape=Extreme), 
+             alpha=0.8, size=1)
+#pCO2_month
+
+pCO2_Y<- Year_ploth+
+    geom_abline(slope = 0, intercept = mean_Op$OpCO2, color="grey")+
+    scale_y_continuous(#limits = c(1,5.5),
+                       name=expression(paste(pCO[2], " (", mu, " atm)")),
+                       breaks = seq(200, 600, 100),
+                       expand = c(0.05, 0.05)
+                        ) +
+  
+    geom_boxplot(aes (x=Sub_region, y=pCO2_mean))+
+    
+    geom_point(aes (x=Sub_region, y=pCO2_mean, fill=Season), 
+             shape=21, alpha=0.8, size=1.5)
+#pCO2_Y
+```
+
+
+```{r, echo=FALSE, fig.height=8, fig.width=8}
+pCO2_my<-ggarrange(pCO2_month, pCO2_Y,
+          #labels = c("DIC Friss regresion", "TA Friss regresion"),
+          ncol = 2, nrow = 1, widths = c(4, 1.5))
+pCO2_my
+```
+
+#### pH
+
+```{r, echo=FALSE, fig.height=8, fig.width=8}
+pH_month<- Month_ploth +
+    geom_abline(slope = 0, intercept = mean_Op$OpH, color="grey")+
     scale_y_continuous(#limits = c(1,5.5),
                        name=(expression ("pH")),
                        breaks = seq(0, 9, 0.1),
                        expand = c(0.05, 0.05)
                         ) +
-    geom_abline(slope = 0, intercept = mean_Op$OpH, color="grey")+
+  
     geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
-                 aes (x=Sub_region, y=pH_calculated))+
+                 aes (x=Month, y=pH_calculated))+
     
-    geom_point(data=FLK.data, aes (x=Sub_region, y=pH_calculated, 
+    geom_point(data=FLK.data, aes (x=Month, y=pH_calculated, 
                                  fill=Precipitation, shape=Extreme), 
-            alpha=0.5, size=0.8)
-pH_season
+             alpha=0.8, size=1)
+#pH_month
+
+pH_Y<- Year_ploth+
+    geom_abline(slope = 0, intercept = mean_Op$OpH, color="grey")+
+    scale_y_continuous(#limits = c(1,5.5),
+                       name=(expression ("pH")),
+                       breaks = seq(0, 9, 0.1),
+                       expand = c(0.05, 0.05)
+                        ) +
+  
+    geom_boxplot(aes (x=Sub_region, y=pH_mean))+
+    
+    geom_point(aes (x=Sub_region, y=pH_mean, fill=Season), 
+             shape=21, alpha=0.8, size=1.5)
+#pH_Y
 ```
 
-### Omega
 
-```{r, echo=FALSE, fig.height=8, fig.width=4}
-Omega_season<- Season_plot+
-   scale_y_continuous(#limits = c(1,5.5),
+```{r, echo=FALSE, fig.height=8, fig.width=8}
+pH_my<-ggarrange(pH_month, pH_Y,
+          #labels = c("DIC Friss regresion", "TA Friss regresion"),
+          ncol = 2, nrow = 1, widths = c(4, 1.5))
+pH_my
+```
+
+#### Omega
+
+```{r, echo=FALSE, fig.height=8, fig.width=8}
+Omega_month<- Month_ploth+
+    geom_abline(slope = 0, intercept = mean_Op$OAra, color="grey")+
+    scale_y_continuous(#limits = c(1,5.5),
                        name=(expression ("Aragonite saturation state "~Omega)),
                        breaks = seq(1, 5, 1),
                        expand = c(0.05, 0.05)
                         ) +
-    geom_abline(slope = 0, intercept = mean_Op$OAra, color="grey")+
+  
     geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
-                 aes (x=Sub_region, y=Aragonite_Sat_W))+
-    geom_point(data=FLK.data, aes (x=Sub_region, y=Aragonite_Sat_W, 
+                 aes (x=Month, y=Aragonite_Sat_W))+
+    geom_point(data=FLK.data, aes (x=Month, y=Aragonite_Sat_W, 
                 fill=Precipitation, shape=Extreme), 
-                alpha=0.5, size=0.8)
-Omega_season
+                alpha=0.8, size=1)
+#Omega_month
+
+Omega_Y<- Year_ploth+
+    geom_abline(slope = 0, intercept = mean_Op$OAra , color="grey")+
+    scale_y_continuous(#limits = c(1,5.5),
+                       name=(expression ("Aragonite saturation state "~Omega)),
+                       breaks = seq(1, 5, 0.5),
+                       expand = c(0.05, 0.05)
+                        ) +
+  
+    geom_boxplot(aes (x=Sub_region, y=Ara_mean))+
+    
+    geom_point(aes (x=Sub_region, y=Ara_mean, fill=Season), 
+             shape=21, alpha=0.8, size=1.5)
+#Omega_Y
 ```
 
-```{r}
-par(mfrow=c(1,1))
+
+```{r, echo=FALSE, fig.height=8, fig.width=8}
+Ara_my<-ggarrange(Omega_month, Omega_Y,
+          #labels = c("DIC Friss regresion", "TA Friss regresion"),
+          ncol = 2, nrow = 1, widths = c(4, 1.5))
+Ara_my
 ```
 
+
+## 5.2 Season raw values 
 
 ### Season stats
 
@@ -1622,12 +1708,197 @@ Seasonal_Stats<-Seasonal_Stats %>%
 Seasonal_Stats
 ```
 
-## 5.3 Delta months plots 
+### Season plots
 
 ```{r}
-# 1. Get the oceanic / offshore mean values per month-year 
+Season_plot<- ggplot(FLK.data) +
+        MyTheme +  
+        facet_grid(Zone~Season)+
+        scale_shape_manual(values=c(24, 25, 21))+
+        guides(fill=guide_legend(override.aes=list(shape=21)))+
+        theme(axis.title.x = element_blank())
 
-  WS.reef<-join(WS.reef, mean_Open, 
+par(mfrow=c(1,2))
+```
+
+#### Temperature
+
+```{r, echo=FALSE, fig.height=6, fig.width=4}
+Temperature_season<- Season_plot+
+    geom_abline(slope = 0, intercept = mean_Op$OTem, color="grey")+
+    scale_y_continuous(#limits = c(15,40),
+                       name=(expression("Temperature"~(degree*C))),
+                       breaks = seq(16, 40, 4),  
+                       expand = c(0.05, 0.05)) +
+ 
+    geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+                 aes (x=Sub_region , y=Temperature_C))+
+    
+    geom_point(data=FLK.data, aes (x=Sub_region, y=Temperature_C, 
+                                 fill=Precipitation, shape=Extreme), 
+             alpha=0.5, size=0.8)
+Temperature_season
+```
+
+#### Salinity
+
+```{r, echo=FALSE, fig.height=6, fig.width=4}
+Sal_season<- Season_plot+
+    scale_y_continuous(#limits = c(15,40),
+                       name=(expression("Salinity")),
+                       breaks = seq(15, 40, 2),  
+                       expand = c(0.05, 0.05)) +
+    geom_abline(slope = 0, intercept = mean_Op$OSal, color="grey")+
+    geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+                 aes (x=Sub_region, y=BestSalinity))+
+    
+    geom_point(data=FLK.data, aes (x=Sub_region, y=BestSalinity, 
+                                 fill=Precipitation, shape=Extreme), 
+            alpha=0.5, size=0.8)
+Sal_season
+```
+
+#### TA
+
+```{r, echo=FALSE, fig.height=6, fig.width=4}
+TA_season<- Season_plot+
+    scale_y_continuous(#limits = c(1700,2900),
+                     expand = c(0.05, 0.05),
+                     #breaks = seq(1800, 2800, 100),
+                     name=expression(paste("TA (", mu, "mol ", kg^-1, ")")))+
+    geom_abline(slope = 0, intercept = mean_Op$OTA, color="grey")+
+    geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+                 aes (x=Sub_region, y=TA_umol_kg))+
+    
+    geom_point(data=FLK.data, aes (x=Sub_region, y=TA_umol_kg, 
+                                 fill=Precipitation, shape=Extreme), 
+             alpha=0.5, size=0.8)
+TA_season
+```
+
+#### n35TA
+
+```{r, echo=FALSE, fig.height=6, fig.width=4}
+nTA_season<- Season_plot+
+ 
+   scale_y_continuous(#limits = c(1700,2900),
+                     expand = c(0.05, 0.05),
+                     #breaks = seq(1800, 2800, 100),
+                     name=expression(paste("nTA (", mu, "mol ", kg^-1, ")")))+
+    geom_abline(slope = 0, intercept = mean_Op$OnTA, color="grey")+
+    geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+                 aes (x=Sub_region, y=n35TA))+
+    
+    geom_point(data=FLK.data, aes (x=Sub_region, y=n35TA, 
+                    fill=Precipitation, shape=Extreme), 
+             alpha=0.5, size=0.8)
+nTA_season
+```
+
+#### DIC
+
+```{r, echo=FALSE, fig.height=6, fig.width=4}
+DIC_season<- Season_plot+
+    scale_y_continuous(#limits = c(1700,2900),
+                    expand = c(0.05, 0.05),
+                     #breaks = seq(1800, 2800, 100),
+                     name=expression(paste("DIC (", mu, "mol ", kg^-1, ")")))+
+    geom_abline(slope = 0, intercept = mean_Op$ODIC, color="grey")+
+    geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+                 aes (x=Sub_region, y=DIC_umol_kg))+
+    
+    geom_point(data=FLK.data, aes (x=Sub_region, y=DIC_umol_kg, 
+                                 fill=Precipitation, shape=Extreme), 
+             alpha=0.5, size=0.8)
+
+DIC_season
+```
+
+#### nDIC
+
+```{r, echo=FALSE, fig.height=6, fig.width=4}
+nDIC_season<- Season_plot+
+ 
+   scale_y_continuous(#limits = c(1700,2900),
+                      expand = c(0.05, 0.05),
+                     #breaks = seq(1800, 2800, 100),
+                     name=expression(paste("nDIC (", mu, "mol ", kg^-1, ")")))+
+    geom_abline(slope = 0, intercept = mean_Op$OnDIC, color="grey")+
+  
+    geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+                 aes (x=Sub_region, y=n35DIC))+
+    
+    geom_point(data=FLK.data, aes (x=Sub_region, y=n35DIC, 
+                                 fill=Precipitation, shape=Extreme), 
+             alpha=0.5, size=0.8)
+nDIC_season
+```
+
+#### pCO2
+
+```{r, echo=FALSE, fig.height=6, fig.width=4}
+pCO2_season<- Season_plot+
+   scale_y_continuous(#limits = c(1,5.5),
+                       name=expression(paste(pCO[2], "(", mu, " atm)")),
+                       breaks = seq(200, 700, 100),
+                        expand = c(0.05, 0.05)
+                        ) +
+    geom_abline(slope = 0, intercept = mean_Op$OpCO2, color="grey")+
+    geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+                 aes (x=Sub_region, y=pCO2_uatm))+
+    geom_point(data=FLK.data, aes (x=Sub_region, y=pCO2_uatm, 
+                                 fill=Precipitation, shape=Extreme), 
+             alpha=0.5, size=0.8)
+pCO2_season
+```
+
+#### pH
+
+```{r, echo=FALSE, fig.height=6, fig.width=4}
+pH_season<- Season_plot+
+    scale_y_continuous(#limits = c(1,5.5),
+                       name=(expression ("pH")),
+                       breaks = seq(0, 9, 0.1),
+                       expand = c(0.05, 0.05)
+                        ) +
+    geom_abline(slope = 0, intercept = mean_Op$OpH, color="grey")+
+    geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+                 aes (x=Sub_region, y=pH_calculated))+
+    
+    geom_point(data=FLK.data, aes (x=Sub_region, y=pH_calculated, 
+                                 fill=Precipitation, shape=Extreme), 
+            alpha=0.5, size=0.8)
+pH_season
+```
+
+#### Omega
+
+```{r, echo=FALSE, fig.height=6, fig.width=4}
+Omega_season<- Season_plot+
+   scale_y_continuous(#limits = c(1,5.5),
+                       name=(expression ("Aragonite saturation state "~Omega)),
+                       breaks = seq(1, 5, 1),
+                       expand = c(0.05, 0.05)
+                        ) +
+    geom_abline(slope = 0, intercept = mean_Op$OAra, color="grey")+
+    geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
+                 aes (x=Sub_region, y=Aragonite_Sat_W))+
+    geom_point(data=FLK.data, aes (x=Sub_region, y=Aragonite_Sat_W, 
+                fill=Precipitation, shape=Extreme), 
+                alpha=0.5, size=0.8)
+Omega_season
+```
+
+```{r}
+par(mfrow=c(1,1))
+```
+
+## 5.3 Delta months values 
+
+```{r}
+# 1. Get the oceanic mean values per month-year 
+
+  WS.reef<-join(WS.reef, mean_Open_MY, 
                  type = "left", by=c("MY", "Month"))
 
 # 2. and subtract them from the reef data
@@ -1650,201 +1921,11 @@ Seasonal_Stats
  #summary(WS.reef, digits=2)
 ```
 
-```{r}
-Delta_plot<- ggplot(WS.reef) +
-        MyTheme +  
-        facet_grid(Zone~Sub_region)+
-        scale_shape_manual(values=c(24, 25, 21))+
-        guides(fill=guide_legend(override.aes=list(shape=21)))+
-        geom_hline(yintercept = 0, color="gray")+
-        theme(axis.title.x = element_blank())
-
-Frequency_plot<- ggplot(data = WS.reef) +
-      geom_vline(aes(xintercept = 0), linetype = "dashed")+
-      facet_grid(Zone~Sub_region, scales = "free_y")+ MyTheme
-```
-
-### dTA
-
-```{r, echo=FALSE, fig.height=8, fig.width=8}
-TA_delta_m<- Delta_plot+
- 
-   scale_y_continuous(#limits = c(1700,2900),
-                     expand = c(0.05, 0.05),
-                     breaks = seq(-800, 800, 100),
-                     name=expression(paste(Delta, "TA (", mu, "mol ", kg^-1, ")")))+
-  
-    geom_boxplot(data=WS.reef[WS.reef$Extreme=="Normal", ], 
-                 aes (x=Month, y=dTA_MY))+
-    
-    geom_point(data=WS.reef, aes (x=Month, y=dTA_MY, 
-                                 fill=Precipitation, shape=Extreme), 
-             alpha=0.8, size=1)
-TA_delta_m
-```
-
-### dTA density
-
-```{r}
-TA_freq_All<- Frequency_plot+
-  geom_density(aes (dTA_MY), fill = "lightgray", alpha=0.4) +
-  scale_x_continuous(# limits = c(1600, 2600),
-                      breaks = seq(-300, 300, 100),
-                      expression(paste(Delta, "TA (", mu, "mol ", kg^-1, ")")))
-TA_freq_All
-
-TA_freq_pre<- Frequency_plot+
-  geom_density(aes (dTA_MY, fill = Precipitation), alpha = 0.4) +
-  scale_x_continuous(breaks = seq(-300, 300, 100),
-                     expression(paste(Delta, "TA (", mu, "mol ", kg^-1, ")")))
-TA_freq_pre
-
-TA_freq_sea<- Frequency_plot+
-  geom_density(aes (dTA_MY, fill = Season), alpha = 0.4) +
-  scale_x_continuous(breaks = seq(-300, 300, 100),
-                     expression(paste(Delta, "TA (", mu, "mol ", kg^-1, ")")))
-TA_freq_sea
-
-```
-
-### dnTA
-
-```{r, echo=FALSE, fig.height=8, fig.width=8}
-nTA_delta_m<- Delta_plot+
-    scale_y_continuous(#limits = c(1700,2900),
-                     expand = c(0.05, 0.05),
-                     breaks = seq(-800, 800, 100),
-                     name=expression(paste(Delta, " nTA (", mu, "mol ", kg^-1, ")")))+
-  
-    geom_boxplot(data=WS.reef[WS.reef$Extreme=="Normal", ], 
-                 aes (x=Month, y=dnTA_MY))+
-    
-    geom_point(data=WS.reef, aes (x=Month, y=dnTA_MY, 
-                                 fill=Precipitation, shape=Extreme), 
-             alpha=0.8, size=1)
-nTA_delta_m
-```
-
-### dDIC
-
-```{r, echo=FALSE, fig.height=8, fig.width=8}
-DIC_delta_m<- Delta_plot+
-    scale_y_continuous(#limits = c(1700,2900),
-                     expand = c(0.05, 0.05),
-                     breaks = seq(-800, 800, 100),
-                     name=expression(paste(Delta, "DIC (", mu, "mol ", kg^-1, ")")))+
-  
-    geom_boxplot(data=WS.reef[WS.reef$Extreme=="Normal", ], 
-                 aes (x=Month, y=dDIC_MY))+
-    
-    geom_point(data=WS.reef, aes (x=Month, y=dDIC_MY, 
-                                 fill=Precipitation, shape=Extreme), 
-             alpha=0.8, size=1)
-DIC_delta_m
-```
-
-### dDIC density
-
-```{r}
-dDIC_freq_All<- Frequency_plot+
-  geom_density(aes (dDIC_MY), fill = "lightgray", alpha=0.5) +
-  scale_x_continuous(breaks = seq(-300, 300, 100),
-                     expression(paste(Delta, "DIC (", mu, "mol ", kg^-1, ")")))
-dDIC_freq_All
-
-dDIC_freq_pre<- Frequency_plot+
-  geom_density(aes (dDIC_MY, fill = Precipitation), alpha = 0.4) +
-  scale_x_continuous(breaks = seq(-300, 300, 100),
-                    expression(paste(Delta, "DIC (", mu, "mol ", kg^-1, ")")))
-dDIC_freq_pre
-
-dDIC_freq_sea<- Frequency_plot+
-  geom_density(aes (dDIC_MY, fill = Season), alpha = 0.4) +
-  scale_x_continuous(breaks = seq(-300, 300, 100),
-                     expression(paste(Delta, "DIC (", mu, "mol ", kg^-1, ")")))
-dDIC_freq_sea
-
-```
-
-
-### dnDIC
-
-```{r, echo=FALSE, fig.height=8, fig.width=8}
-nDIC_delta_m<- Delta_plot+
-    scale_y_continuous(#limits = c(1700,2900),
-                     expand = c(0.05, 0.05),
-                     breaks = seq(-800, 800, 100),
-                     name=expression(paste(Delta, " nDIC (", mu, "mol ", kg^-1, ")")))+
-  
-    geom_boxplot(data=WS.reef[WS.reef$Extreme=="Normal", ], 
-                 aes (x=Month, y=dnDIC_MY))+
-    
-    geom_point(data=WS.reef, aes (x=Month, y=dnDIC_MY, 
-                                 fill=Precipitation, shape=Extreme), 
-             alpha=0.8, size=1)
-nDIC_delta_m
-```
-
-### dpCO2
-
-```{r, echo=FALSE, fig.height=8, fig.width=8}
-pCO2_delta_m<- Delta_plot+
-    scale_y_continuous(#limits = c(1700,2900),
-                     expand = c(0.05, 0.05),
-                     #breaks = seq(1800, 2800, 100),
-                     name=expression(paste(Delta ~ pCO[2] , " (", mu, "atm)")))+
-  
-    geom_boxplot(data=WS.reef[WS.reef$Extreme=="Normal", ], 
-                 aes (x=Month, y=dpCO2_MY))+
-    
-    geom_point(data=WS.reef, aes (x=Month, y=dpCO2_MY, 
-                                 fill=Precipitation, shape=Extreme), 
-             alpha=0.8, size=1)
-pCO2_delta_m
-```
-
-### dpH
-
-```{r, echo=FALSE, fig.height=8, fig.width=8}
-pH_delta_m<- Delta_plot+
-    scale_y_continuous(#limits = c(1,5.5),
-                       name=(expression (paste(Delta, " pH"))),
-                       breaks = seq(-5, 5, 0.1),
-                       expand = c(0.05, 0.05)
-                        ) +
-  
-    geom_boxplot(data=WS.reef[WS.reef$Extreme=="Normal", ], 
-                 aes (x=Month, y=dpH_MY))+
-    
-    geom_point(data=WS.reef, aes (x=Month, y=dpH_MY, 
-                                 fill=Precipitation, shape=Extreme), 
-             alpha=0.8, size=1)
-pH_delta_m
-```
-
-### dOmega
-
-```{r, echo=FALSE, fig.height=8, fig.width=8}
-Omega_delta_m<- Delta_plot+
-   scale_y_continuous(#limits = c(1,5.5),
-                       name=(expression (paste(Delta, " Aragonite saturation state "
-                                               ~Omega))),
-                       breaks = seq(-3, 3, 0.5),
-                       expand = c(0.05, 0.05)
-                        ) +
-  
-    geom_boxplot(data=WS.reef[WS.reef$Extreme=="Normal", ], 
-                 aes (x=Month, y=dOme_MY))+
-    geom_point(data=WS.reef, aes (x=Month, y=dOme_MY, 
-                fill=Precipitation, shape=Extreme), 
-                alpha=0.8, size=1)
-Omega_delta_m
-```
 
 ### Delta month stats 
 
 ```{r}
-  dMonth_Stats<- ddply (WS.reef, .(Zone, Sub_region, Month),
+  dMonth_Stats<- ddply (WS.reef, .(Zone, Sub_region, Month, Season, Region),
                             summarise,
                   dTA_mean = mean (dTA_MY, na.rm = T),
                   dTA_sd = sd (dTA_MY, na.rm = T),
@@ -1868,157 +1949,354 @@ Omega_delta_m
                   dAra_sd = mean (dOme_MY , na.rm = T)
                   )
 
-dMonth_Stats<-Seasonal_Stats %>% 
+dMonth_Stats<-dMonth_Stats %>% 
  mutate_if(is.numeric, round, digits=3)
 dMonth_Stats
 ```
 
-## 5.4 Delta season plots 
+### Delta month plots
 
 ```{r}
-Delta_S_plot<- ggplot(WS.reef) +
+Delta_plot<- ggplot(WS.reef) +
         MyTheme +  
-        facet_grid(Zone~Season)+
+        facet_grid(Zone~Sub_region)+
         scale_shape_manual(values=c(24, 25, 21))+
         guides(fill=guide_legend(override.aes=list(shape=21)))+
         geom_hline(yintercept = 0, color="gray")+
         theme(axis.title.x = element_blank())
-par(mfrow=c(1,2))
+
+DeltaYear_plot<- ggplot(dMonth_Stats) +
+        MyTheme +  
+        facet_grid(Zone~Region)+
+        geom_hline(yintercept = 0, color="gray")+
+        theme(axis.title.x = element_blank())
         
+
+Frequency_plot<- ggplot(data = WS.reef) +
+      geom_vline(aes(xintercept = 0), linetype = "dashed")+
+      facet_grid(Zone~Sub_region, scales = "free_y")+ MyTheme
 ```
 
-### TA
+#### dTA
 
 ```{r, echo=FALSE, fig.height=8, fig.width=8}
-TA_delta_S<- Delta_S_plot+
- 
-   scale_y_continuous(#limits = c(1700,2900),
+TA_delta_m<- Delta_plot+
+    scale_y_continuous(#limits = c(-350,340),
                      expand = c(0.05, 0.05),
-                     breaks = seq(-500, 500, 100),
-                     name=expression(paste(Delta~"TA (", mu, "mol ", kg^-1, ")")))+
+                     breaks = seq(-800, 800, 100),
+                     name=expression(paste(Delta, "TA (", mu, "mol ", kg^-1, ")")))+
   
     geom_boxplot(data=WS.reef[WS.reef$Extreme=="Normal", ], 
-                 aes (x=Sub_region, y=dTA_MY))+
+                 aes (x=Month, y=dTA_MY))+
     
-    geom_point(data=WS.reef, aes (x=Sub_region, y=dTA_MY, 
+    geom_point(data=WS.reef, aes (x=Month, y=dTA_MY, 
                                  fill=Precipitation, shape=Extreme), 
              alpha=0.8, size=1)
-TA_delta_S
+#TA_delta_m
+
+TA_delta_Y<- DeltaYear_plot+
+    scale_y_continuous(#limits = c(-350,340),
+                     expand = c(0.05, 0.05),
+                     breaks = seq(-800, 800, 50),
+                     name=expression(paste(Delta, "TA (", mu, "mol ", kg^-1, ")")))+
+    geom_boxplot(data=dMonth_Stats, 
+                 aes (x=Sub_region, y=dTA_mean))+
+    
+    geom_point(data=dMonth_Stats, aes (x=Sub_region, y=dTA_mean, fill=Season), 
+             alpha=0.8, size=1.5, shape=21)
+#TA_delta_Y
 ```
 
-### nTA
 
 ```{r, echo=FALSE, fig.height=8, fig.width=8}
-nTA_delta_S<- Delta_S_plot+
+dTA_my<-ggarrange(TA_delta_m, TA_delta_Y,
+          #labels = c("dTA by month", "dTA by Year"),
+          ncol = 2, nrow = 1, widths = c(4, 1.5))
+dTA_my
+```
+
+#### dTA density
+
+```{r}
+TA_freq_All<- Frequency_plot+
+  geom_histogram(aes(x=dTA_MY, fill=Precipitation),
+                 binwidth = 50,
+                   position = "stack", colour="black")+
+  geom_density(aes (dTA_MY), fill = "lightgray", alpha=0.4) +
+  scale_x_continuous(# limits = c(1600, 2600),
+                      breaks = seq(-300, 300, 100),
+                      expression(paste(Delta, "TA (", mu, "mol ", kg^-1, ")")))
+TA_freq_All
+
+TA_freq_pre<- Frequency_plot+
+  geom_density(aes (dTA_MY, fill = Precipitation), alpha = 0.4) +
+  scale_x_continuous(breaks = seq(-300, 300, 100),
+                     expression(paste(Delta, "TA (", mu, "mol ", kg^-1, ")")))
+TA_freq_pre
+
+TA_freq_sea<- Frequency_plot+
+  geom_density(aes (dTA_MY, fill = Season), alpha = 0.4) +
+  scale_x_continuous(breaks = seq(-300, 300, 100),
+                     expression(paste(Delta, "TA (", mu, "mol ", kg^-1, ")")))
+TA_freq_sea
+
+```
+
+#### dnTA
+
+```{r, echo=FALSE, fig.height=8, fig.width=8}
+nTA_delta_m<- Delta_plot+
     scale_y_continuous(#limits = c(1700,2900),
                      expand = c(0.05, 0.05),
-                     breaks = seq(-500, 500, 100),
-                     name=expression(paste(Delta~"nTA (", mu, "mol ", kg^-1, ")")))+
+                     breaks = seq(-800, 800, 200),
+                     name=expression(paste(Delta, " nTA (", mu, "mol ", kg^-1, ")")))+
   
     geom_boxplot(data=WS.reef[WS.reef$Extreme=="Normal", ], 
-                 aes (x=Sub_region, y=dnTA_MY))+
+                 aes (x=Month, y=dnTA_MY))+
     
-    geom_point(data=WS.reef, aes (x=Sub_region, y=dnTA_MY, 
+    geom_point(data=WS.reef, aes (x=Month, y=dnTA_MY, 
                                  fill=Precipitation, shape=Extreme), 
              alpha=0.8, size=1)
-nTA_delta_S
+#nTA_delta_m
+
+dnTA_delta_Y<- DeltaYear_plot+
+    scale_y_continuous(#limits = c(-350,340),
+                     expand = c(0.05, 0.05),
+                     breaks = seq(-800, 800, 100),
+                     name=expression(paste(Delta, "nTA (", mu, "mol ", kg^-1, ")")))+
+    geom_boxplot(data=dMonth_Stats, 
+                 aes (x=Sub_region, y=dnTA_mean))+
+    
+    geom_point(data=dMonth_Stats, aes (x=Sub_region, y=dnTA_mean, fill=Season), 
+             alpha=0.8, size=1.5, shape=21)
+#dnTA_delta_Y
 ```
 
-### DIC
+```{r, echo=FALSE, fig.height=8, fig.width=8}
+dnTA_my<-ggarrange(nTA_delta_m, dnTA_delta_Y,
+          #labels = c("dTA by month", "dTA by Year"),
+          ncol = 2, nrow = 1, widths = c(4, 1.5))
+dnTA_my
+```
+
+#### dDIC
 
 ```{r, echo=FALSE, fig.height=8, fig.width=8}
-DIC_delta_S<- Delta_S_plot+
+DIC_delta_m<- Delta_plot+
     scale_y_continuous(#limits = c(1700,2900),
                      expand = c(0.05, 0.05),
-                     breaks = seq(-500, 500, 100),
-                     name=expression(paste(Delta~"DIC (", mu, "mol ", kg^-1, ")")))+
+                     breaks = seq(-800, 800, 100),
+                     name=expression(paste(Delta, "DIC (", mu, "mol ", kg^-1, ")")))+
   
     geom_boxplot(data=WS.reef[WS.reef$Extreme=="Normal", ], 
-                 aes (x=Sub_region, y=dDIC_MY))+
+                 aes (x=Month, y=dDIC_MY))+
     
-    geom_point(data=WS.reef, aes (x=Sub_region, y=dDIC_MY, 
+    geom_point(data=WS.reef, aes (x=Month, y=dDIC_MY, 
                                  fill=Precipitation, shape=Extreme), 
              alpha=0.8, size=1)
-DIC_delta_S
-```
+#DIC_delta_m
 
-### nDIC
-
-```{r, echo=FALSE, fig.height=8, fig.width=8}
-nDIC_delta_S<- Delta_S_plot+
+DIC_delta_Y<- DeltaYear_plot+
     scale_y_continuous(#limits = c(1700,2900),
                      expand = c(0.05, 0.05),
-                     breaks = seq(-500, 500, 100),
-                     name=expression(paste(Delta~"nDIC (", mu, "mol ", kg^-1, ")")))+
+                     breaks = seq(-800, 800, 100),
+                     name=expression(paste(Delta, "DIC (", mu, "mol ", kg^-1, ")")))+
   
-    geom_boxplot(data=WS.reef[WS.reef$Extreme=="Normal", ], 
-                 aes (x=Sub_region, y=dnDIC_MY))+
+    geom_boxplot(data=dMonth_Stats, 
+                 aes (x=Sub_region, y=dDIC_mean))+
     
-    geom_point(data=WS.reef, aes (x=Sub_region, y=dnDIC_MY, 
-                                 fill=Precipitation, shape=Extreme), 
-             alpha=0.8, size=1)
-nDIC_delta_S
+    geom_point(data=dMonth_Stats, aes (x=Sub_region, y=dDIC_mean, fill=Season), 
+             alpha=0.8, size=1.5, shape=21)
+#DIC_delta_Y
 ```
 
-### pCO2
 
 ```{r, echo=FALSE, fig.height=8, fig.width=8}
-pCO2_delta_S<- Delta_S_plot+
+dDIC_my<-ggarrange(DIC_delta_m, DIC_delta_Y,
+          #labels = c("dTA by month", "dTA by Year"),
+          ncol = 2, nrow = 1, widths = c(4, 1.5))
+dDIC_my
+```
+
+#### dDIC density
+
+```{r}
+dDIC_freq_All<- Frequency_plot+
+  geom_density(aes (dDIC_MY), fill = "lightgray", alpha=0.5) +
+  scale_x_continuous(breaks = seq(-300, 300, 100),
+                     expression(paste(Delta, "DIC (", mu, "mol ", kg^-1, ")")))
+dDIC_freq_All
+
+dDIC_freq_pre<- Frequency_plot+
+  geom_density(aes (dDIC_MY, fill = Precipitation), alpha = 0.4) +
+  scale_x_continuous(breaks = seq(-300, 300, 100),
+                    expression(paste(Delta, "DIC (", mu, "mol ", kg^-1, ")")))
+dDIC_freq_pre
+
+dDIC_freq_sea<- Frequency_plot+
+  geom_density(aes (dDIC_MY, fill = Season), alpha = 0.4) +
+  scale_x_continuous(breaks = seq(-300, 300, 100),
+                     expression(paste(Delta, "DIC (", mu, "mol ", kg^-1, ")")))
+dDIC_freq_sea
+
+```
+
+#### dnDIC
+
+```{r, echo=FALSE, fig.height=8, fig.width=8}
+nDIC_delta_m<- Delta_plot+
     scale_y_continuous(#limits = c(1700,2900),
                      expand = c(0.05, 0.05),
-                    breaks = seq(-500, 500, 100),
-                     name=expression(paste(Delta~pCO[2] , "(", mu, "atm) ")))+
+                     breaks = seq(-800, 800, 200),
+                     name=expression(paste(Delta, " nDIC (", mu, "mol ", kg^-1, ")")))+
   
     geom_boxplot(data=WS.reef[WS.reef$Extreme=="Normal", ], 
-                 aes (x=Sub_region, y=dpCO2_MY))+
+                 aes (x=Month, y=dnDIC_MY))+
     
-    geom_point(data=WS.reef, aes (x=Sub_region, y=dpCO2_MY, 
+    geom_point(data=WS.reef, aes (x=Month, y=dnDIC_MY, 
                                  fill=Precipitation, shape=Extreme), 
              alpha=0.8, size=1)
-pCO2_delta_S
+#nDIC_delta_m
+
+dnDIC_delta_Y<- DeltaYear_plot+
+    scale_y_continuous(#limits = c(1700,2900),
+                     expand = c(0.05, 0.05),
+                     breaks = seq(-800, 800, 100),
+                     name=expression(paste(Delta, " nDIC (", mu, "mol ", kg^-1, ")")))+
+    geom_boxplot(data=dMonth_Stats, 
+                 aes (x=Sub_region, y=dnDIC_mean))+
+    
+    geom_point(data=dMonth_Stats, aes (x=Sub_region, y=dnDIC_mean, fill=Season), 
+             alpha=0.8, size=1.5, shape=21)
+#dnDIC_delta_Y
 ```
 
-### pH
+```{r, echo=FALSE, fig.height=8, fig.width=8}
+dnDIC_my<-ggarrange(nDIC_delta_m, dnDIC_delta_Y,
+          #labels = c("dTA by month", "dTA by Year"),
+          ncol = 2, nrow = 1, widths = c(4, 1.5))
+dnDIC_my
+```
+
+#### dpCO2
 
 ```{r, echo=FALSE, fig.height=8, fig.width=8}
-pH_delta_S<- Delta_S_plot+
+pCO2_delta_m<- Delta_plot+
+    scale_y_continuous(#limits = c(1700,2900),
+                     expand = c(0.05, 0.05),
+                     #breaks = seq(1800, 2800, 100),
+                     name=expression(paste(Delta ~ pCO[2] , " (", mu, "atm)")))+
+  
+    geom_boxplot(data=WS.reef[WS.reef$Extreme=="Normal", ], 
+                 aes (x=Month, y=dpCO2_MY))+
+    
+    geom_point(data=WS.reef, aes (x=Month, y=dpCO2_MY, 
+                                 fill=Precipitation, shape=Extreme), 
+             alpha=0.8, size=1)
+#pCO2_delta_m
+
+pCO2_delta_y<- DeltaYear_plot+
+    scale_y_continuous(#limits = c(1700,2900),
+                     expand = c(0.05, 0.05),
+                     #breaks = seq(1800, 2800, 100),
+                     name=expression(paste(Delta ~ pCO[2] , " (", mu, "atm)")))+
+  
+    geom_boxplot(data=dMonth_Stats, 
+                 aes (x=Sub_region, y=dpCO2_mean))+
+    
+    geom_point(data=dMonth_Stats, aes (x=Sub_region, y=dpCO2_mean, fill=Season), 
+             alpha=0.8, size=1.5, shape=21)
+#pCO2_delta_y
+```
+
+```{r, echo=FALSE, fig.height=8, fig.width=8}
+dpCO2_my<-ggarrange(pCO2_delta_m, pCO2_delta_y,
+          #labels = c("dTA by month", "dTA by Year"),
+          ncol = 2, nrow = 1, widths = c(4, 1.5))
+dpCO2_my
+```
+
+#### dpH
+
+```{r, echo=FALSE, fig.height=8, fig.width=8}
+pH_delta_m<- Delta_plot+
     scale_y_continuous(#limits = c(1,5.5),
-                       name=(expression (paste(Delta~"pH"))),
+                       name=(expression (paste(Delta, " pH"))),
                        breaks = seq(-5, 5, 0.1),
                        expand = c(0.05, 0.05)
                         ) +
-  
     geom_boxplot(data=WS.reef[WS.reef$Extreme=="Normal", ], 
-                 aes (x=Sub_region, y=dpH_MY))+
+                 aes (x=Month, y=dpH_MY))+
     
-    geom_point(data=WS.reef, aes (x=Sub_region, y=dpH_MY, 
+    geom_point(data=WS.reef, aes (x=Month, y=dpH_MY, 
                                  fill=Precipitation, shape=Extreme), 
              alpha=0.8, size=1)
-pH_delta_S
+#pH_delta_m
+
+pH_delta_y<- DeltaYear_plot+
+     scale_y_continuous(#limits = c(1,5.5),
+                       name=(expression (paste(Delta, " pH"))),
+                       breaks = seq(-5, 5, 0.1),
+                       expand = c(0.05, 0.05)
+                        ) +
+    geom_boxplot(data=dMonth_Stats, 
+                 aes (x=Sub_region, y=dpH_mean))+
+    
+    geom_point(data=dMonth_Stats, aes (x=Sub_region, y=dpH_mean, fill=Season), 
+             alpha=0.8, size=1.5, shape=21)
+#pH_delta_y
 ```
 
-### Omega
+```{r, echo=FALSE, fig.height=8, fig.width=8}
+dpH_my<-ggarrange(pH_delta_m, pH_delta_y,
+          #labels = c("dTA by month", "dTA by Year"),
+          ncol = 2, nrow = 1, widths = c(4, 1.5))
+dpH_my
+```
+
+#### dOmega
 
 ```{r, echo=FALSE, fig.height=8, fig.width=8}
-Omega_delta_S<- Delta_S_plot+
+Omega_delta_m<- Delta_plot+
    scale_y_continuous(#limits = c(1,5.5),
-                       name=(expression (paste(Delta~"Aragonite saturation state "
+                       name=(expression (paste(Delta, " Aragonite saturation state "
                                                ~Omega))),
                        breaks = seq(-3, 3, 0.5),
                        expand = c(0.05, 0.05)
                         ) +
   
     geom_boxplot(data=WS.reef[WS.reef$Extreme=="Normal", ], 
-                 aes (x=Sub_region, y=dOme_MY))+
-    geom_point(data=WS.reef, aes (x=Sub_region, y=dOme_MY, 
+                 aes (x=Month, y=dOme_MY))+
+    geom_point(data=WS.reef, aes (x=Month, y=dOme_MY, 
                 fill=Precipitation, shape=Extreme), 
                 alpha=0.8, size=1)
-Omega_delta_S
+#Omega_delta_m
+
+Omega_delta_y<- DeltaYear_plot+
+    scale_y_continuous(#limits = c(1,5.5),
+                       name=(expression (paste(Delta, " Aragonite saturation state "
+                                               ~Omega))),
+                       breaks = seq(-3, 3, 0.5),
+                       expand = c(0.05, 0.05)
+                        ) +
+    geom_boxplot(data=dMonth_Stats, 
+                 aes (x=Sub_region, y=dAra_mean))+
+    
+    geom_point(data=dMonth_Stats, aes (x=Sub_region, y=dAra_mean, fill=Season), 
+             alpha=0.8, size=1.5, shape=21)
+#Omega_delta_y
 ```
 
-```{r}
-par(mfrow=c(1,1))
+
+```{r, echo=FALSE, fig.height=8, fig.width=8}
+dAra_my<-ggarrange(Omega_delta_m, Omega_delta_y,
+          #labels = c("dTA by month", "dTA by Year"),
+          ncol = 2, nrow = 1, widths = c(4, 1.5))
+dAra_my
 ```
+
+
+## 5.4 Delta season values 
 
 ### Delta season stats 
 
@@ -2052,219 +2330,164 @@ dSeason_Stats<-dSeason_Stats %>%
 dSeason_Stats
 ```
 
-
-## 5.5 Month in the inshore reef figures 
+### Delta season plots
 
 ```{r}
-
-Inshore.data<-WS.reef[WS.reef$Zone=="Inshore", ]
-
-Final_plot<- ggplot(Inshore.data)+ 
-        MyTheme +  theme(axis.title.x = element_blank())+
-        facet_grid(~Sub_region)+
+Delta_S_plot<- ggplot(WS.reef) +
+        MyTheme +  
+        facet_grid(Zone~Season)+
         scale_shape_manual(values=c(24, 25, 21))+
-        guides(fill=guide_legend(override.aes=list(shape=21)))
+        guides(fill=guide_legend(override.aes=list(shape=21)))+
+        geom_hline(yintercept = 0, color="gray")+
+        theme(axis.title.x = element_blank())
+par(mfrow=c(1,2))
+        
 ```
 
-### Temperature
+#### TA
 
-```{r, echo=FALSE, fig.height=4, fig.width=8}
-Temperature_fig<- Final_plot+
-    geom_abline(slope = 0, intercept = mean_Op$OTem, color="grey")+
-    scale_y_continuous(#limits = c(15,40),
-                       name=(expression("Temperature"~(degree*C))),
-                       breaks = seq(16, 40, 4),  
-                       expand = c(0.05, 0.05)) +
+```{r, echo=FALSE, fig.height=6, fig.width=4}
+TA_delta_S<- Delta_S_plot+
  
-    geom_boxplot(data=Inshore.data[Inshore.data$Extreme=="Normal", ], 
-                 aes (x=Month, y=Temperature_C))+
-    
-    geom_point(data=Inshore.data, aes (x=Month, y=Temperature_C, 
-                                 fill=Precipitation, shape=Extreme), 
-             alpha=0.8, size=0.8, show.legend = F)
-Temperature_fig
-```
-
-### Salinity
-
-```{r, echo=FALSE, fig.height=4, fig.width=8}
-Sal_fig<- Final_plot+
-       geom_abline(slope = 0, intercept = mean_Op$OSal, color="grey")+
-       scale_y_continuous(#limits = c(15,40),
-                       name=(expression("Salinity")),
-                       breaks = seq(15, 40, 2),  
-                       expand = c(0.05, 0.05)) +
- 
-    geom_boxplot(data=Inshore.data[Inshore.data$Extreme=="Normal", ], 
-                 aes (x=Month, y=BestSalinity))+
-    
-    geom_point(data=Inshore.data, aes (x=Month, y=BestSalinity, 
-                                 fill=Precipitation, shape=Extreme), 
-               show.legend = F, alpha=0.8, size=0.8)
-Sal_fig
-```
-
-### Delta TA
-
-```{r, echo=FALSE, fig.height=4, fig.width=8}
-DeltaTA_fig<- Final_plot+
-    geom_abline(slope = 0, intercept = 0, color="grey")+
-    scale_y_continuous(#limits = c(1700,2900),
-                     expand = c(0.02, 0.02),
+   scale_y_continuous(#limits = c(1700,2900),
+                     expand = c(0.05, 0.05),
                      breaks = seq(-500, 500, 100),
-                     name=expression(paste(Delta, " TA (", mu, "mol ", kg^-1, ")")))+
+                     name=expression(paste(Delta~"TA (", mu, "mol ", kg^-1, ")")))+
   
-    geom_boxplot(data=Inshore.data[Inshore.data$Extreme=="Normal", ], 
-                 aes (x=Month, y=dTA_MY))+
+    geom_boxplot(data=WS.reef[WS.reef$Extreme=="Normal", ], 
+                 aes (x=Sub_region, y=dTA_MY))+
     
-    geom_point(data=Inshore.data, aes (x=Month, y=dTA_MY, 
+    geom_point(data=WS.reef, aes (x=Sub_region, y=dTA_MY, 
                                  fill=Precipitation, shape=Extreme), 
-             alpha=0.8, size=0.8, show.legend = F)
-DeltaTA_fig
+             alpha=0.8, size=1)
+TA_delta_S
 ```
 
-### Delta nTA
+#### nTA
 
-```{r, echo=FALSE, fig.height=4, fig.width=8}
-DeltanTA_fig<- Final_plot+
-    geom_abline(slope = 0, intercept = 0, color="grey")+
+```{r, echo=FALSE, fig.height=6, fig.width=4}
+nTA_delta_S<- Delta_S_plot+
     scale_y_continuous(#limits = c(1700,2900),
-                     expand = c(0.02, 0.02),
+                     expand = c(0.05, 0.05),
                      breaks = seq(-500, 500, 100),
-                     name=expression(paste(Delta, " nTA (", mu, "mol ", kg^-1, ")")))+
+                     name=expression(paste(Delta~"nTA (", mu, "mol ", kg^-1, ")")))+
   
-    geom_boxplot(data=Inshore.data[Inshore.data$Extreme=="Normal", ], 
-                 aes (x=Month, y=dnTA_MY))+
+    geom_boxplot(data=WS.reef[WS.reef$Extreme=="Normal", ], 
+                 aes (x=Sub_region, y=dnTA_MY))+
     
-    geom_point(data=Inshore.data, aes (x=Month, y=dnTA_MY, 
+    geom_point(data=WS.reef, aes (x=Sub_region, y=dnTA_MY, 
                                  fill=Precipitation, shape=Extreme), 
-             alpha=0.8, size=0.8, show.legend = F)
-DeltanTA_fig
+             alpha=0.8, size=1)
+nTA_delta_S
 ```
 
-### Delta DIC
+#### DIC
 
-```{r, echo=FALSE, fig.height=4, fig.width=8}
-DeltaDIC_fig<- Final_plot+
-    geom_abline(slope = 0, intercept = 0, color="grey")+
+```{r, echo=FALSE, fig.height=6, fig.width=4}
+DIC_delta_S<- Delta_S_plot+
     scale_y_continuous(#limits = c(1700,2900),
-                     expand = c(0.02, 0.02),
+                     expand = c(0.05, 0.05),
                      breaks = seq(-500, 500, 100),
-                     name=expression(paste(Delta, " DIC (", mu, "mol ", kg^-1, ")")))+
+                     name=expression(paste(Delta~"DIC (", mu, "mol ", kg^-1, ")")))+
   
-    geom_boxplot(data=Inshore.data[Inshore.data$Extreme=="Normal", ], 
-                 aes (x=Month, y=dDIC_MY))+
+    geom_boxplot(data=WS.reef[WS.reef$Extreme=="Normal", ], 
+                 aes (x=Sub_region, y=dDIC_MY))+
     
-    geom_point(data=Inshore.data, aes (x=Month, y=dDIC_MY, 
+    geom_point(data=WS.reef, aes (x=Sub_region, y=dDIC_MY, 
                                  fill=Precipitation, shape=Extreme), 
-             alpha=0.8, size=0.8, show.legend = F)
-DeltaDIC_fig
+             alpha=0.8, size=1)
+DIC_delta_S
 ```
 
-### nDelta DIC
+#### nDIC
 
-```{r, echo=FALSE, fig.height=4, fig.width=8}
-DeltanDIC_fig<- Final_plot+
-    geom_abline(slope = 0, intercept = 0, color="grey")+
+```{r, echo=FALSE, fig.height=6, fig.width=4}
+nDIC_delta_S<- Delta_S_plot+
     scale_y_continuous(#limits = c(1700,2900),
-                     expand = c(0.02, 0.02),
+                     expand = c(0.05, 0.05),
                      breaks = seq(-500, 500, 100),
-                     name=expression(paste(Delta, " nDIC (", mu, "mol ", kg^-1, ")")))+
+                     name=expression(paste(Delta~"nDIC (", mu, "mol ", kg^-1, ")")))+
   
-    geom_boxplot(data=Inshore.data[Inshore.data$Extreme=="Normal", ], 
-                 aes (x=Month, y=dnDIC_MY))+
+    geom_boxplot(data=WS.reef[WS.reef$Extreme=="Normal", ], 
+                 aes (x=Sub_region, y=dnDIC_MY))+
     
-    geom_point(data=Inshore.data, aes (x=Month, y=dnDIC_MY, 
+    geom_point(data=WS.reef, aes (x=Sub_region, y=dnDIC_MY, 
                                  fill=Precipitation, shape=Extreme), 
-             alpha=0.8, size=0.8, show.legend = F)
-DeltanDIC_fig
+             alpha=0.8, size=1)
+nDIC_delta_S
 ```
 
-### pCO2
+#### pCO2
 
-```{r, echo=FALSE, fig.height=4, fig.width=8}
-pCO2_fig<- Final_plot+
-    geom_abline(slope = 0, intercept = mean_Op$OpCO2, color="grey")+
+```{r, echo=FALSE, fig.height=6, fig.width=4}
+pCO2_delta_S<- Delta_S_plot+
+    scale_y_continuous(#limits = c(1700,2900),
+                     expand = c(0.05, 0.05),
+                    breaks = seq(-500, 500, 100),
+                     name=expression(paste(Delta~pCO[2] , "(", mu, "atm) ")))+
+  
+    geom_boxplot(data=WS.reef[WS.reef$Extreme=="Normal", ], 
+                 aes (x=Sub_region, y=dpCO2_MY))+
+    
+    geom_point(data=WS.reef, aes (x=Sub_region, y=dpCO2_MY, 
+                                 fill=Precipitation, shape=Extreme), 
+             alpha=0.8, size=1)
+pCO2_delta_S
+```
+
+#### pH
+
+```{r, echo=FALSE, fig.height=6, fig.width=4}
+pH_delta_S<- Delta_S_plot+
     scale_y_continuous(#limits = c(1,5.5),
-                       name=expression(paste(pCO[2], "(", mu, " atm)")),
-                       breaks = seq(200, 700, 100),
-                        expand = c(0.05, 0.05)
-                        ) +
- 
-    geom_boxplot(data=Inshore.data[Inshore.data$Extreme=="Normal", ], 
-                 aes (x=Month, y=pCO2_uatm))+
-    
-    geom_point(data=Inshore.data, aes (x=Month, y=pCO2_uatm, 
-                                 fill=Precipitation, shape=Extreme), 
-               show.legend = F, alpha=0.8, size=0.8)
-pCO2_fig
-```
-
-### pH
-
-```{r, echo=FALSE, fig.height=4, fig.width=8}
-pH_fig<- Final_plot+
-  geom_abline(slope = 0, intercept = mean_Op$OpH, color="grey")+
-  scale_y_continuous(#limits = c(1,5.5),
-                       name=(expression ("pH")),
-                       breaks = seq(0, 9, 0.1),
+                       name=(expression (paste(Delta~"pH"))),
+                       breaks = seq(-5, 5, 0.1),
                        expand = c(0.05, 0.05)
                         ) +
-  geom_boxplot(data=Inshore.data[Inshore.data$Extreme=="Normal", ], 
-                 aes (x=Month, y=pH_calculated))+
+  
+    geom_boxplot(data=WS.reef[WS.reef$Extreme=="Normal", ], 
+                 aes (x=Sub_region, y=dpH_MY))+
     
-  geom_point(data=Inshore.data, aes (x=Month, y=pH_calculated, 
+    geom_point(data=WS.reef, aes (x=Sub_region, y=dpH_MY, 
                                  fill=Precipitation, shape=Extreme), 
-                              show.legend = F, alpha=0.8, size=0.8)
-pH_fig
+             alpha=0.8, size=1)
+pH_delta_S
 ```
 
-### Omega
+#### Omega
 
-```{r, echo=FALSE, fig.height=4, fig.width=8}
-Omega_fig<- Final_plot+
-      geom_abline(slope = 0, intercept = mean_Op$OAra, color="grey")+
-      scale_y_continuous(#limits = c(1,5.5),
-                       name=(expression ("Aragonite "~Omega)),
-                       breaks = seq(1, 5, 0.5),
+```{r, echo=FALSE, fig.height=6, fig.width=4}
+Omega_delta_S<- Delta_S_plot+
+   scale_y_continuous(#limits = c(1,5.5),
+                       name=(expression (paste(Delta~"Aragonite saturation state "
+                                               ~Omega))),
+                       breaks = seq(-3, 3, 0.5),
                        expand = c(0.05, 0.05)
                         ) +
-    geom_boxplot(data=Inshore.data[Inshore.data$Extreme=="Normal", ], 
-                 aes (x=Month, y=Aragonite_Sat_W))+
-    
-    geom_point(data=Inshore.data, aes (x=Month, y=Aragonite_Sat_W, 
-                                 fill=Precipitation, shape=Extreme), 
-               show.legend = F, alpha=0.8, size=0.8)
-Omega_fig
+  
+    geom_boxplot(data=WS.reef[WS.reef$Extreme=="Normal", ], 
+                 aes (x=Sub_region, y=dOme_MY))+
+    geom_point(data=WS.reef, aes (x=Sub_region, y=dOme_MY, 
+                fill=Precipitation, shape=Extreme), 
+                alpha=0.8, size=1)
+Omega_delta_S
 ```
 
-### Month in the inshore reef figure 
+```{r}
+par(mfrow=c(1,1))
+```
 
-```{r, echo=FALSE, fig.height=12, fig.width=8.5}
-Figure_monts<-ggarrange(DeltaTA_fig, DeltanTA_fig,
-                        DeltaDIC_fig, DeltanDIC_fig,
-                        pCO2_fig, Temperature_fig,
-                        pH_fig, Sal_fig,
-                        Omega_fig,
-                        
-          #labels = c("", ""),
-          ncol = 2, nrow = 5)
-Figure_monts
 
-#Figure_monts2<-ggarrange(DeltaTA_fig, DeltanTA_fig,
-                        #DeltaDIC_fig, DeltanDIC_fig,
-                        #pCO2_fig, pH_fig, 
-                        #Temperature_fig, Sal_fig, Omega_fig,
-                        
-          #labels = c("", ""),
-          #ncol = 1)
-#Figure_monts2
+## 5.5 Month in the inshore reef data 
+
+```{r}
+Inshore.data<-WS.reef[WS.reef$Zone=="Inshore", ]
 ```
 
 ### Month in the inshore reef stats 
 
 ```{r}
-  dreef_Stats<- ddply (Inshore.data, .(Month, Sub_region),
+  dreef_Stats<- ddply (Inshore.data, .(Month, Sub_region, Region),
                             summarise,
                   dTA_mean = mean (dTA_MY, na.rm = T),
                   dTA_sd = sd (dTA_MY, na.rm = T),
@@ -2292,20 +2515,37 @@ dreef_Stats<-dreef_Stats %>%
 dreef_Stats
 ```
 
-## 5.6 Seasons in the inshore reefs figures 
+### Month in the inshore reef figures
 
 ```{r}
-Season_plot<- ggplot(Inshore.data)+ 
-        MyTheme +  theme(axis.title.x = element_blank())+
-        facet_grid(~Season)+
+
+Final_plot<- ggplot(Inshore.data)+ 
+        MyTheme + 
+        theme(axis.title.x = element_blank())+
+        facet_grid(~Sub_region)+
         scale_shape_manual(values=c(24, 25, 21))+
         guides(fill=guide_legend(override.aes=list(shape=21)))
+
+Year_reef<- ggplot(Month_Stats[Month_Stats$Zone=="Inshore", ]) +
+        MyTheme +  
+        theme(axis.title.x = element_blank())+
+        facet_grid(Zone~Region)
+        #scale_shape_manual(values=c(24, 25, 21))+
+        #guides(fill=guide_legend(override.aes=list(shape=21)))+
+
+dYear_reef<- ggplot(dMonth_Stats[dMonth_Stats$Zone=="Inshore", ]) +
+        MyTheme +  
+        theme(axis.title.x = element_blank())+
+        facet_grid(Zone~Region)
+        #scale_shape_manual(values=c(24, 25, 21))+
+        #guides(fill=guide_legend(override.aes=list(shape=21)))+
+        
 ```
 
-### Temperature
+#### Temperature
 
 ```{r, echo=FALSE, fig.height=4, fig.width=8}
-Temperature_sea_re<- Season_plot+
+Temperature_fig<- Final_plot+
     geom_abline(slope = 0, intercept = mean_Op$OTem, color="grey")+
     scale_y_continuous(#limits = c(15,40),
                        name=(expression("Temperature"~(degree*C))),
@@ -2313,189 +2553,369 @@ Temperature_sea_re<- Season_plot+
                        expand = c(0.05, 0.05)) +
  
     geom_boxplot(data=Inshore.data[Inshore.data$Extreme=="Normal", ], 
-                 aes (x=Sub_region, y=Temperature_C))+
+                 aes (x=Month, y=Temperature_C))+
     
-    geom_point(data=Inshore.data, aes (x=Sub_region, y=Temperature_C, 
+    geom_point(data=Inshore.data, aes (x=Month, y=Temperature_C, 
                                  fill=Precipitation, shape=Extreme), 
-             alpha=0.5, size=0.8, show.legend = F, width = 0.20)
-Temperature_sea_re
+             alpha=0.8, size=0.8, show.legend = F)
+#Temperature_fig
+
+Tem_Y_fig<- Year_reef+
+    geom_abline(slope = 0, intercept = mean_Op$OTem, color="grey")+
+    scale_y_continuous(#limits = c(15,40),
+                       name=(expression("Temperature"~(degree*C))),
+                       breaks = seq(16, 40, 2),  
+                       expand = c(0.1, 0.1)) +
+  
+    geom_boxplot(aes (x=Sub_region, y=Tem_mean))+
+    
+    geom_point(aes (x=Sub_region, y=Tem_mean, fill=Season), 
+             shape=21, alpha=0.8, size=1.5,  show.legend = F)
+#Tem_Y_fig
 ```
 
-### Salinity
 
 ```{r, echo=FALSE, fig.height=4, fig.width=8}
-Sal_sea_re<- Season_plot+
-      geom_abline(slope = 0, intercept = mean_Op$OSal, color="grey")+
-      scale_y_continuous(#limits = c(15,40),
+Temperature_reef<-ggarrange(Temperature_fig, Tem_Y_fig,
+          #labels = c("DIC Friss regresion", "TA Friss regresion"),
+          ncol = 2, nrow = 1, widths = c(4, 1.5))
+Temperature_reef
+```
+
+#### Salinity
+
+```{r, echo=FALSE, fig.height=4, fig.width=8}
+Sal_fig<- Final_plot+
+       geom_abline(slope = 0, intercept = mean_Op$OSal, color="grey")+
+       scale_y_continuous(#limits = c(15,40),
                        name=(expression("Salinity")),
                        breaks = seq(15, 40, 2),  
                        expand = c(0.05, 0.05)) +
  
     geom_boxplot(data=Inshore.data[Inshore.data$Extreme=="Normal", ], 
-                 aes (x=Sub_region, y=BestSalinity))+
-    
-    geom_point(data=Inshore.data, aes (x=Sub_region, y=BestSalinity, 
+                 aes (x=Month, y=BestSalinity))+
+    geom_point(data=Inshore.data, aes (x=Month, y=BestSalinity, 
                                  fill=Precipitation, shape=Extreme), 
-               alpha=0.8, size=0.8, show.legend = F, width = 0.20)
-Sal_sea_re
+               show.legend = F, alpha=0.8, size=0.8)
+#Sal_fig
+
+Sal_Y_fig<- Year_reef+
+    geom_abline(slope = 0, intercept = mean_Op$OSal, color="grey")+
+    scale_y_continuous(#limits = c(15,40),
+                       name=(expression("Salinity")),
+                       breaks = seq(15, 40, 1),  
+                       expand = c(0.05, 0.05)) +
+  
+    geom_boxplot(aes (x=Sub_region, y=Sal_mean))+
+    geom_point(aes (x=Sub_region, y=Sal_mean, fill=Season), 
+             shape=21, alpha=0.8, size=1.5,  show.legend = F)
+#Sal_Y_fig
 ```
 
-### Delta TA
 
 ```{r, echo=FALSE, fig.height=4, fig.width=8}
-DeltaTA_sea_re<- Season_plot+
+Sal_reef<-ggarrange(Sal_fig, Sal_Y_fig,
+          #labels = c("DIC Friss regresion", "TA Friss regresion"),
+          ncol = 2, nrow = 1, widths = c(4, 1.5))
+Sal_reef
+```
+
+#### Delta TA
+
+```{r, echo=FALSE, fig.height=4, fig.width=8}
+DeltaTA_fig<- Final_plot+
     geom_abline(slope = 0, intercept = 0, color="grey")+
     scale_y_continuous(#limits = c(1700,2900),
-                     expand = c(0.02, 0.02),
+                     expand = c(0.05, 0.05),
                      breaks = seq(-500, 500, 100),
                      name=expression(paste(Delta, " TA (", mu, "mol ", kg^-1, ")")))+
   
     geom_boxplot(data=Inshore.data[Inshore.data$Extreme=="Normal", ], 
-                 aes (x=Sub_region, y=dTA_MY))+
+                 aes (x=Month, y=dTA_MY))+
     
-    geom_point(data=Inshore.data, aes (x=Sub_region, y=dTA_MY, 
+    geom_point(data=Inshore.data, aes (x=Month, y=dTA_MY, 
                                  fill=Precipitation, shape=Extreme), 
              alpha=0.8, size=0.8, show.legend = F)
-DeltaTA_sea_re
-```
+#DeltaTA_fig
 
-### Delta nTA
-
-```{r, echo=FALSE, fig.height=4, fig.width=8}
-DeltanTA_sea_re<- Season_plot+
+dTA_Y_fig<- dYear_reef+
     geom_abline(slope = 0, intercept = 0, color="grey")+
     scale_y_continuous(#limits = c(1700,2900),
-                     expand = c(0.02, 0.02),
-                     breaks = seq(-500, 500, 100),
+                     expand = c(0.05, 0.05),
+                     breaks = seq(-500, 500, 50),
+                     name=expression(paste(Delta, " TA (", mu, "mol ", kg^-1, ")")))+
+  
+    geom_boxplot(aes (x=Sub_region, y=dTA_mean))+
+    geom_point(aes (x=Sub_region, y=dTA_mean, fill=Season), 
+             shape=21, alpha=0.8, size=1.5,  show.legend = F)
+#dTA_Y_fig
+```
+
+```{r, echo=FALSE, fig.height=4, fig.width=8}
+dTA_reef<-ggarrange(DeltaTA_fig, dTA_Y_fig,
+          #labels = c("DIC Friss regresion", "TA Friss regresion"),
+          ncol = 2, nrow = 1, widths = c(4, 1.5))
+dTA_reef
+```
+
+#### Delta nTA
+
+```{r, echo=FALSE, fig.height=4, fig.width=8}
+DeltanTA_fig<- Final_plot+
+    geom_abline(slope = 0, intercept = 0, color="grey")+
+    scale_y_continuous(#limits = c(1700,2900),
+                     expand = c(0.05, 0.05),
+                     breaks = seq(-500, 500, 150),
                      name=expression(paste(Delta, " nTA (", mu, "mol ", kg^-1, ")")))+
   
     geom_boxplot(data=Inshore.data[Inshore.data$Extreme=="Normal", ], 
-                 aes (x=Sub_region, y=dnTA_MY))+
+                 aes (x=Month, y=dnTA_MY))+
     
-    geom_point(data=Inshore.data, aes (x=Sub_region, y=dnTA_MY, 
+    geom_point(data=Inshore.data, aes (x=Month, y=dnTA_MY, 
                                  fill=Precipitation, shape=Extreme), 
              alpha=0.8, size=0.8, show.legend = F)
-DeltanTA_sea_re
+#DeltanTA_fig
+
+dnTA_Y_fig<- dYear_reef+
+    geom_abline(slope = 0, intercept = 0, color="grey")+
+    scale_y_continuous(#limits = c(1700,2900),
+                       expand = c(0.05, 0.05),
+                     breaks = seq(-500, 500, 100),
+                     name=expression(paste(Delta, " nTA (", mu, "mol ", kg^-1, ")")))+
+  
+    geom_boxplot(aes (x=Sub_region, y=dnTA_mean))+
+    geom_point(aes (x=Sub_region, y=dnTA_mean, fill=Season), 
+             shape=21, alpha=0.8, size=1.5,  show.legend = F)
+#dnTA_Y_fig
 ```
 
-### Delta DIC
+```{r, echo=FALSE, fig.height=4, fig.width=8}
+dnTA_reef<-ggarrange(DeltanTA_fig, dnTA_Y_fig,
+          #labels = c("DIC Friss regresion", "TA Friss regresion"),
+          ncol = 2, nrow = 1, widths = c(4, 1.5))
+dnTA_reef
+```
+
+#### Delta DIC
 
 ```{r, echo=FALSE, fig.height=4, fig.width=8}
-DeltaDIC_sea_re<- Season_plot+
-  geom_abline(slope = 0, intercept = 0, color="grey")+
+DeltaDIC_fig<- Final_plot+
+    geom_abline(slope = 0, intercept = 0, color="grey")+
     scale_y_continuous(#limits = c(1700,2900),
-                     expand = c(0.02, 0.02),
-                     breaks = seq(-500, 500, 100),
+                      expand = c(0.05, 0.05),
+                     breaks = seq(-500, 500, 150),
                      name=expression(paste(Delta, " DIC (", mu, "mol ", kg^-1, ")")))+
   
     geom_boxplot(data=Inshore.data[Inshore.data$Extreme=="Normal", ], 
-                 aes (x=Sub_region, y=dDIC_MY))+
+                 aes (x=Month, y=dDIC_MY))+
     
-    geom_point(data=Inshore.data, aes (x=Sub_region, y=dDIC_MY, 
+    geom_point(data=Inshore.data, aes (x=Month, y=dDIC_MY, 
                                  fill=Precipitation, shape=Extreme), 
              alpha=0.8, size=0.8, show.legend = F)
-DeltaDIC_sea_re
+#DeltaDIC_fig
+
+dDIC_Y_fig<- dYear_reef+
+    geom_abline(slope = 0, intercept = 0, color="grey")+
+    scale_y_continuous(#limits = c(1700,2900),
+                       expand = c(0.05, 0.05),
+                     breaks = seq(-500, 500, 100),
+                     name=expression(paste(Delta, " DIC (", mu, "mol ", kg^-1, ")")))+
+  
+    geom_boxplot(aes (x=Sub_region, y=dDIC_mean))+
+    geom_point(aes (x=Sub_region, y=dDIC_mean, fill=Season), 
+             shape=21, alpha=0.8, size=1.5,  show.legend = F)
+#dDIC_Y_fig
 ```
 
-### Delta nDIC
+```{r, echo=FALSE, fig.height=4, fig.width=8}
+dDIC_reef<-ggarrange(DeltaDIC_fig, dDIC_Y_fig,
+          #labels = c("DIC Friss regresion", "TA Friss regresion"),
+          ncol = 2, nrow = 1, widths = c(4, 1.5))
+dDIC_reef
+```
+
+#### nDelta DIC
 
 ```{r, echo=FALSE, fig.height=4, fig.width=8}
-DeltanDIC_sea_re<- Season_plot+
-  geom_abline(slope = 0, intercept = 0, color="grey")+
+DeltanDIC_fig<- Final_plot+
+    geom_abline(slope = 0, intercept = 0, color="grey")+
     scale_y_continuous(#limits = c(1700,2900),
-                     expand = c(0.02, 0.02),
+                       expand = c(0.05, 0.05),
                      breaks = seq(-500, 500, 100),
                      name=expression(paste(Delta, " nDIC (", mu, "mol ", kg^-1, ")")))+
   
     geom_boxplot(data=Inshore.data[Inshore.data$Extreme=="Normal", ], 
-                 aes (x=Sub_region, y=dnDIC_MY))+
+                 aes (x=Month, y=dnDIC_MY))+
     
-    geom_point(data=Inshore.data, aes (x=Sub_region, y=dnDIC_MY, 
+    geom_point(data=Inshore.data, aes (x=Month, y=dnDIC_MY, 
                                  fill=Precipitation, shape=Extreme), 
              alpha=0.8, size=0.8, show.legend = F)
-DeltanDIC_sea_re
+#DeltanDIC_fig
+
+dnDIC_Y_fig<- dYear_reef+
+    geom_abline(slope = 0, intercept = mean_Op$OnDIC, color="grey")+
+    scale_y_continuous(#limits = c(1700,2900),
+                      expand = c(0.05, 0.05),
+                     breaks = seq(-500, 500, 50),
+                     name=expression(paste(Delta, " nDIC (", mu, "mol ", kg^-1, ")")))+
+  
+    geom_boxplot(aes (x=Sub_region, y=dnDIC_mean))+
+    geom_point(aes (x=Sub_region, y=dnDIC_mean, fill=Season), 
+             shape=21, alpha=0.8, size=1.5,  show.legend = F)
+#dnDIC_Y_fig
 ```
 
-### pCO2
+```{r, echo=FALSE, fig.height=4, fig.width=8}
+dnDIC_reef<-ggarrange(DeltanDIC_fig, dnDIC_Y_fig,
+          #labels = c("DIC Friss regresion", "TA Friss regresion"),
+          ncol = 2, nrow = 1, widths = c(4, 1.5))
+dnDIC_reef
+```
+
+#### pCO2
 
 ```{r, echo=FALSE, fig.height=4, fig.width=8}
-pCO2_sea_re<- Season_plot+
-      geom_abline(slope = 0, intercept = mean_Op$OpCO2, color="grey")+
-       scale_y_continuous(#limits = c(1,5.5),
+pCO2_fig<- Final_plot+
+    geom_abline(slope = 0, intercept = mean_Op$OpCO2, color="grey")+
+    scale_y_continuous(#limits = c(1,5.5),
                        name=expression(paste(pCO[2], "(", mu, " atm)")),
-                       breaks = seq(200, 700, 100),
+                       breaks = seq(200, 700, 200),
                         expand = c(0.05, 0.05)
                         ) +
  
     geom_boxplot(data=Inshore.data[Inshore.data$Extreme=="Normal", ], 
-                 aes (x=Sub_region, y=pCO2_uatm))+
+                 aes (x=Month, y=pCO2_uatm))+
     
-    geom_point(data=Inshore.data, aes (x=Sub_region, y=pCO2_uatm, 
+    geom_point(data=Inshore.data, aes (x=Month, y=pCO2_uatm, 
                                  fill=Precipitation, shape=Extreme), 
                show.legend = F, alpha=0.8, size=0.8)
-pCO2_sea_re
+#pCO2_fig
+
+pCO2_Y_fig<- Year_reef+
+    geom_abline(slope = 0, intercept = mean_Op$OpCO2, color="grey")+
+    scale_y_continuous(#limits = c(1,5.5),
+                       name=expression(paste(pCO[2], "(", mu, " atm)")),
+                       breaks = seq(200, 700, 100),
+                        expand = c(0.05, 0.05)
+                        ) +
+  
+    geom_boxplot(aes (x=Sub_region, y=pCO2_mean))+
+    geom_point(aes (x=Sub_region, y=pCO2_mean, fill=Season), 
+             shape=21, alpha=0.8, size=1.5,  show.legend = F)
+#pCO2_Y_fig
 ```
 
-### pH
 
 ```{r, echo=FALSE, fig.height=4, fig.width=8}
-pH_sea_re<- Season_plot+
+pCO2_reef<-ggarrange(pCO2_fig, pCO2_Y_fig,
+          #labels = c("DIC Friss regresion", "TA Friss regresion"),
+          ncol = 2, nrow = 1, widths = c(4, 1.5))
+pCO2_reef
+```
+
+#### pH
+
+```{r, echo=FALSE, fig.height=4, fig.width=8}
+pH_fig<- Final_plot+
+  geom_abline(slope = 0, intercept = mean_Op$OpH, color="grey")+
+  scale_y_continuous(#limits = c(1,5.5),
+                       name=(expression ("pH")),
+                       breaks = seq(0, 9, 0.1),
+                       expand = c(0.05, 0.05)
+                        ) +
+  geom_boxplot(data=Inshore.data[Inshore.data$Extreme=="Normal", ], 
+                 aes (x=Month, y=pH_calculated))+
+    
+  geom_point(data=Inshore.data, aes (x=Month, y=pH_calculated, 
+                                 fill=Precipitation, shape=Extreme), 
+                              show.legend = F, alpha=0.8, size=0.8)
+#pH_fig
+
+pH_Y_fig<- Year_reef+
     geom_abline(slope = 0, intercept = mean_Op$OpH, color="grey")+
     scale_y_continuous(#limits = c(1,5.5),
                        name=(expression ("pH")),
                        breaks = seq(0, 9, 0.1),
                        expand = c(0.05, 0.05)
                         ) +
-    geom_boxplot(data=Inshore.data[Inshore.data$Extreme=="Normal", ], 
-                 aes (x=Sub_region, y=pH_calculated))+
-    
-    geom_point(data=Inshore.data, aes (x=Sub_region, y=pH_calculated, 
-                                 fill=Precipitation, shape=Extreme), 
-               show.legend = F, alpha=0.8, size=0.8)
-pH_sea_re
+    geom_abline(slope = 0, intercept = mean_Op$OpH, color="grey")+
+    geom_boxplot(aes (x=Sub_region, y=pH_mean))+
+    geom_point(aes (x=Sub_region, y=pH_mean, fill=Season), 
+             shape=21, alpha=0.8, size=1.5,  show.legend = F)
+#pH_Y_fig
 ```
 
-### Omega
 
 ```{r, echo=FALSE, fig.height=4, fig.width=8}
-Omega_sea_re<- Season_plot+
+pH_reef<-ggarrange(pH_fig, pH_Y_fig,
+          #labels = c("DIC Friss regresion", "TA Friss regresion"),
+          ncol = 2, nrow = 1, widths = c(4, 1.5))
+pH_reef
+```
+
+#### Omega
+
+```{r, echo=FALSE, fig.height=4, fig.width=8}
+Omega_fig<- Final_plot+
       geom_abline(slope = 0, intercept = mean_Op$OAra, color="grey")+
-          scale_y_continuous(#limits = c(1,5.5),
+      scale_y_continuous(#limits = c(1,5.5),
                        name=(expression ("Aragonite "~Omega)),
                        breaks = seq(1, 5, 0.5),
                        expand = c(0.05, 0.05)
                         ) +
     geom_boxplot(data=Inshore.data[Inshore.data$Extreme=="Normal", ], 
-                 aes (x=Sub_region, y=Aragonite_Sat_W))+
+                 aes (x=Month, y=Aragonite_Sat_W))+
     
-    geom_point(data=Inshore.data, aes (x=Sub_region, y=Aragonite_Sat_W, 
+    geom_point(data=Inshore.data, aes (x=Month, y=Aragonite_Sat_W, 
                                  fill=Precipitation, shape=Extreme), 
                show.legend = F, alpha=0.8, size=0.8)
-Omega_sea_re
+#Omega_fig
+
+Omega_Y_fig<- Year_reef+
+    geom_abline(slope = 0, intercept = mean_Op$OAra, color="grey")+
+    scale_y_continuous(#limits = c(1,5.5),
+                       name=(expression ("Aragonite "~Omega)),
+                       breaks = seq(1, 5, 0.5),
+                       expand = c(0.05, 0.05)
+                        ) +
+    geom_boxplot(aes (x=Sub_region, y=Ara_mean))+
+    geom_point(aes (x=Sub_region, y=Ara_mean, fill=Season), 
+             shape=21, alpha=0.8, size=1.5,  show.legend = F)
+#Omega_Y_fig
 ```
 
-### Seasons in the reef figure 
 
-```{r}
-Figure_sea_re<-ggarrange(DeltaTA_sea_re, DeltanTA_sea_re,
-                         DeltaDIC_sea_re, DeltanDIC_sea_re, 
-                         pH_sea_re, pCO2_sea_re, 
-                         Temperature_sea_re, Sal_sea_re, 
-                         Omega_sea_re,
-                        
-          #labels = c("", ""),
-          ncol = 2, nrow = 5)
-Figure_sea_re
-
-Figure_sea_re2<-ggarrange(
-  DeltaTA_sea_re, DeltaDIC_sea_re,Omega_sea_re, 
-  DeltanTA_sea_re, DeltanDIC_sea_re, pCO2_sea_re, 
-  Temperature_sea_re, Sal_sea_re,  pH_sea_re,
-                        
-          #labels = c("", ""),
-          ncol = 3, nrow = 3)
-Figure_sea_re2
+```{r, echo=FALSE, fig.height=4, fig.width=8}
+Omega_reef<-ggarrange(Omega_fig, Omega_Y_fig,
+          #labels = c("DIC Friss regresion", "TA Friss regresion"),
+          ncol = 2, nrow = 1, widths = c(4, 1.5))
+Omega_reef
 ```
+
+### Month in the inshore reef figure 
+
+```{r, echo=FALSE, fig.height=12, fig.width=8.5}
+# Figure_monts<-ggarrange(DeltaTA_fig, DeltanTA_fig,
+#                         DeltaDIC_fig, DeltanDIC_fig,
+#                         pCO2_fig, Temperature_fig,
+#                         pH_fig, Sal_fig,
+#                         Omega_fig,
+#                         
+#           #labels = c("", ""),
+#           ncol = 2, nrow = 5)
+# Figure_monts
+
+Figure_monts2<-ggarrange(dTA_reef, dDIC_reef,
+                        #DeltaDIC_fig, DeltanDIC_fig,
+                        pCO2_reef, pH_reef, Omega_reef,
+                        #Temperature_fig, Sal_fig, Omega_fig,
+                        
+          #labels = c("", ""),
+          ncol = 1)
+Figure_monts2
+```
+
+## 5.6 Seasons in the inshore reefs data 
 
 ### Season in the reef stats 
 
@@ -2528,7 +2948,233 @@ dreef_Stats<-dreef_Stats %>%
 dreef_Stats
 ```
 
+### Season in the reef figures 
+
+```{r}
+Season_plot<- ggplot(Inshore.data)+ 
+        MyTheme +  theme(axis.title.x = element_blank())+
+        facet_grid(~Season)+
+        scale_shape_manual(values=c(24, 25, 21))+
+        guides(fill=guide_legend(override.aes=list(shape=21)))
+```
+
+#### Temperature
+
+```{r, echo=FALSE, fig.height=4, fig.width=8}
+Temperature_sea_re<- Season_plot+
+    geom_abline(slope = 0, intercept = mean_Op$OTem, color="grey")+
+    scale_y_continuous(#limits = c(15,40),
+                       name=(expression("Temperature"~(degree*C))),
+                       breaks = seq(16, 40, 4),  
+                       expand = c(0.05, 0.05)) +
+ 
+    geom_boxplot(data=Inshore.data[Inshore.data$Extreme=="Normal", ], 
+                 aes (x=Sub_region, y=Temperature_C))+
+    
+    geom_point(data=Inshore.data, aes (x=Sub_region, y=Temperature_C, 
+                                 fill=Precipitation, shape=Extreme), 
+             alpha=0.5, size=0.8, show.legend = F, width = 0.20)
+Temperature_sea_re
+
+Tem_Y<- Year_ploth+
+    geom_abline(slope = 0, intercept = mean_Op$OTem, color="grey")+
+    scale_y_continuous(#limits = c(15,40),
+                       name=(expression("Temperature"~(degree*C))),
+                       breaks = seq(16, 40, 2),  
+                       expand = c(0.1, 0.1)) +
+  
+    geom_boxplot(aes (x=Sub_region, y=Tem_mean))+
+    
+    geom_point(aes (x=Sub_region, y=Tem_mean, fill=Season), 
+             shape=21, alpha=0.8, size=1)
+#Tem_Y
+```
+
+#### Salinity
+
+```{r, echo=FALSE, fig.height=4, fig.width=8}
+Sal_sea_re<- Season_plot+
+      geom_abline(slope = 0, intercept = mean_Op$OSal, color="grey")+
+      scale_y_continuous(#limits = c(15,40),
+                       name=(expression("Salinity")),
+                       breaks = seq(15, 40, 2),  
+                       expand = c(0.05, 0.05)) +
+ 
+    geom_boxplot(data=Inshore.data[Inshore.data$Extreme=="Normal", ], 
+                 aes (x=Sub_region, y=BestSalinity))+
+    
+    geom_point(data=Inshore.data, aes (x=Sub_region, y=BestSalinity, 
+                                 fill=Precipitation, shape=Extreme), 
+               alpha=0.8, size=0.8, show.legend = F, width = 0.20)
+Sal_sea_re
+```
+
+#### Delta TA
+
+```{r, echo=FALSE, fig.height=4, fig.width=8}
+DeltaTA_sea_re<- Season_plot+
+    geom_abline(slope = 0, intercept = 0, color="grey")+
+    scale_y_continuous(#limits = c(1700,2900),
+                     expand = c(0.02, 0.02),
+                     breaks = seq(-500, 500, 100),
+                     name=expression(paste(Delta, " TA (", mu, "mol ", kg^-1, ")")))+
+  
+    geom_boxplot(data=Inshore.data[Inshore.data$Extreme=="Normal", ], 
+                 aes (x=Sub_region, y=dTA_MY))+
+    
+    geom_point(data=Inshore.data, aes (x=Sub_region, y=dTA_MY, 
+                                 fill=Precipitation, shape=Extreme), 
+             alpha=0.8, size=0.8, show.legend = F)
+DeltaTA_sea_re
+```
+
+#### Delta nTA
+
+```{r, echo=FALSE, fig.height=4, fig.width=8}
+DeltanTA_sea_re<- Season_plot+
+    geom_abline(slope = 0, intercept = 0, color="grey")+
+    scale_y_continuous(#limits = c(1700,2900),
+                     expand = c(0.02, 0.02),
+                     breaks = seq(-500, 500, 100),
+                     name=expression(paste(Delta, " nTA (", mu, "mol ", kg^-1, ")")))+
+  
+    geom_boxplot(data=Inshore.data[Inshore.data$Extreme=="Normal", ], 
+                 aes (x=Sub_region, y=dnTA_MY))+
+    
+    geom_point(data=Inshore.data, aes (x=Sub_region, y=dnTA_MY, 
+                                 fill=Precipitation, shape=Extreme), 
+             alpha=0.8, size=0.8, show.legend = F)
+DeltanTA_sea_re
+```
+
+#### Delta DIC
+
+```{r, echo=FALSE, fig.height=4, fig.width=8}
+DeltaDIC_sea_re<- Season_plot+
+  geom_abline(slope = 0, intercept = 0, color="grey")+
+    scale_y_continuous(#limits = c(1700,2900),
+                     expand = c(0.02, 0.02),
+                     breaks = seq(-500, 500, 100),
+                     name=expression(paste(Delta, " DIC (", mu, "mol ", kg^-1, ")")))+
+  
+    geom_boxplot(data=Inshore.data[Inshore.data$Extreme=="Normal", ], 
+                 aes (x=Sub_region, y=dDIC_MY))+
+    
+    geom_point(data=Inshore.data, aes (x=Sub_region, y=dDIC_MY, 
+                                 fill=Precipitation, shape=Extreme), 
+             alpha=0.8, size=0.8, show.legend = F)
+DeltaDIC_sea_re
+```
+
+#### Delta nDIC
+
+```{r, echo=FALSE, fig.height=4, fig.width=8}
+DeltanDIC_sea_re<- Season_plot+
+  geom_abline(slope = 0, intercept = 0, color="grey")+
+    scale_y_continuous(#limits = c(1700,2900),
+                     expand = c(0.02, 0.02),
+                     breaks = seq(-500, 500, 100),
+                     name=expression(paste(Delta, " nDIC (", mu, "mol ", kg^-1, ")")))+
+  
+    geom_boxplot(data=Inshore.data[Inshore.data$Extreme=="Normal", ], 
+                 aes (x=Sub_region, y=dnDIC_MY))+
+    
+    geom_point(data=Inshore.data, aes (x=Sub_region, y=dnDIC_MY, 
+                                 fill=Precipitation, shape=Extreme), 
+             alpha=0.8, size=0.8, show.legend = F)
+DeltanDIC_sea_re
+```
+
+#### pCO2
+
+```{r, echo=FALSE, fig.height=4, fig.width=8}
+pCO2_sea_re<- Season_plot+
+      geom_abline(slope = 0, intercept = mean_Op$OpCO2, color="grey")+
+       scale_y_continuous(#limits = c(1,5.5),
+                       name=expression(paste(pCO[2], "(", mu, " atm)")),
+                       breaks = seq(200, 700, 100),
+                        expand = c(0.05, 0.05)
+                        ) +
+ 
+    geom_boxplot(data=Inshore.data[Inshore.data$Extreme=="Normal", ], 
+                 aes (x=Sub_region, y=pCO2_uatm))+
+    
+    geom_point(data=Inshore.data, aes (x=Sub_region, y=pCO2_uatm, 
+                                 fill=Precipitation, shape=Extreme), 
+               show.legend = F, alpha=0.8, size=0.8)
+pCO2_sea_re
+```
+
+#### pH
+
+```{r, echo=FALSE, fig.height=4, fig.width=8}
+pH_sea_re<- Season_plot+
+    geom_abline(slope = 0, intercept = mean_Op$OpH, color="grey")+
+    scale_y_continuous(#limits = c(1,5.5),
+                       name=(expression ("pH")),
+                       breaks = seq(0, 9, 0.1),
+                       expand = c(0.05, 0.05)
+                        ) +
+    geom_boxplot(data=Inshore.data[Inshore.data$Extreme=="Normal", ], 
+                 aes (x=Sub_region, y=pH_calculated))+
+    
+    geom_point(data=Inshore.data, aes (x=Sub_region, y=pH_calculated, 
+                                 fill=Precipitation, shape=Extreme), 
+               show.legend = F, alpha=0.8, size=0.8)
+pH_sea_re
+```
+
+#### Omega
+
+```{r, echo=FALSE, fig.height=4, fig.width=8}
+Omega_sea_re<- Season_plot+
+      geom_abline(slope = 0, intercept = mean_Op$OAra, color="grey")+
+          scale_y_continuous(#limits = c(1,5.5),
+                       name=(expression ("Aragonite "~Omega)),
+                       breaks = seq(1, 5, 0.5),
+                       expand = c(0.05, 0.05)
+                        ) +
+    geom_boxplot(data=Inshore.data[Inshore.data$Extreme=="Normal", ], 
+                 aes (x=Sub_region, y=Aragonite_Sat_W))+
+    
+    geom_point(data=Inshore.data, aes (x=Sub_region, y=Aragonite_Sat_W, 
+                                 fill=Precipitation, shape=Extreme), 
+               show.legend = F, alpha=0.8, size=0.8)
+Omega_sea_re
+```
+
+### Seasons in the reef figure 
+
+```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
+Figure_sea_re<-ggarrange(DeltaTA_sea_re, DeltanTA_sea_re,
+                         DeltaDIC_sea_re, DeltanDIC_sea_re, 
+                         pH_sea_re, pCO2_sea_re, 
+                         Temperature_sea_re, Sal_sea_re, 
+                         Omega_sea_re,
+                        
+          #labels = c("", ""),
+          ncol = 2, nrow = 5)
+Figure_sea_re
+```
+
+```{r, echo=FALSE, fig.height=8, fig.width=8.8}
+Figure_sea_re2<-ggarrange(
+  DeltaTA_sea_re, DeltaDIC_sea_re,Omega_sea_re, 
+  DeltanTA_sea_re, DeltanDIC_sea_re, pCO2_sea_re, 
+  Temperature_sea_re, Sal_sea_re,  pH_sea_re,
+                        
+          #labels = c("", ""),
+          ncol = 3, nrow = 3)
+Figure_sea_re2
+```
+
 # 6 LMER long trend MODELS
+
+* The F statistic in a regression model is used to test whether there is a linear model of the data - overall , or equivalently that your model is no better than a model with just the intercept. 
+
+* The t statistic for a coefficient in a linear model tests the H0 that the true coefficient is 0. 
+
+*The t-statistic is telling you about each coefficient individually. You can have a model with a low overall linear fit, but one individual coefficient may be relatively contributing a lot to explanation the variation in the DV that is explained on the assumption that there is a linear model.
 
 ## Long term data/plots 
 
@@ -2538,6 +3184,7 @@ Trends.data<-FLK.data_filtered[FLK.data_filtered$Year>2014, ]
 
 Reef.Trends.data<-WS.reef[WS.reef$Year>2014, ]
 Reef.Trends.data<-Reef.Trends.data[Reef.Trends.data$Extreme=="Normal", ]
+#summary(Reef.Trends.data$Extreme)
 
 Trends.ocean<-Trends.data[Trends.data$Zone=="Oceanic", ]
 
@@ -2677,7 +3324,7 @@ modelsummary(Omega_models, stars = TRUE,
 ```{r, echo=FALSE, fig.height=5, fig.width=8}
 pCO2_all<- Long_plot+
     scale_y_continuous(#limits = c(15,40),
-                       name=(expression(pCO[2])),
+                       name=expression(paste(pCO[2], " (", mu, " atm)")),
                        breaks = seq(0, 800, 50),  
                        expand = c(0.05, 0.05)) +
     geom_point(aes (x=Date, y=pCO2_uatm, fill=Precipitation), 
@@ -3114,8 +3761,8 @@ Long_plot2<- ggplot(Reef.Trends.data) +
 #head(Reef.Trends.data)
 dTA_all<- Long_plot2+
     scale_y_continuous(#limits = c(15,40),
-                      name=(expression(Delta~TA)),
-                      breaks = seq(0, 10, 0.5),  
+                      breaks = seq(-500, 500, 100),
+                      name=expression(paste(Delta, " TA (", mu, "mol ", kg^-1, ")")),
                       expand = c(0.05, 0.05)) +
     geom_point(aes (x=Date, y=dTA_MY, fill=Precipitation), 
              alpha=0.8, size=1, shape=21)+
@@ -3201,9 +3848,9 @@ modelsummary(dTA_models, stars = TRUE,
 ```{r, echo=FALSE, fig.height=5, fig.width=8}
 dDIC_all<- Long_plot2+
     scale_y_continuous(#limits = c(15,40),
-                      name=(expression(Delta~DIC)),
-                       breaks = seq(-900, 900, 100),  
-                       expand = c(0.05, 0.05)) +
+                      name=expression(paste(Delta, " DIC (", mu, "mol ", kg^-1, ")")),
+                      breaks = seq(-900, 900, 100),  
+                      expand = c(0.05, 0.05)) +
     geom_point(aes (x=Date, y=dDIC_MY, fill=Precipitation), 
              alpha=0.8, size=1, shape=21)+
     geom_smooth(aes (x=Date, y=dDIC_MY), method = "lm")
@@ -3283,3 +3930,5 @@ modelsummary(dDIC_models, stars = TRUE,
              coef_map=factor_order)
 #modelsummary(dDIC_models, estimate = "p.value")
 ```
+
+
