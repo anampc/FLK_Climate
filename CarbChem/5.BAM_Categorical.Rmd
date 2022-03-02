@@ -36,8 +36,7 @@ library(dplyr)
 
 ```{r, include=FALSE}
 # 1. Get data
-WS.data<-read.csv("WS.data.csv", header = T)
-
+WS.data<-FLK.data_filtered
 # Separate CalVal and Walton Smith data
 summary(WS.data$Mission)
 
@@ -62,56 +61,14 @@ WS.data <- transform(WS.data,
 ## Subset FLK data by zone to use them as endpoints
 
 ```{r}
-  WS.open<-subset(WS.data, WS.data$Zone=="Offshore"|WS.data$Zone=="Oceanic")
+  WS.open<-subset(WS.data, WS.data$Zone=="Oceanic")
   WS.open$Date<-as.Date(WS.open$Date, "%Y-%m-%d")
  
-  WS.reef<-subset(WS.data, WS.data$Zone=="Inshore"|WS.data$Zone=="Mid channel")
+  WS.reef<-subset(WS.data, WS.data$Zone!="Oceanic")
   WS.reef$Date<-as.Date(WS.reef$Date, "%Y-%m-%d")
 ```
 
 * Get the oceanic / offshore mean values per monty-year and substract them from the reef data
-
-```{r}
-
-# Reef data
-nTA.MY.open <- ddply (WS.open, .(Sub_region, MY),summarise,
-                OnTA_my = mean (nTA, na.rm = T),
-                #sd = sd (nTA, na.rm = T),
-                number = n())
-
-nDIC.MY.open <- ddply (WS.open, .(Sub_region, MY),summarise,
-                OnDIC_my = mean (nDIC, na.rm = T),
-                #sd = sd (nDIC, na.rm = T),
-                number = n())
-
-# ONly reef
-  WS.reef<-join(WS.reef,nTA.MY.open[,-4], 
-                   type = "left", by=c("MY", "Sub_region"))
-  
-  WS.reef<-join(WS.reef, nDIC.MY.open, 
-                   type = "left", by=c("MY", "Sub_region"))
-  
-  # Delta nTA
-  WS.reef$dnTA_MY<-WS.reef$nTA-WS.reef$OnTA_my
-  
-  # Delta nDIC
-  WS.reef$dnDIC_MY<-WS.reef$nDIC-WS.reef$OnDIC_my
-
-
-# all WS data
-  WS.data<-join(WS.data,nTA.MY.open[,-4], 
-                   type = "left", by=c("MY", "Sub_region"))
-  
-  WS.data<-join(WS.data, nDIC.MY.open, 
-                   type = "left", by=c("MY", "Sub_region"))
-  
-  # Delta nTA
-  WS.data$dnTA_MY<-WS.data$nTA-WS.data$OnTA_my
-  
-  # Delta nDIC
-  WS.data$dnDIC_MY<-WS.data$nDIC-WS.data$OnDIC_my
-
-```
 
 **Quick plote / note about Time of the day:** Either hour of the day does not matter for temperature (lots of circulation?) or times are not very accurate (Waton Smith UTC reporting not always followed?) 
 
