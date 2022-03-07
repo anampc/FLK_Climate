@@ -44,6 +44,9 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE,
     library(emmeans)
     library(modelsummary) # model results in table
     library(lsmeans) #cld functon 
+    library(jtools) # Plot modesl
+    library(kableExtra) # ANOVA tables
+
 
 # Interactive Maps
     library(leaflet)
@@ -177,7 +180,7 @@ leaflet(FLK.data, height = '400px') %>%
 
 ```
 
-**Figure:** Map of the sites where individual samples were collected
+**Figure Supp:** Map of the sites where individual samples were collected
 
 **Notes:**
 * Check location of individual SiteIDs
@@ -421,6 +424,11 @@ kable(as.data.frame(Cases_Site_FLK, format = "html"),
 ```{r}
 #MeanSalinity<-mean(FLK.data[FLK.data$Zone=="Oceanic",]$BestSalinity)
 MeanSalinity<-mean(FLK.data$BestSalinity)
+sdSalinity<-sd(FLK.data$BestSalinity)
+
+Sal<-paste("Mean salinity = ", round(MeanSalinity, digits=3),
+           "(", round(sdSalinity, digits=3), ")")
+Sal
 ```
 
 ```{r}
@@ -463,6 +471,13 @@ MeanSalinity<-mean(FLK.data$BestSalinity)
 ```
 
 2. Calculate TA intercepts
+
+**Note: Use Model II Linera regressions!**
+
+"For Model II regressions, neither X nor Y is an INDEPENDENT variable but both are assumed to be DEPENDENT on some other parameter which is often unknown. Neither are “controlled”, both are measured, and both include some error. We do not seek an equation of how Y varies in response to a change in X, but rather we look for how they both co-vary in time or space in response to some other variable or process." 
+
+* Use ordinary least squares (OLS)? 
+
 
 ```{r, echo=FALSE, fig.height=4, fig.width=8}
 # TA_coef <- FLK.data %>% 
@@ -666,7 +681,7 @@ nTA_TA_plots<-ggarrange(nTA_TA_ext, nTA_TA_pre,
 nTA_TA_plots
 ```
 
-**Figure Supp 2:** Linear regressions of Friss normalized total alkalinity (nTA, µmol kg−1) as a function of measured Total Alcalinity (TA, µmol kg−1)
+**Figure Supp X:** Linear regressions of Friss normalized total alkalinity (nTA, µmol kg−1) as a function of measured Total Alcalinity (TA, µmol kg−1)
 
 ### DIC vs Friss salinity normalized DIC
 
@@ -700,7 +715,7 @@ nDIC_DIC_plots<-ggarrange(nDIC_DIC_ext, nDIC_DIC_pre,
 nDIC_DIC_plots
 ```
 
-**Figure Supp 3:** Linear regressions of Friss normalized Dissolved Inorganc Carbon (nDIC, µmol kg−1) as a function of measured Dissolved Inorganc Carbon (DIC, µmol kg−1)
+**Figure Supp X:** Linear regressions of Friss normalized Dissolved Inorganc Carbon (nDIC, µmol kg−1) as a function of measured Dissolved Inorganc Carbon (DIC, µmol kg−1)
 
 ### TA vs Salinity normalized TA  
 
@@ -730,7 +745,7 @@ n35TA_TA_plots<-ggarrange(n35TA_TA_ext, n35TA_TA_pre,
 n35TA_TA_plots
 ```
 
-**Figure Supp 4:** Linear regressions of mean salinity normalized total alkalinity (n35TA, µmol kg−1) as a function of measured Total Alcalinity (TA, µmol kg−1)
+**Figure Supp X:** Linear regressions of mean salinity normalized total alkalinity (n35TA, µmol kg−1) as a function of measured Total Alcalinity (TA, µmol kg−1)
 
 ### DIC vs Salinity normalized DIC
 
@@ -760,7 +775,7 @@ nDIC_DIC_plots<-ggarrange(n35DIC_DIC_ext, n35DIC_DIC_pre,
 nDIC_DIC_plots
 ```
 
-**Figure Supp 5:** Linear regressions of mean salinity normalized Dissolved Inorganc Carbon (n35DIC, µmol kg−1) as a function of measured Dissolved Inorganc Carbon (DIC, µmol kg−1)
+**Figure Supp X:** Linear regressions of mean salinity normalized Dissolved Inorganc Carbon (n35DIC, µmol kg−1) as a function of measured Dissolved Inorganc Carbon (DIC, µmol kg−1)
 
 ### Differences vs Salinity
 
@@ -820,7 +835,7 @@ Difference_plots<-ggarrange(TAdiff, DICdiff_pre,
 Difference_plots
 ```
 
-**Figure Supp 6:** Linear regressions of (A) TA-n35TA and (B) DIC-nDIC as a function of Salinity
+**Figure Supp X:** Linear regressions of (A) TA-n35TA and (B) DIC-nDIC as a function of Salinity
 
 # 4. Endmember comparissions
 
@@ -942,12 +957,20 @@ TA_DIC_Zone <- ddply (FLK.data[FLK.data$Extreme=="Normal", ], .(Zone),summarise,
                 TAmean = mean (TA_umol_kg, na.rm = T), 
                 DICmean = mean (DIC_umol_kg, na.rm = T),
                 nTAmean = mean (n35TA, na.rm = T), 
-                nDICmean = mean (n35DIC, na.rm = T))
+                nDICmean = mean (n35DIC, na.rm = T),
+                TAsd = sd (TA_umol_kg, na.rm = T), 
+                DICsd = sd (DIC_umol_kg, na.rm = T),
+                nTAsd = sd (n35TA, na.rm = T), 
+                nDIsd = sd (n35DIC, na.rm = T))
 
 TA_DIC_Ocean<-TA_DIC_Zone[TA_DIC_Zone$Zone=="Oceanic", ]
 
 kable(as.data.frame(TA_DIC_Zone, format = "markdown"), caption = "Mean TA/DIC by zone")
 ```
+
+**Note: Use Model II Linera regressions!**
+
+"For Model II regressions, neither X nor Y is an INDEPENDENT variable but both are assumed to be DEPENDENT on some other parameter which is often unknown. Neither are “controlled”, both are measured, and both include some error. We do not seek an equation of how Y varies in response to a change in X, but rather we look for how they both co-vary in time or space in response to some other variable or process."
 
 ```{r}
 # Individual LR for each Zone and Sub_region
@@ -965,15 +988,44 @@ kable(as.data.frame(TA_DIC_coef_zone_noExtremes[,1:8],
       caption = "TA vs DIC equations without extreme events",
       digits = 2)
 
+
 #write.csv(TA_DIC_coef_zone_noExtremes, "FLK_results/Fig_2_TA_DIC_coef_slopes_Subregion.csv", row.names = FALSE)
-    
+
+# Annotations for plots
+  coef_zone_noExtremes<-select(TA_DIC_coef_zone_noExtremes, 
+                               c("Zone", "Sub_region", "estimate", "r.squared"))
+  coef_zone_noExtremes$estimate<-round(coef_zone_noExtremes$estimate, digits=2)
+  coef_zone_noExtremes$r.squared<-round(coef_zone_noExtremes$r.squared, digits=2)
+```
+
+Type II Linear regression
+
+```{r}
+TA_DIC_coef_zone_noExtII <- FLK.data[FLK.data$Extreme=="Normal", ] %>% 
+                    group_by(Zone, Sub_region) %>%
+                    do({model = lmodel2(TA_umol_kg~DIC_umol_kg, data=.)  
+                    # create model
+                    data.frame(tidy(model), # get coefficient info
+                    glance(model))})        # get model info
+TA_DIC_coef_zone_noExtII
+
+TA_DIC_coef_zone_noExtII<-subset(TA_DIC_coef_zone_noExtII, term!="Intercept")
+kable(as.data.frame(TA_DIC_coef_zone_noExtII[,1:9], 
+      format = "markdown"),
+      caption = "TA vs DIC equations without extreme events using type II lm",
+      digits = 2)
+
+# Annotations for plots
+  TA_DIC_coef_zone_noExtII<-select(TA_DIC_coef_zone_noExtII, 
+                               c("Zone", "Sub_region","method", "estimate", "r.squared"))
+  TA_DIC_coef_zone_noExtII$estimate<-round(TA_DIC_coef_zone_noExtII$estimate, digits=2)
+  TA_DIC_coef_zone_noExtII$r.squared<-round(TA_DIC_coef_zone_noExtII$r.squared, digits=2)
+
+
 ```
 
 ```{r}
-coef_zone_noExtremes<-select(TA_DIC_coef_zone_noExtremes, 
-                             c("Zone", "Sub_region", "estimate", "r.squared"))
-coef_zone_noExtremes$estimate<-round(coef_zone_noExtremes$estimate, digits=2)
-coef_zone_noExtremes$r.squared<-round(coef_zone_noExtremes$r.squared, digits=2)
+
 
 TA_DIC_Extreme_pre<-TA_DIC + 
   geom_abline(intercept = -1700, slope=2, color="grey")+
@@ -1067,7 +1119,7 @@ TA_DIC_reef_pre<-TA_DIC_Extreme_pre +
 #TA_DIC_reef_pre
 ```
 
-**Figure Sup:** Linear regressions of total alkalinity (TA; µmol kg−1) and dissolved inorganic carbon (DIC; µmol kg−1) by reef and zone
+<!-- **Figure Sup:** Linear regressions of total alkalinity (TA; µmol kg−1) and dissolved inorganic carbon (DIC; µmol kg−1) by reef and zone -->
 
 ```{r}
 # Individual LR for each reef
@@ -1123,7 +1175,7 @@ FLK_slopes<-ggarrange(TA_DIC_Extreme_pre, Slope_plot,
           ncol = 2, nrow = 1, widths = c(4, 1.3))
 FLK_slopes
 
-#ggsave(file="FLK_results/Fig_2_FLK_slopes.svg", plot=FLK_slopes, dpi = 300, width=8, height=6.2)
+#ggsave(file="FLK_results/Fig_2_FLK_slopes.svg", plot=FLK_slopes, dpi = 300, width=8, height=8)
   
 ```
 
@@ -1183,7 +1235,7 @@ nSlopes_reef<-ggplot(data=nSlopes_reef, aes (x =Sub_region, y =estimate)) +
 
 ```
 
-**Figure 2b:** nTA (µmol kg−1) vs nDIC (µmol kg−1) slopes
+<!-- **Figure 2b:** nTA (µmol kg−1) vs nDIC (µmol kg−1) slopes -->
 
 ```{r,  echo=FALSE}
 FLK_nslopes<-ggarrange(nTA_nDIC_Extreme_pre, nSlopes_reef,
@@ -1274,7 +1326,7 @@ FLK_nslopes
 
 ## 5.1 Month raw values 
 
-### Months stats
+## - Months stats
 
 ```{r}
 Month_Stats<- ddply (FLK.data_filtered, .(Zone, Sub_region, Season, Month, Region),
@@ -1305,14 +1357,16 @@ Month_Stats<- ddply (FLK.data_filtered, .(Zone, Sub_region, Season, Month, Regio
                   pH_sd = sd (pH_calculated, na.rm = T),
                   
                   Ara_mean = mean (Aragonite_Sat_W , na.rm = T),
-                  Ara_sd = sd (Aragonite_Sat_W , na.rm = T)
-                  )
+                  Ara_sd = sd (Aragonite_Sat_W , na.rm = T),
+                  n = n())
+
 Month_Stats<-Month_Stats %>% 
  mutate_if(is.numeric, round, digits=3)
 Month_Stats
 ```
 
-### Month Plots 
+## - Month Plots 
+
 ```{r}
 Month_ploth<- ggplot(FLK.data) +
         MyTheme +  
@@ -1325,13 +1379,14 @@ Year_ploth<- ggplot(Month_Stats) +
         MyTheme +  
         theme(axis.title.x = element_blank())+
         Season_fill+
+        Season_colour+
         facet_grid(Zone~Region)
         #scale_shape_manual(values=c(24, 25, 21))+
         #guides(fill=guide_legend(override.aes=list(shape=21)))+
         #theme(axis.title.x = element_blank() )
 ```
 
-#### Temperature
+### Temperature
 
 ```{r, echo=FALSE, fig.height=8, fig.width=8}
 Temperature_month<- Month_ploth+
@@ -1355,22 +1410,30 @@ Tem_Y<- Year_ploth+
                        name=(expression("Temperature"~(degree*C))),
                        breaks = seq(16, 40, 2),  
                        expand = c(0.1, 0.1)) +
-  
-    geom_boxplot(aes (x=Sub_region, y=Tem_mean))+
-    
     geom_point(aes (x=Sub_region, y=Tem_mean, fill=Season), 
-             shape=21, alpha=0.8, size=1.5)
+             shape=21, alpha=0.5, size=1)+
+  
+    geom_boxplot(aes (x=Sub_region, y=Tem_mean))
+    #stat_summary(aes (x=Sub_region, y=Tem_mean, colour=Season),
+                #fun.data = "mean_cl_boot",geom = "errorbar",
+                #width = 1, position=position_dodge(width=0.25))+
+    #stat_summary(aes (x=Sub_region, y=Tem_mean, colour=Season),
+                #fun.data = "mean_cl_boot", geom = "point", 
+                #position=position_dodge(width=0.25))
 #Tem_Y
 ```
 
 ```{r, echo=FALSE, fig.height=8, fig.width=8}
 Temperature_my<-ggarrange(Temperature_month, Tem_Y,
-          #labels = c("DIC Friss regresion", "TA Friss regresion"),
+          labels = c("(A)", "(B)"),
           ncol = 2, nrow = 1, widths = c(4, 1.5))
 Temperature_my
 ```
 
-#### Salinity
+**Figure Supp 2:** Temperature variation by the region and shelf position by (A) month of the year and (B) season.   
+
+
+### Salinity
 
 ```{r, echo=FALSE, fig.height=8, fig.width=8}
 Sal_month<- Month_ploth+
@@ -1409,12 +1472,14 @@ Sal_Y<- Year_ploth+
 
 ```{r, echo=FALSE, fig.height=8, fig.width=8}
 Sal_my<-ggarrange(Sal_month, Sal_Y,
-          #labels = c("DIC Friss regresion", "TA Friss regresion"),
-          ncol = 2, nrow = 1, widths = c(4, 1.5))
+        labels = c("(A)", "(B)"),
+        ncol = 2, nrow = 1, widths = c(4, 1.5))
 Sal_my
 ```
 
-#### TA
+**Figure Supp 3:** Salinity variation by the region and shelf position by (A) month of the year and (B) season. 
+
+### TA
 
 ```{r, echo=FALSE, fig.height=8, fig.width=8}
 TA_month<- Month_ploth+
@@ -1449,12 +1514,14 @@ TA_Y<- Year_ploth+
 
 ```{r, echo=FALSE, fig.height=8, fig.width=8}
 TA_my<-ggarrange(TA_month, TA_Y,
-          #labels = c("DIC Friss regresion", "TA Friss regresion"),
+          labels = c("(A)", "(B)"),
           ncol = 2, nrow = 1, widths = c(4, 1.5))
 TA_my
 ```
 
-#### nTA
+**Figure Supp 4:** Total Alkalinity (TA) variation by the region and shelf position by (A) month of the year and (B) season. 
+
+### nTA
 
 ```{r, echo=FALSE, fig.height=8, fig.width=8}
 nTA_month<- Month_ploth+
@@ -1494,7 +1561,7 @@ nTA_my<-ggarrange(nTA_month, nTA_Y,
 nTA_my
 ```
 
-#### DIC
+### DIC
 
 ```{r, echo=FALSE, fig.height=8, fig.width=8}
 DIC_month<- Month_ploth+
@@ -1529,12 +1596,14 @@ DIC_Y<- Year_ploth+
 
 ```{r, echo=FALSE, fig.height=8, fig.width=8}
 DIC_my<-ggarrange(DIC_month, DIC_Y,
-          #labels = c("DIC Friss regresion", "TA Friss regresion"),
+          labels = c("(A)", "(B)"),
           ncol = 2, nrow = 1, widths = c(4, 1.5))
 DIC_my
 ```
 
-#### nDIC
+**Figure Supp 5:** Disolved Inorganic Carbon (DIC) variation by the region and shelf position by (A) month of the year and (B) season.
+
+### nDIC
 
 ```{r, echo=FALSE, fig.height=8, fig.width=8}
 nDIC_month<- Month_ploth+
@@ -1574,7 +1643,7 @@ nDIC_my<-ggarrange(nDIC_month, nDIC_Y,
 nDIC_my
 ```
 
-#### pCO2
+### pCO2
 
 ```{r, echo=FALSE, fig.height=8, fig.width=8}
 pCO2_month<- Month_ploth+
@@ -1610,12 +1679,14 @@ pCO2_Y<- Year_ploth+
 
 ```{r, echo=FALSE, fig.height=8, fig.width=8}
 pCO2_my<-ggarrange(pCO2_month, pCO2_Y,
-          #labels = c("DIC Friss regresion", "TA Friss regresion"),
-          ncol = 2, nrow = 1, widths = c(4, 1.5))
+         labels = c("(A)", "(B)"),
+         ncol = 2, nrow = 1, widths = c(4, 1.5))
 pCO2_my
 ```
 
-#### pH
+**Figure Supp 6:** pCO2 variation by the region and shelf position by (A) month of the year and (B) season.
+
+### pH
 
 ```{r, echo=FALSE, fig.height=8, fig.width=8}
 pH_month<- Month_ploth +
@@ -1652,12 +1723,15 @@ pH_Y<- Year_ploth+
 
 ```{r, echo=FALSE, fig.height=8, fig.width=8}
 pH_my<-ggarrange(pH_month, pH_Y,
-          #labels = c("DIC Friss regresion", "TA Friss regresion"),
-          ncol = 2, nrow = 1, widths = c(4, 1.5))
+        labels = c("(A)", "(B)"),
+        ncol = 2, nrow = 1, widths = c(4, 1.5))
 pH_my
 ```
 
-#### Omega
+**Figure Supp 7:** pH variation by the region and shelf position by (A) month of the year and (B) season.
+
+
+### Omega
 
 ```{r, echo=FALSE, fig.height=8, fig.width=8}
 Omega_month<- Month_ploth+
@@ -1693,53 +1767,139 @@ Omega_Y<- Year_ploth+
 
 ```{r, echo=FALSE, fig.height=8, fig.width=8}
 Ara_my<-ggarrange(Omega_month, Omega_Y,
-          #labels = c("DIC Friss regresion", "TA Friss regresion"),
+          labels = c("(A)", "(B)"),
           ncol = 2, nrow = 1, widths = c(4, 1.5))
 Ara_my
 ```
 
+**Figure Supp 8:** Omega variation by the region and shelf position by (A) month of the year and (B) season.
+
 
 ## 5.2 Season raw values 
 
-## - Season stats
+## - Season stats (all data)
 
 ```{r}
-  Seasonal_Stats<- ddply (FLK.data_filtered, .(Zone, Sub_region, Season),
-                            summarise,
-                          
-                  Tem_mean = mean (Temperature_C, na.rm = T),
-                  Tem_sd = sd (Temperature_C, na.rm = T),
-                  
-                  Sal_mean = mean (BestSalinity, na.rm = T),
-                  Sal_sd = sd (BestSalinity, na.rm = T),
-                  
-                  TA_mean = mean (TA_umol_kg, na.rm = T),
-                  TA_sd = sd (TA_umol_kg, na.rm = T),
-                  
-                  nTA_mean = mean (n35TA, na.rm = T),
-                  nTA_sd = sd (n35TA, na.rm = T),
-                  
-                  nDIC_mean = mean (n35DIC, na.rm = T),
-                  nDIC_sd = sd (n35DIC, na.rm = T),
-                  
-                  DIC_mean = mean (DIC_umol_kg, na.rm = T),
-                  DIC_sd = mean (DIC_umol_kg, na.rm = T),
-                  
-                  pCO2_mean = mean (pCO2_uatm , na.rm = T),
-                  pCO2_sd = sd (pCO2_uatm , na.rm = T),
-                  
-                  pH_mean = mean (pH_calculated, na.rm = T),
-                  pH_sd = mean (pH_calculated, na.rm = T),
-                  
-                  Ara_mean = mean (Aragonite_Sat_W , na.rm = T),
-                  Ara_sd = mean (Aragonite_Sat_W , na.rm = T)
-                  )
+Seasonal_Stats<- ddply (FLK.data_filtered, .(Zone, Sub_region, Season),
+             summarise,
+
+      Tem_mean = mean (Temperature_C, na.rm = T),
+      Tem_sd = sd (Temperature_C, na.rm = T),
+    
+      Sal_mean = mean (BestSalinity, na.rm = T),
+      Sal_sd = sd (BestSalinity, na.rm = T),
+    
+      TA_mean = mean (TA_umol_kg, na.rm = T),
+      TA_sd = sd (TA_umol_kg, na.rm = T),
+    
+      nTA_mean = mean (n35TA, na.rm = T),
+      nTA_sd = sd (n35TA, na.rm = T),
+    
+      nDIC_mean = mean (n35DIC, na.rm = T),
+      nDIC_sd = sd (n35DIC, na.rm = T),
+    
+      DIC_mean = mean (DIC_umol_kg, na.rm = T),
+      DIC_sd = sd (DIC_umol_kg, na.rm = T),
+    
+      pCO2_mean = mean (pCO2_uatm , na.rm = T),
+      pCO2_sd = sd (pCO2_uatm , na.rm = T),
+    
+      pH_mean = mean (pH_calculated, na.rm = T),
+      pH_sd = sd (pH_calculated, na.rm = T),
+    
+      Ara_mean = mean (Aragonite_Sat_W , na.rm = T),
+      Ara_sd = sd (Aragonite_Sat_W , na.rm = T),
+       n())
+
 Seasonal_Stats<-Seasonal_Stats %>% 
- mutate_if(is.numeric, round, digits=3)
+ mutate_if(is.numeric, round, digits=2)
 Seasonal_Stats
 ```
 
-## - Season plots
+## - Season stats (monthly mean)
+
+```{r}
+Seasonal_Stats2<- ddply (Month_Stats, .(Zone, Sub_region, Season),
+                         summarise,
+
+                  Tem_M = mean (Tem_mean, na.rm = T),
+                  Tem_sd = sd (Tem_mean, na.rm = T),
+
+                  Sal_M = mean (Sal_mean, na.rm = T),
+                  Sal_sd = sd (Sal_mean, na.rm = T),
+
+                  TA_M = mean (TA_mean, na.rm = T),
+                  TA_sd = sd (TA_mean, na.rm = T),
+
+                  nTA_M = mean (nTA_mean, na.rm = T),
+                  nTA_sd = sd (nTA_mean, na.rm = T),
+
+                  nDIC_M = mean (nDIC_mean, na.rm = T),
+                  nDIC_sd = sd (nDIC_mean, na.rm = T),
+
+                  DIC_M = mean (DIC_mean, na.rm = T),
+                  DIC_sd = sd (DIC_mean, na.rm = T),
+
+                  pCO2_M = mean (pCO2_mean , na.rm = T),
+                  pCO2_sd = sd (pCO2_mean , na.rm = T),
+
+                  pH_M = mean (pH_mean, na.rm = T),
+                  pH_sd = sd (pH_mean, na.rm = T),
+
+                  Ara_M = mean (Ara_mean , na.rm = T),
+                  Ara_sd = sd (Ara_mean , na.rm = T),
+                  n())
+
+Seasonal_Stats2<-Seasonal_Stats2 %>% 
+ mutate_if(is.numeric, round, digits=2)
+Seasonal_Stats2
+
+```
+
+**Note:** SD is NA when calculating it based on monthly meand (n=3 per season)
+
+## - Yearly stats (monthly mean)
+
+```{r}
+Yearly_Stats<- ddply (Month_Stats, .(Zone, Sub_region),
+                         summarise,
+
+                  Tem_Y = mean (Tem_mean, na.rm = T),
+                  Tem_sd = sd (Tem_mean, na.rm = T),
+
+                  Sal_Y = mean (Sal_mean, na.rm = T),
+                  Sal_sd = sd (Sal_mean, na.rm = T),
+
+                  TA_Y = mean (TA_mean, na.rm = T),
+                  TA_sd = sd (TA_mean, na.rm = T),
+
+                  nTA_Y = mean (nTA_mean, na.rm = T),
+                  nTA_sd = sd (nTA_mean, na.rm = T),
+
+                  nDIC_Y = mean (nDIC_mean, na.rm = T),
+                  nDIC_sd = sd (nDIC_mean, na.rm = T),
+
+                  DIC_Y = mean (DIC_mean, na.rm = T),
+                  DIC_sd = sd (DIC_mean, na.rm = T),
+
+                  pCO2_Y = mean (pCO2_mean , na.rm = T),
+                  pCO2_sd = sd (pCO2_mean , na.rm = T),
+
+                  pH_Y = mean (pH_mean, na.rm = T),
+                  pH_sd = sd (pH_mean, na.rm = T),
+
+                  Ara_Y = mean (Ara_mean , na.rm = T),
+                  Ara_sd = sd (Ara_mean , na.rm = T),
+                  n())
+
+Yearly_Stats<-Yearly_Stats %>% 
+ mutate_if(is.numeric, round, digits=2)
+Yearly_Stats
+
+```
+
+**Note:** SD is NA when calculating it based on monthly meand (n=3 per season)
+## - Season plots (all data)
 
 ```{r}
 Season_plot<- ggplot(FLK.data) +
@@ -1980,9 +2140,37 @@ dMonth_Stats<- ddply (WS.reef, .(Zone, Sub_region, Month, Season, Region),
                   dAra_sd = mean (dOme_MY , na.rm = T)
                   )
 
+Year_Add<- ddply (dMonth_Stats, .(Zone, Sub_region, Region),
+           summarise,
+  dTA_Y = sum (dTA_mean, na.rm = T),
+  dnTA_Y = sum (dnTA_mean, na.rm = T),
+  dDIC_Y = sum (dDIC_mean, na.rm = T),
+  dnDIC_Y = sum (dnDIC_mean, na.rm = T),
+  dpCO2_Y = sum (dpCO2_mean, na.rm = T),
+  dpH_Y = sum (dpH_mean, na.rm = T),
+  dAra_Y = sum (dAra_mean, na.rm = T),
+  
+  mTA_Y = mean (dTA_mean, na.rm = T),
+  mdTA_Y = median (dTA_mean, na.rm = T),
+  mnTA_Y = mean (dnTA_mean, na.rm = T),
+  mDIC_Y = mean (dDIC_mean, na.rm = T),
+  mnDIC_Y = mean (dnDIC_mean, na.rm = T),
+  mpCO2_Y = mean (dpCO2_mean, na.rm = T),
+  mpH_Y = mean (dpH_mean, na.rm = T),
+  mAra_Y = mean (dAra_mean, na.rm = T))
+
 dMonth_Stats<-dMonth_Stats %>% 
  mutate_if(is.numeric, round, digits=3)
 dMonth_Stats
+
+Year_Add<-Year_Add %>% 
+ mutate_if(is.numeric, round, digits=3)
+Year_Add
+
+Spring.data<-WS.reef[WS.reef$Season=="Spring", ]
+Summer.data<-WS.reef[WS.reef$Season=="Summer", ]
+Fall.data<-WS.reef[WS.reef$Season=="Fall", ]
+Winter.data<-WS.reef[WS.reef$Season=="Winter", ]
 ```
 
 ## - Delta month plots
@@ -2000,6 +2188,7 @@ DeltaYear_plot<- ggplot(dMonth_Stats) +
         MyTheme +  
         facet_grid(Zone~Region)+
         Season_fill+
+        Season_colour+
         geom_hline(yintercept = 0, color="gray")+
         theme(axis.title.x = element_blank())
         
@@ -2007,6 +2196,7 @@ DeltaYear_plot<- ggplot(dMonth_Stats) +
 Frequency_plot<- ggplot(data = WS.reef) +
       geom_vline(aes(xintercept = 0), linetype = "dashed")+
       facet_grid(Zone~Sub_region, scales = "free_y")+ MyTheme
+
 ```
 
 ### dTA
@@ -2029,13 +2219,27 @@ TA_delta_m<- Delta_plot+
 TA_delta_Y<- DeltaYear_plot+
     scale_y_continuous(#limits = c(-350,340),
                      expand = c(0.05, 0.05),
-                     breaks = seq(-800, 800, 50),
+                     #breaks = seq(-800, 800, 50),
                      name=expression(paste(Delta, "TA (", mu, "mol ", kg^-1, ")")))+
-    geom_boxplot(data=dMonth_Stats, 
-                 aes (x=Sub_region, y=dTA_mean))+
+    #geom_boxplot(data=dMonth_Stats, 
+    #             aes (x=Sub_region, y=dTA_mean))+
     
-    geom_point(data=dMonth_Stats, aes (x=Sub_region, y=dTA_mean, fill=Season), 
-             alpha=0.8, size=1.5, shape=21)
+    # geom_point( aes (x=Sub_region, y=dTA_mean, fill=Season),
+    #             position=position_dodge(width=0.2),
+    #             alpha=0.5, size=1, shape=21)+
+    # 
+    stat_summary(aes (x=Sub_region, y=dTA_mean, fill=Season),
+                fun.data = "mean_cl_boot", geom = "bar",
+                position=position_dodge(width=0.8))+
+    stat_summary(aes (x=Sub_region, y=dTA_mean, colour=Season),
+                fun.data = "mean_cl_boot", geom = "errorbar",  width = 0.2,
+                position=position_dodge(width=0.8))+
+    
+    stat_summary(aes (x=Sub_region, y=dTA_mean),
+                fun.data = "mean_cl_boot", geom = "point", size=3)+
+    stat_summary(aes (x=Sub_region, y=dTA_mean),
+                fun.data = "mean_cl_boot", geom = "errorbar",  width = 0.2)
+  
 #TA_delta_Y
 ```
 
@@ -2047,13 +2251,14 @@ dTA_my<-ggarrange(TA_delta_m, TA_delta_Y,
 dTA_my
 ```
 
+
 ### dTA density
 
 ```{r}
 TA_freq_All<- Frequency_plot+
   geom_histogram(aes(x=dTA_MY, fill=Precipitation),
                 alpha=0.8,
-                binwidth = 50,
+                binwidth = 25,
                 position = "stack", colour="black")+
   geom_density(aes (dTA_MY), fill = "lightgray", alpha=0.4) +
   scale_x_continuous(# limits = c(1600, 2600),
@@ -2100,7 +2305,6 @@ dnTA_delta_Y<- DeltaYear_plot+
                      name=expression(paste(Delta, "nTA (", mu, "mol ", kg^-1, ")")))+
     geom_boxplot(data=dMonth_Stats, 
                  aes (x=Sub_region, y=dnTA_mean))+
-    
     geom_point(data=dMonth_Stats, aes (x=Sub_region, y=dnTA_mean, fill=Season), 
              alpha=0.8, size=1.5, shape=21)
 #dnTA_delta_Y
@@ -2151,6 +2355,7 @@ dDIC_my<-ggarrange(DIC_delta_m, DIC_delta_Y,
           ncol = 2, nrow = 1, widths = c(4, 1.5))
 dDIC_my
 ```
+
 
 ### dDIC density
 
@@ -2250,6 +2455,7 @@ dpCO2_my<-ggarrange(pCO2_delta_m, pCO2_delta_y,
           ncol = 2, nrow = 1, widths = c(4, 1.5))
 dpCO2_my
 ```
+
 
 ### dpH
 
@@ -3203,6 +3409,457 @@ Figure_sea_re2<-ggarrange(
           ncol = 3, nrow = 3)
 Figure_sea_re2
 ```
+
+## 5.7 Seasoal models
+
+```{r}
+season.data<-WS.reef[WS.reef$Extreme=="Normal", ]
+season.data<-droplevels(season.data)
+season.data$Zone<-factor(season.data$Zone, levels = c("Offshore", "Mid channel", "Inshore"))
+summary(season.data)
+
+inshore.season.data<-season.data[season.data$Zone=="Inshore", ]
+midchanel.season.data<-season.data[season.data$Zone=="Mid channel", ]
+ofshore.season.data<-season.data[season.data$Zone=="Offshore", ]
+```
+
+### LMER - all dTA
+
+```{r, fig.height=4, fig.width=4}
+  hist(season.data$dTA_MY)
+  shapiro.test(season.data$dTA_MY) # Normality rejected
+# 
+#   dTA_seson<-lmer(dTA_MY~  Zone + Sub_region + Season +
+#                            Zone:Sub_region + Zone:Season + Sub_region:Season+   
+#                            (1|SiteID), data=season.data)
+  
+  dTA_seson<-lmer(dTA_MY~  Zone * Sub_region * Season +
+                           (1|SiteID), data=season.data)
+  
+  #summary(dTA_seson)    
+  av.dTA_seson<-(anova(dTA_seson))
+  av.dTA_seson
+  ranova(dTA_seson)
+  #step(dTA_seson)
+  
+  plot(dTA_seson)
+  qqnorm(resid(dTA_seson))
+  acf(resid(dTA_seson), main="acf(resid(dTA Season))")
+  
+  #summ(dTA_seson, scale = TRUE)
+  plot_summs(dTA_seson)
+  
+  dTA_ses.emmc<-emmeans(dTA_seson, ~Zone*Sub_region*Season)
+    dTA_ses.emmc<-multcomp::cld(dTA_ses.emmc)
+    #dTA_ses.emmc<-as.data.frame(dTA_ses.emmc[complete.cases(dTA_ses.emmc),])
+    dTA_ses.emmc<-dTA_ses.emmc[order(dTA_ses.emmc$Zone, dTA_ses.emmc$Season), ]
+  dTA_ses.emmc
+  
+```
+ 
+### LMER - dTA Inshore 
+ 
+```{r}
+# Inshore dTA
+  hist(inshore.season.data$dTA_MY)
+  shapiro.test(inshore.season.data$dTA_MY) # Normality rejected
+
+  dTA_seson_in<-lmer(dTA_MY~  Sub_region * Season +
+                           (1|SiteID), data=inshore.season.data)
+  
+  #summary(dTA_seson_in)    
+  av.dTA_seson_in<-anova(dTA_seson_in)
+  av.dTA_seson_in
+  ranova(dTA_seson_in)
+  #step(dTA_seson_in)
+  
+  plot(dTA_seson_in)
+  qqnorm(resid(dTA_seson_in))
+  acf(resid(dTA_seson_in), main="acf(resid(dTA Season))")
+  
+  #summ(dTA_seson_in, scale = TRUE)
+  plot_summs(dTA_seson_in)
+  
+  dTA_ses_in.emmc<-emmeans(dTA_seson_in, ~ Sub_region*Season)
+    dTA_ses_in.emmc<-multcomp::cld(dTA_ses_in.emmc)
+    #dTA_ses_in.emmc<-as.data.frame(dTA_ses_in.emmc[complete.cases(dTA_ses_in.emmc),])
+    dTA_ses_in.emmc<-dTA_ses_in.emmc[order(dTA_ses_in.emmc$Season,
+                                           dTA_ses_in.emmc$Sub_region), ]
+  dTA_ses_in.emmc
+```
+
+
+### LMER - all dDIC
+
+```{r, fig.height=4, fig.width=4}
+# Inshore Omega
+  hist(season.data$dDIC_MY)
+  shapiro.test(season.data$dDIC_MY) # Normality rejected
+
+  # dDIC_seson<-lmer(dDIC_MY~ Zone + Sub_region + Season +
+  #                          Zone:Sub_region + Zone:Season + Sub_region:Season+   
+  #                          (1|SiteID), data=season.data)
+  
+  dDIC_seson<-lmer(dDIC_MY~ Zone * Sub_region * Season +
+                           (1|SiteID), data=season.data)
+  
+  #summary(dDIC_seson)    
+  av.dDIC_seson<-anova(dDIC_seson)
+  av.dDIC_seson
+  ranova(dDIC_seson)
+  step(dDIC_seson)
+  
+  plot(dDIC_seson)
+  qqnorm(resid(dDIC_seson))
+  acf(resid(dDIC_seson), main="acf(resid(dTA Season))")
+  
+  #summ(dDIC_seson, scale = TRUE)
+  plot_summs(dDIC_seson)
+  
+  dDIC_ses.emmc<-emmeans(dDIC_seson, ~Zone*Sub_region*Season)
+    dDIC_ses.emmc<-multcomp::cld(dDIC_ses.emmc)
+    dDIC_ses.emmc<-dDIC_ses.emmc[order(dDIC_ses.emmc$Zone, dDIC_ses.emmc$Season), ]
+  dDIC_ses.emmc
+
+```
+
+### LMER - dDIC Inshore 
+ 
+```{r}
+# Inshore dDIC
+  hist(inshore.season.data$dDIC_MY)
+  shapiro.test(inshore.season.data$dDIC_MY) # Normality rejected
+
+  dDIC_seson_in<-lmer(dDIC_MY~  Sub_region * Season +
+                           (1|SiteID), data=inshore.season.data)
+  
+  #summary(dDIC_seson_in)    
+  av.dDIC_seson_in<-anova(dDIC_seson_in)
+  av.dDIC_seson_in
+  ranova(dDIC_seson_in)
+  #step(dDIC_seson_in)
+  
+  plot(dDIC_seson_in)
+  qqnorm(resid(dDIC_seson_in))
+  acf(resid(dDIC_seson_in), main="acf(resid(dTA Season))")
+  
+  #summ(dDIC_seson_in, scale = TRUE)
+  plot_summs(dDIC_seson_in)
+  
+  dDIC_ses_in.emmc<-emmeans(dDIC_seson_in, ~ Sub_region*Season)
+    dDIC_ses_in.emmc<-multcomp::cld(dDIC_ses_in.emmc)
+    #dDIC_ses_in.emmc<-as.data.frame(dDIC_ses_in.emmc[complete.cases(dDIC_ses_in.emmc),])
+    dDIC_ses_in.emmc<-dDIC_ses_in.emmc[order(dDIC_ses_in.emmc$Season,
+                                           dDIC_ses_in.emmc$Sub_region), ]
+  dDIC_ses_in.emmc
+```
+
+### LMER - all dpCO2
+
+```{r, fig.height=4, fig.width=4}
+# Inshore Omega
+  hist(season.data$dpCO2_MY)
+  shapiro.test(season.data$dpCO2_MY) # Normality rejected
+
+  # dpCO2_seson<-lmer(dpCO2_MY~ Zone + Sub_region + Season +
+  #                          Zone:Sub_region + Zone:Season + Sub_region:Season+   
+  #                          (1|SiteID), data=season.data)
+  dpCO2_seson<-lmer(dpCO2_MY~ Zone * Sub_region * Season +
+                           (1|SiteID), data=season.data)
+  
+  #summary(dpCO2_seson)    
+  av.dPCO2_seson<-anova(dpCO2_seson)
+  av.dPCO2_seson
+  ranova(dpCO2_seson)
+  step(dpCO2_seson)
+  
+  plot(dpCO2_seson)
+  qqnorm(resid(dpCO2_seson))
+  acf(resid(dpCO2_seson), main="acf(resid(dTA Season))")
+
+  plot_summs(dpCO2_seson)  
+  
+  dpCO2_ses.emmc<-emmeans(dpCO2_seson, ~Zone*Sub_region*Season)
+    dpCO2_ses.emmc<-multcomp::cld(dpCO2_ses.emmc)
+    #dpCO2_ses.emmc<-as.data.frame(dpCO2_ses.emmc[complete.cases(dpCO2_ses.emmc),])
+    dpCO2_ses.emmc<-dpCO2_ses.emmc[order(dpCO2_ses.emmc$Zone, dpCO2_ses.emmc$Season), ]
+  dpCO2_ses.emmc
+  #summ(dpCO2_seson, scale = TRUE)
+```
+
+### LMER - dPCO2 Inshore 
+ 
+```{r}
+# Inshore dDIC
+  hist(inshore.season.data$dpCO2_MY)
+  shapiro.test(inshore.season.data$dpCO2_MY) # Normality rejected
+
+  dpCO2_seson_in<-lmer(dpCO2_MY~  Sub_region * Season +
+                           (1|SiteID), data=inshore.season.data)
+  
+  #summary(dpCO2_seson_in)    
+  av.dPCO2_seson_in<-anova(dpCO2_seson_in)
+  av.dPCO2_seson_in
+  ranova(dpCO2_seson_in)
+  #step(dpCO2_seson_in)
+  
+  plot(dpCO2_seson_in)
+  qqnorm(resid(dpCO2_seson_in))
+  acf(resid(dpCO2_seson_in), main="acf(resid(dTA Season))")
+  
+  #summ(dpCO2_seson_in, scale = TRUE)
+  plot_summs(dpCO2_seson_in)
+  
+  dpCO2_ses_in.emmc<-emmeans(dpCO2_seson_in, ~ Sub_region*Season)
+    dpCO2_ses_in.emmc<-multcomp::cld(dpCO2_ses_in.emmc)
+    #dpCO2_ses_in.emmc<-as.data.frame(dpCO2_ses_in.emmc[complete.cases(dpCO2_ses_in.emmc),])
+    dpCO2_ses_in.emmc<-dpCO2_ses_in.emmc[order(dpCO2_ses_in.emmc$Season,
+                                           dpCO2_ses_in.emmc$Sub_region), ]
+  dpCO2_ses_in.emmc
+```
+
+### LMER - all Omega
+
+```{r, fig.height=4, fig.width=4}
+# Inshore Omega
+  hist(season.data$Aragonite_Sat_W)
+  shapiro.test(season.data$Aragonite_Sat_W) # Normality rejected
+
+  # Omega_seson<-lmer(Aragonite_Sat_W~  Zone + Sub_region + Season +
+  #                          Zone:Sub_region + Zone:Season + Sub_region:Season+   
+  #                          (1|SiteID), data=season.data)
+  Omega_seson<-lmer(Aragonite_Sat_W~  Zone * Sub_region * Season +
+                           (1|SiteID), data=season.data)
+  
+  #summary(Omega_seson)    
+  av.Ome_seson<-anova(Omega_seson)
+  av.Ome_seson
+  ranova(Omega_seson)
+  #step(Omega_seson)
+  
+  plot(Omega_seson)
+  qqnorm(resid(Omega_seson))
+  acf(resid(Omega_seson), main="acf(resid(dTA Season))")
+  
+  plot_summs(Omega_seson)  
+    
+  Ara_ses.emmc<-emmeans(Omega_seson, ~Zone*Sub_region*Season)
+    Ara_ses.emmc<-multcomp::cld(Ara_ses.emmc)
+    Ara_ses.emmc<-as.data.frame(Ara_ses.emmc[complete.cases(Ara_ses.emmc),])
+    Ara_ses.emmc<-Ara_ses.emmc[order(Ara_ses.emmc$Zone, Ara_ses.emmc$Season), ]
+  Ara_ses.emmc
+```
+
+### LMER - Omega Inshore 
+ 
+```{r}
+# Inshore dDIC
+  hist(inshore.season.data$Aragonite_Sat_W)
+  shapiro.test(inshore.season.data$Aragonite_Sat_W) # Normality rejected
+
+  Omega_seson_in<-lmer(Aragonite_Sat_W~  Sub_region * Season +
+                           (1|SiteID), data=inshore.season.data)
+  
+      #summary(Omega_seson_in)    
+      av.Ome_seson_in<-anova(Omega_seson_in)
+      av.Ome_seson_in
+      ranova(Omega_seson_in)
+      #step(Omega_seson_in)
+      
+      plot(Omega_seson_in)
+      qqnorm(resid(Omega_seson_in))
+      acf(resid(Omega_seson_in), main="acf(resid(dTA Season))")
+      
+      #summ(dDIC_seson_in, scale = TRUE)
+  plot_summs(Omega_seson_in)
+  
+  omega_ses_in.emmc<-emmeans(Omega_seson_in, ~ Sub_region*Season)
+    omega_ses_in.emmc<-multcomp::cld(omega_ses_in.emmc)
+    #omega_ses_in.emmc<-as.data.frame(omega_ses_in.emmc[complete.cases(omega_ses_in.emmc),])
+    omega_ses_in.emmc<-omega_ses_in.emmc[order(omega_ses_in.emmc$Season,
+                                           omega_ses_in.emmc$Sub_region), ]
+  omega_ses_in.emmc
+```
+
+### LMER - all pH
+
+```{r, fig.height=4, fig.width=4}
+# Inshore Omega
+  hist(season.data$pH_calculated)
+  shapiro.test(season.data$pH_calculated) # Normality rejected
+
+  # pH_seson<-lmer(pH_calculated~ Zone + Sub_region + Season +
+  #                          Zone:Sub_region + Zone:Season + Sub_region:Season+   
+  #                          (1|SiteID), data=season.data)
+  pH_seson<-lmer(pH_calculated~ Zone * Sub_region * Season *
+                           (1|SiteID), data=season.data)
+  
+        #summary(pH_seson)    
+        av.pH_seson<-anova(pH_seson)
+        av.pH_seson
+        ranova(pH_seson)
+        #step(pH_seson)
+        
+        plot(pH_seson)
+        qqnorm(resid(pH_seson))
+        acf(resid(pH_seson), main="acf(resid(dTA Season))")
+      
+  #summ(pH_seson, scale = TRUE)
+  plot_summs(pH_seson)  
+  
+  pH_ses.emmc<-emmeans(pH_seson, ~Zone*Sub_region*Season)
+    pH_ses.emmc<-multcomp::cld(pH_ses.emmc)
+    pH_ses.emmc<-as.data.frame(pH_ses.emmc[complete.cases(pH_ses.emmc),])
+    pH_ses.emmc<-pH_ses.emmc[order(pH_ses.emmc$Zone, pH_ses.emmc$Season), ]
+  pH_ses.emmc
+```
+
+### LMER - pH Inshore 
+ 
+```{r}
+# Inshore pH
+  hist(inshore.season.data$pH_calculated)
+  shapiro.test(inshore.season.data$pH_calculated) # Normality rejected
+
+  pH_seson_in<-lmer(pH_calculated~  Sub_region * Season +
+                           (1|SiteID), data=inshore.season.data)
+  
+    #summary(pH_seson_in)    
+    av.pH_seson_in<-anova(pH_seson_in)
+    av.pH_seson_in
+    ranova(pH_seson_in)
+    #step(pH_seson_in)
+    
+    plot(pH_seson_in)
+    qqnorm(resid(pH_seson_in))
+    acf(resid(pH_seson_in), main="acf(resid(dTA Season))")
+    
+    #summ(pH_seson_in, scale = TRUE)
+    plot_summs(pH_seson_in)
+  
+  pH_ses_in.emmc<-emmeans(pH_seson_in, ~ Sub_region*Season)
+    pH_ses_in.emmc<-multcomp::cld(pH_ses_in.emmc)
+    #pH_ses_in.emmc<-as.data.frame(pH_ses_in.emmc[complete.cases(pH_ses_in.emmc),])
+    pH_ses_in.emmc<-pH_ses_in.emmc[order(pH_ses_in.emmc$Season,
+                                           pH_ses_in.emmc$Sub_region), ]
+  pH_ses_in.emmc
+```
+
+## Summary all data
+
+```{r}
+# ANOVAs
+    # Convert ANOVA results into dataframes allows for easier name manipulation
+    av.dTA_seson <- data.frame(av.dTA_seson)
+    av.dDIC_seson <- data.frame(av.dDIC_seson) 
+    av.dPCO2_seson <- data.frame(av.dPCO2_seson)
+    av.Ome_seson <- data.frame(av.Ome_seson) 
+    av.pH_seson <- data.frame(av.pH_seson) 
+    
+    # Putting all into one dataframe/table
+    anova_results_all <- data.frame(cbind
+                    (c("Zone", "Sub_region", "Season", "Zone:Sub_region", "Zone:Season",
+                       "Sub_region:Season", "Zone:Sub_region:Season",
+                       
+                       "Zone", "Sub_region", "Season", "Zone:Sub_region", "Zone:Season",
+                       "Sub_region:Season", "Zone:Sub_region:Season",
+                       
+                       "Zone", "Sub_region", "Season", "Zone:Sub_region", "Zone:Season",
+                       "Sub_region:Season", "Zone:Sub_region:Season",
+                       
+                       "Zone", "Sub_region", "Season", "Zone:Sub_region", "Zone:Season",
+                       "Sub_region:Season", "Zone:Sub_region:Season",
+                       
+                       "Zone", "Sub_region", "Season", "Zone:Sub_region", "Zone:Season",
+                       "Sub_region:Season", "Zone:Sub_region:Season"), 
+                                      rbind(av.dTA_seson, av.dDIC_seson, av.dPCO2_seson,
+                                            av.Ome_seson, av.pH_seson ))) 
+    colnames(anova_results_all) <- c("", "Sum Sq", "Mean Sq", "N Df" , "D Df",
+                                     "F value", "Pr(>F)")
+    row.names(anova_results_all) <- NULL
+    
+    # create HTML table using kableExtra
+    anova_results_all %>% kable("html", digits=2) %>% 
+      kable_styling(bootstrap_options = "striped", full_width = F) %>% 
+      pack_rows(., "d TA", 1, 7) %>% # groups rows with label
+      pack_rows(., "d DIC", 8, 14)  %>% # groups rows with label
+      pack_rows(., "d pCO2", 15, 21) %>% # groups rows with label
+      pack_rows(., "Omega", 22, 28)  %>% # groups rows with label
+      pack_rows(., "pH", 29, 35)  
+    
+    
+    
+#export_summs(dTA_seson, dDIC_seson, dpCO2_seson,  scale = TRUE)
+      
+      Seasonal_models<-list("d TA" = dTA_seson, 
+                         "d DIC" = dDIC_seson, 
+                         "d pCO2" = dpCO2_seson, 
+                         "Omega" = Omega_seson,
+                         "pH" = pH_seson)
+      
+      modelsummary(Seasonal_models, stars = TRUE, 
+                   #statistic = c('std.error', 'p.value', 'conf.int'),
+                   title = 'Seasonal and spatial models'#,
+                   #coef_map=factor_order
+                   )
+      #modelsummary(Omega_models, estimate = "p.value")
+      
+```
+
+## Summary all inshore
+
+```{r}
+# ANOVAs
+    # Convert ANOVA results into dataframes allows for easier name manipulation
+    av.dTA_seson_in <- data.frame(av.dTA_seson_in)
+    av.dDIC_seson_in <- data.frame(av.dDIC_seson_in) 
+    av.dPCO2_seson_in <- data.frame(av.dPCO2_seson_in)
+    av.Ome_seson_in <- data.frame(av.Ome_seson_in) 
+    av.pH_seson_in <- data.frame(av.pH_seson_in) 
+    
+    # Putting all into one dataframe/table
+    anova_results_In <- data.frame(cbind
+                    (c("Sub_region", "Season", "Sub_region:Season", 
+                       
+                       "Sub_region", "Season", "Sub_region:Season",
+                       
+                       "Sub_region", "Season", "Sub_region:Season",
+                       
+                       "Sub_region", "Season", "Sub_region:Season",
+                       
+                       "Sub_region", "Season", "Sub_region:Season"), 
+                                      rbind(av.dTA_seson_in, av.dDIC_seson_in,
+                                            av.dPCO2_seson_in,
+                                            av.Ome_seson_in, av.pH_seson_in))) 
+    colnames(anova_results_In) <- c("", "Sum Sq", "Mean Sq", "N Df" , "D Df",
+                                     "F value", "Pr(>F)")
+    row.names(anova_results_In) <- NULL
+    
+    # create HTML table using kableExtra
+    anova_results_In %>% kable("html", digits=2) %>% 
+      kable_styling(bootstrap_options = "striped", full_width = F) %>% 
+      pack_rows(., "d TA inshore", 1, 3) %>% # groups rows with label
+      pack_rows(., "d DIC inshore", 4, 6)  %>% # groups rows with label
+      pack_rows(., "d pCO2 inshore", 7, 9) %>% # groups rows with label
+      pack_rows(., "Omega inshore", 10, 12)  %>% # groups rows with label
+      pack_rows(., "pH inshore", 13, 15)  
+    
+    
+#export_summs(dTA_seson, dDIC_seson, dpCO2_seson,  scale = TRUE)
+    Seasonal_models_in<-list("d TA" = dTA_seson_in, 
+                       "d DIC" = dDIC_seson_in, 
+                       "d pCO2" = dpCO2_seson_in, 
+                       "Omega" = Omega_seson_in,
+                       "pH" = pH_seson_in)
+    
+    modelsummary(Seasonal_models_in, stars = TRUE, 
+                 #statistic = c('std.error', 'p.value', 'conf.int'),
+                 title = 'Seasonal and spatial models for inshore reefs'#,
+                 #coef_map=factor_order
+                 )
+    #modelsummary(Omega_models, estimate = "p.value")
+```
+
 
 # 6 LMER long trend MODELS
 
@@ -4258,7 +4915,7 @@ modelsummary(dDIC_models, stars = TRUE,
 #modelsummary(dDIC_models, estimate = "p.value")
 ```
 
-# PCA
+# 7. PCA
 
 ```{r}
 #str(Month_Stats)
@@ -4297,7 +4954,7 @@ sitecoord <- CC.rda1$CA$u[,1:2]   # The site coordinates along PC1 and PC2
   eig
   
 # (Kaiser-Guttman)
-par(mfrow=c(2,1))
+par(mfrow=c(1,2))
   barplot(eig$eigenval, main="Eigenvalues",las=2)
   abline(h=mean(eig$eigenval),col="red")    # average eigenvalue
   legend("topright","Average eigenvalue",lwd=1,col=2,bty="n")
