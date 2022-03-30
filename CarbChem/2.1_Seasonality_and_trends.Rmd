@@ -309,8 +309,9 @@ Cases_Loc_Zone<-as.data.frame(Cases_Loc_Zone %>%
                    values_from = n))
 #write.csv(Cases_Loc_Zone, "FLK_results/SampleS_Region_zone.csv")
 
-kable(as.data.frame(Cases_Loc_Zone, format = "markdown"), 
-      longtable = TRUE)
+kable(as.data.frame(Cases_Loc_Zone, format = "html"), 
+      longtable = TRUE) %>% 
+kable_styling(bootstrap_options = c("striped", "condensed", full_width = F), font_size = 11)
 ```
 
 ### By year and sub_region
@@ -322,7 +323,8 @@ Cases_Reg_Year<-as.data.frame(Cases_Reg_Year %>%
     pivot_wider(names_from = Year, values_from = n))
 #write.csv(Cases_Reg_Year, "FLK_results/SampleS_Region_Year.csv")
 
-kable(as.data.frame(Cases_Reg_Year, format = "html"),  caption = "Samples collected each year")
+kable(as.data.frame(Cases_Reg_Year, format = "html"),  caption = "Samples collected each year")%>% 
+kable_styling(bootstrap_options = c("striped", "condensed", full_width = F), font_size = 11)
 ```
 
 ### By climatological season and region
@@ -335,7 +337,8 @@ Cases_Reg_season<-as.data.frame(Cases_Reg_season %>%
 #write.csv(Cases_Reg_season, "FLK_results/SampleS_RegionSeason.csv")
 
 kable(as.data.frame(Cases_Reg_season, format = "html"),
-      caption = "Samples collected in each season")
+      caption = "Samples collected in each season")%>% 
+kable_styling(bootstrap_options = c("striped", "condensed", full_width = F), font_size = 11)
 ```
 
 ### By Month-year
@@ -352,7 +355,8 @@ Cases_Month<-as.data.frame(Cases_Month %>%
  Cases_Month<-Cases_Month %>% 
      select(sort(names(.)))
 
-kable(as.data.frame(Cases_Month, format = "html"), caption="Samples collected by year-month")
+kable(as.data.frame(Cases_Month, format = "html"), caption="Samples collected by year-month")%>% 
+kable_styling(bootstrap_options = c("striped", "condensed", full_width = F), font_size = 11)
 #write.csv(Cases_Month, "FLK_results/SampleS_Month_Year.csv")
 ```
 
@@ -370,7 +374,8 @@ Cases_Season<-as.data.frame(Cases_Season %>%
  Cases_Season<-Cases_Season %>% 
      select(sort(names(.)))
 
-kable(as.data.frame(Cases_Season, format = "html"), caption="Samples collected by year-month")
+kable(as.data.frame(Cases_Season, format = "html"), caption="Samples collected by year-month")%>% 
+kable_styling(bootstrap_options = c("striped", "condensed", full_width = F), font_size = 11)
 #write.csv(Cases_Season, "FLK_results/SampleS_Season_Year.csv")
 ```
 
@@ -387,7 +392,8 @@ Cases_Month_Location<-as.data.frame(Cases_Month_Location %>%
 #write.csv(Cases_Month_Location, "FLK_results/SampleS_Monthlocation.csv")
 
 kable(as.data.frame(Cases_Month_Location, format = "html"),
-      caption="Samples collected by month-location")
+      caption="Samples collected by month-location")%>% 
+kable_styling(bootstrap_options = c("striped", "condensed", full_width = F), font_size = 11)
 ```
 
 ### Per station during all sampling time
@@ -401,7 +407,8 @@ Cases_Site_FLK<-as.data.frame(Cases_Site_FLK %>%
 #write.csv(Cases_Site_FLK, "FLK_results/SampleSiteIDFLK.csv")
 
 kable(as.data.frame(Cases_Site_FLK, format = "html"),
-      caption = "Samples collected in SiteIDs")
+      caption = "Samples collected in SiteIDs")%>% 
+kable_styling(bootstrap_options = c("striped", "condensed", full_width = F), font_size = 11)
 ```
 
 ## Remove extreme events?
@@ -581,7 +588,8 @@ par(mfrow=c(1,1))
 ```{r}
 kable(as.data.frame(TA_coef[,1:8], format = "markdown"), 
       caption = "Table 1: TA parameters for salinity normalization with endmember S0",
-      digits = 3)
+      digits = 3)%>% 
+kable_styling(bootstrap_options = c("striped", "condensed", full_width = F), font_size = 11)
 #write.csv(TA_coef, "TA_coef.csv")
 
 ```
@@ -611,7 +619,8 @@ nTA_Sal<- ggplot(FLK.data) + MyTheme+
 ```{r}
 kable(as.data.frame(DIC_coef[,1:8], format = "markdown"), 
       caption = "Table 2: DIC parameters for salinity normalization with endmember S0",
-      digits = 2)
+      digits = 2) %>% 
+kable_styling(bootstrap_options = c("striped", "condensed", full_width = F), font_size = 11)
 
 #write.csv(DIC_coef, "DIC_coef.csv")
     
@@ -890,7 +899,8 @@ TA_DIC<- ggplot(FLK.data, aes (DIC_umol_kg, TA_umol_kg)) +
   #                   glance(model))})        # get model info
   # 
   #   kable(as.data.frame(TA_DIC_coef_zone[,1:8], format = "markdown"),
-  #         caption = "TA vs DIC equations with all data", digits = 3)
+  #         caption = "TA vs DIC equations with all data", digits = 3) %>% 
+  # kable_styling(bootstrap_options = c("striped", "condensed", full_width = F), font_size = 11)
 ```
 
 <!-- ## 3.2 All normalized (all FLK samples) -->
@@ -965,7 +975,8 @@ TA_DIC_Zone <- ddply (FLK.data[FLK.data$Extreme=="Normal", ], .(Zone),summarise,
 
 TA_DIC_Ocean<-TA_DIC_Zone[TA_DIC_Zone$Zone=="Oceanic", ]
 
-kable(as.data.frame(TA_DIC_Zone, format = "markdown"), caption = "Mean TA/DIC by zone")
+kable(as.data.frame(TA_DIC_Zone, format = "markdown"), caption = "Mean TA/DIC by zone") %>% 
+kable_styling(bootstrap_options = c("striped", "condensed", full_width = F), font_size = 11)
 ```
 
 **Note: Use Model II Linera regressions!**
@@ -986,7 +997,8 @@ TA_DIC_coef_zone_noExtremes<-subset(TA_DIC_coef_zone_noExtremes, term!="(Interce
 kable(as.data.frame(TA_DIC_coef_zone_noExtremes[,1:8], 
       format = "markdown"),
       caption = "TA vs DIC equations without extreme events",
-      digits = 2)
+      digits = 2)%>% 
+kable_styling(bootstrap_options = c("striped", "condensed", full_width = F), font_size = 11)
 
 
 #write.csv(TA_DIC_coef_zone_noExtremes, "FLK_results/Fig_2_TA_DIC_coef_slopes_Subregion.csv", row.names = FALSE)
@@ -1013,7 +1025,8 @@ TA_DIC_coef_zone_noExtII<-subset(TA_DIC_coef_zone_noExtII, term!="Intercept")
 kable(as.data.frame(TA_DIC_coef_zone_noExtII[,1:9], 
       format = "markdown"),
       caption = "TA vs DIC equations without extreme events using type II lm",
-      digits = 2)
+      digits = 2)%>% 
+kable_styling(bootstrap_options = c("striped", "condensed", full_width = F), font_size = 11)
 
 # Annotations for plots
   TA_DIC_coef_zone_noExtII<-select(TA_DIC_coef_zone_noExtII, 
@@ -1071,7 +1084,8 @@ nTA_nDIC_coef_zone_noExtremes<-subset(nTA_nDIC_coef_zone_noExtremes, term!="(Int
 kable(as.data.frame(nTA_nDIC_coef_zone_noExtremes[,1:8],
       format = "markdown"),
       caption = "nTA vs nDIC equations without extreme events",
-      digits = 2)
+      digits = 2)%>% 
+kable_styling(bootstrap_options = c("striped", "condensed", full_width = F), font_size = 11)
 
 #write.csv(TA_DIC_coef_zone_noExtremes, "FLK_results/Fig_2_TA_DIC_coef_slopes_Subregion.csv", row.names = FALSE)
     
@@ -1134,7 +1148,8 @@ TA_DIC_coef_Reef_noExtremes<-subset(TA_DIC_coef_Reef_noExtremes, term!="(Interce
 kable(as.data.frame(TA_DIC_coef_Reef_noExtremes[,1:11],
                       format = "markdown"),
         caption = "TA vs DIC equations by reef without extreme events",
-        digits = 2)
+        digits = 2)%>% 
+kable_styling(bootstrap_options = c("striped", "condensed", full_width = F), font_size = 11)
 #write.csv (TA_DIC_coef_Reef_noExtremes, "FLK_results/Fig_2_TA_DIC_slopes_Reefs.csv", row.names = FALSE)
   
   
@@ -1203,7 +1218,8 @@ nTA_nDIC_coef_Reef_noExtremes<-subset(nTA_nDIC_coef_Reef_noExtremes, term!="(Int
 kable(as.data.frame(nTA_nDIC_coef_Reef_noExtremes[,1:11],
                       format = "markdown"),
         caption = "TA vs DIC equations by reef without extreme events",
-        digits = 2)
+        digits = 2)%>% 
+kable_styling(bootstrap_options = c("striped", "condensed", full_width = F), font_size = 11)
 #write.csv (nTA_nDIC_coef_Reef_noExtremes, "FLK_results/Fig_2_nTA_nDIC_slopes_Reefs.csv", row.names = FALSE)
 
 nTA_nDIC_coef_Reef_noExtremes <- FLK.data[FLK.data$Extreme=="Normal", ] %>%
@@ -1410,10 +1426,9 @@ Tem_Y<- Year_ploth+
                        name=(expression("Temperature"~(degree*C))),
                        breaks = seq(16, 40, 2),  
                        expand = c(0.1, 0.1)) +
-    geom_point(aes (x=Sub_region, y=Tem_mean, fill=Season), 
-             shape=21, alpha=0.5, size=1)+
-  
     geom_boxplot(aes (x=Sub_region, y=Tem_mean))
+    geom_point(aes (x=Sub_region, y=Tem_mean, fill=Season), 
+             shape=21, alpha=0.5, size=1)
     #stat_summary(aes (x=Sub_region, y=Tem_mean, colour=Season),
                 #fun.data = "mean_cl_boot",geom = "errorbar",
                 #width = 1, position=position_dodge(width=0.25))+
@@ -2340,11 +2355,22 @@ DIC_delta_Y<- DeltaYear_plot+
                      breaks = seq(-800, 800, 100),
                      name=expression(paste(Delta, "DIC (", mu, "mol ", kg^-1, ")")))+
   
-    geom_boxplot(data=dMonth_Stats, 
-                 aes (x=Sub_region, y=dDIC_mean))+
+    # geom_boxplot(data=dMonth_Stats, 
+    #              aes (x=Sub_region, y=dDIC_mean))+
+    # 
+    # geom_point(data=dMonth_Stats, aes (x=Sub_region, y=dDIC_mean, fill=Season), 
+    #          alpha=0.8, size=1.5, shape=21)
+    stat_summary(aes (x=Sub_region, y=dDIC_mean, fill=Season),
+                fun.data = "mean_cl_boot", geom = "bar",
+                position=position_dodge(width=0.8))+
+    stat_summary(aes (x=Sub_region, y=dDIC_mean, colour=Season),
+                fun.data = "mean_cl_boot", geom = "errorbar",  width = 0.2,
+                position=position_dodge(width=0.8))+
     
-    geom_point(data=dMonth_Stats, aes (x=Sub_region, y=dDIC_mean, fill=Season), 
-             alpha=0.8, size=1.5, shape=21)
+    stat_summary(aes (x=Sub_region, y=dDIC_mean),
+                fun.data = "mean_cl_boot", geom = "point", size=3)+
+    stat_summary(aes (x=Sub_region, y=dDIC_mean),
+                fun.data = "mean_cl_boot", geom = "errorbar",  width = 0.2)
 #DIC_delta_Y
 ```
 
@@ -2400,14 +2426,25 @@ nDIC_delta_m<- Delta_plot+
 
 dnDIC_delta_Y<- DeltaYear_plot+
     scale_y_continuous(#limits = c(1700,2900),
-                     expand = c(0.05, 0.05),
-                     breaks = seq(-800, 800, 100),
-                     name=expression(paste(Delta, " nDIC (", mu, "mol ", kg^-1, ")")))+
-    geom_boxplot(data=dMonth_Stats, 
-                 aes (x=Sub_region, y=dnDIC_mean))+
+                expand = c(0.05, 0.05),
+                breaks = seq(-800, 800, 100),
+                name=expression(paste(Delta, " nDIC (", mu, "mol ", kg^-1, ")")))+
+    # geom_boxplot(data=dMonth_Stats, 
+    #              aes (x=Sub_region, y=dnDIC_mean))+
+    # 
+    # geom_point(data=dMonth_Stats, aes (x=Sub_region, y=dnDIC_mean, fill=Season), 
+    #          alpha=0.8, size=1.5, shape=21)
+  stat_summary(aes (x=Sub_region, y=dnDIC_mean, fill=Season),
+                fun.data = "mean_cl_boot", geom = "bar",
+                position=position_dodge(width=0.8))+
+  stat_summary(aes (x=Sub_region, y=dnDIC_mean, colour=Season),
+                fun.data = "mean_cl_boot", geom = "errorbar",  width = 0.2,
+                position=position_dodge(width=0.8))+
     
-    geom_point(data=dMonth_Stats, aes (x=Sub_region, y=dnDIC_mean, fill=Season), 
-             alpha=0.8, size=1.5, shape=21)
+  stat_summary(aes (x=Sub_region, y=dnDIC_mean),
+                fun.data = "mean_cl_boot", geom = "point", size=3)+
+  stat_summary(aes (x=Sub_region, y=dnDIC_mean),
+                fun.data = "mean_cl_boot", geom = "errorbar",  width = 0.2)
 #dnDIC_delta_Y
 ```
 
@@ -2441,11 +2478,22 @@ pCO2_delta_y<- DeltaYear_plot+
                      #breaks = seq(1800, 2800, 100),
                      name=expression(paste(Delta ~ pCO[2] , " (", mu, "atm)")))+
   
-    geom_boxplot(data=dMonth_Stats, 
-                 aes (x=Sub_region, y=dpCO2_mean))+
+    # geom_boxplot(data=dMonth_Stats, 
+    #              aes (x=Sub_region, y=dpCO2_mean))+
+    # 
+    # geom_point(data=dMonth_Stats, aes (x=Sub_region, y=dpCO2_mean, fill=Season), 
+    #          alpha=0.8, size=1.5, shape=21)
+    stat_summary(aes (x=Sub_region, y=dpCO2_mean, fill=Season),
+                fun.data = "mean_cl_boot", geom = "bar",
+                position=position_dodge(width=0.8))+
+    stat_summary(aes (x=Sub_region, y=dpCO2_mean, colour=Season),
+                fun.data = "mean_cl_boot", geom = "errorbar",  width = 0.2,
+                position=position_dodge(width=0.8))+
     
-    geom_point(data=dMonth_Stats, aes (x=Sub_region, y=dpCO2_mean, fill=Season), 
-             alpha=0.8, size=1.5, shape=21)
+    stat_summary(aes (x=Sub_region, y=dpCO2_mean),
+                fun.data = "mean_cl_boot", geom = "point", size=3)+
+    stat_summary(aes (x=Sub_region, y=dpCO2_mean),
+                fun.data = "mean_cl_boot", geom = "errorbar",  width = 0.2)
 #pCO2_delta_y
 ```
 
@@ -2480,11 +2528,22 @@ pH_delta_y<- DeltaYear_plot+
                        breaks = seq(-5, 5, 0.1),
                        expand = c(0.05, 0.05)
                         ) +
-    geom_boxplot(data=dMonth_Stats, 
-                 aes (x=Sub_region, y=dpH_mean))+
+    # geom_boxplot(data=dMonth_Stats, 
+    #              aes (x=Sub_region, y=dpH_mean))+
+    # 
+    # geom_point(data=dMonth_Stats, aes (x=Sub_region, y=dpH_mean, fill=Season), 
+    #          alpha=0.8, size=1.5, shape=21)
+    stat_summary(aes (x=Sub_region, y=dpH_mean, fill=Season),
+                fun.data = "mean_cl_boot", geom = "bar",
+                position=position_dodge(width=0.8))+
+    stat_summary(aes (x=Sub_region, y=dpH_mean, colour=Season),
+                fun.data = "mean_cl_boot", geom = "errorbar",  width = 0.2,
+                position=position_dodge(width=0.8))+
     
-    geom_point(data=dMonth_Stats, aes (x=Sub_region, y=dpH_mean, fill=Season), 
-             alpha=0.8, size=1.5, shape=21)
+    stat_summary(aes (x=Sub_region, y=dpH_mean),
+                fun.data = "mean_cl_boot", geom = "point", size=3)+
+    stat_summary(aes (x=Sub_region, y=dpH_mean),
+                fun.data = "mean_cl_boot", geom = "errorbar",  width = 0.2)
 #pH_delta_y
 ```
 
@@ -2520,11 +2579,22 @@ Omega_delta_y<- DeltaYear_plot+
                        breaks = seq(-3, 3, 0.5),
                        expand = c(0.05, 0.05)
                         ) +
-    geom_boxplot(data=dMonth_Stats, 
-                 aes (x=Sub_region, y=dAra_mean))+
+   stat_summary(aes (x=Sub_region, y=dAra_mean, fill=Season),
+                fun.data = "mean_cl_boot", geom = "bar",
+                position=position_dodge(width=0.8))+
+    stat_summary(aes (x=Sub_region, y=dAra_mean, colour=Season),
+                fun.data = "mean_cl_boot", geom = "errorbar",  width = 0.2,
+                position=position_dodge(width=0.8))+
     
-    geom_point(data=dMonth_Stats, aes (x=Sub_region, y=dAra_mean, fill=Season), 
-             alpha=0.8, size=1.5, shape=21)
+    stat_summary(aes (x=Sub_region, y=dAra_mean),
+                fun.data = "mean_cl_boot", geom = "point", size=3)+
+    stat_summary(aes (x=Sub_region, y=dAra_mean),
+                fun.data = "mean_cl_boot", geom = "errorbar",  width = 0.2)
+    # geom_boxplot(data=dMonth_Stats, 
+    #              aes (x=Sub_region, y=dAra_mean))+
+    # 
+    # geom_point(data=dMonth_Stats, aes (x=Sub_region, y=dAra_mean, fill=Season), 
+    #          alpha=0.8, size=1.5, shape=21)
 #Omega_delta_y
 ```
 
@@ -3425,7 +3495,7 @@ ofshore.season.data<-season.data[season.data$Zone=="Offshore", ]
 
 ### LMER - all dTA
 
-```{r, fig.height=4, fig.width=4}
+```{r, fig.height=6, fig.width=6}
   hist(season.data$dTA_MY)
   shapiro.test(season.data$dTA_MY) # Normality rejected
 # 
@@ -3443,8 +3513,10 @@ ofshore.season.data<-season.data[season.data$Zone=="Offshore", ]
   #step(dTA_seson)
   
   plot(dTA_seson)
+  par(mfrow=c(1,2))
   qqnorm(resid(dTA_seson))
   acf(resid(dTA_seson), main="acf(resid(dTA Season))")
+  par(mfrow=c(1,1))
   
   #summ(dTA_seson, scale = TRUE)
   plot_summs(dTA_seson)
@@ -3459,7 +3531,7 @@ ofshore.season.data<-season.data[season.data$Zone=="Offshore", ]
  
 ### LMER - dTA Inshore 
  
-```{r}
+```{r, fig.height=6, fig.width=6}
 # Inshore dTA
   hist(inshore.season.data$dTA_MY)
   shapiro.test(inshore.season.data$dTA_MY) # Normality rejected
@@ -3474,9 +3546,10 @@ ofshore.season.data<-season.data[season.data$Zone=="Offshore", ]
   #step(dTA_seson_in)
   
   plot(dTA_seson_in)
+  par(mfrow=c(1,2))
   qqnorm(resid(dTA_seson_in))
   acf(resid(dTA_seson_in), main="acf(resid(dTA Season))")
-  
+  par(mfrow=c(1,1))
   #summ(dTA_seson_in, scale = TRUE)
   plot_summs(dTA_seson_in)
   
@@ -3491,7 +3564,7 @@ ofshore.season.data<-season.data[season.data$Zone=="Offshore", ]
 
 ### LMER - all dDIC
 
-```{r, fig.height=4, fig.width=4}
+```{r, fig.height=6, fig.width=6}
 # Inshore Omega
   hist(season.data$dDIC_MY)
   shapiro.test(season.data$dDIC_MY) # Normality rejected
@@ -3510,9 +3583,10 @@ ofshore.season.data<-season.data[season.data$Zone=="Offshore", ]
   step(dDIC_seson)
   
   plot(dDIC_seson)
+  par(mfrow=c(1,2))
   qqnorm(resid(dDIC_seson))
   acf(resid(dDIC_seson), main="acf(resid(dTA Season))")
-  
+  par(mfrow=c(1,1))
   #summ(dDIC_seson, scale = TRUE)
   plot_summs(dDIC_seson)
   
@@ -3525,7 +3599,7 @@ ofshore.season.data<-season.data[season.data$Zone=="Offshore", ]
 
 ### LMER - dDIC Inshore 
  
-```{r}
+```{r, fig.height=6, fig.width=6}
 # Inshore dDIC
   hist(inshore.season.data$dDIC_MY)
   shapiro.test(inshore.season.data$dDIC_MY) # Normality rejected
@@ -3540,9 +3614,10 @@ ofshore.season.data<-season.data[season.data$Zone=="Offshore", ]
   #step(dDIC_seson_in)
   
   plot(dDIC_seson_in)
+  par(mfrow=c(1,1))
   qqnorm(resid(dDIC_seson_in))
   acf(resid(dDIC_seson_in), main="acf(resid(dTA Season))")
-  
+  par(mfrow=c(1,1))
   #summ(dDIC_seson_in, scale = TRUE)
   plot_summs(dDIC_seson_in)
   
@@ -3556,7 +3631,7 @@ ofshore.season.data<-season.data[season.data$Zone=="Offshore", ]
 
 ### LMER - all dpCO2
 
-```{r, fig.height=4, fig.width=4}
+```{r, fig.height=6, fig.width=6}
 # Inshore Omega
   hist(season.data$dpCO2_MY)
   shapiro.test(season.data$dpCO2_MY) # Normality rejected
@@ -3574,9 +3649,10 @@ ofshore.season.data<-season.data[season.data$Zone=="Offshore", ]
   step(dpCO2_seson)
   
   plot(dpCO2_seson)
+  par(mfrow=c(1,2))
   qqnorm(resid(dpCO2_seson))
   acf(resid(dpCO2_seson), main="acf(resid(dTA Season))")
-
+  par(mfrow=c(1,1))
   plot_summs(dpCO2_seson)  
   
   dpCO2_ses.emmc<-emmeans(dpCO2_seson, ~Zone*Sub_region*Season)
@@ -3589,7 +3665,7 @@ ofshore.season.data<-season.data[season.data$Zone=="Offshore", ]
 
 ### LMER - dPCO2 Inshore 
  
-```{r}
+```{r, fig.height=6, fig.width=6}
 # Inshore dDIC
   hist(inshore.season.data$dpCO2_MY)
   shapiro.test(inshore.season.data$dpCO2_MY) # Normality rejected
@@ -3604,9 +3680,10 @@ ofshore.season.data<-season.data[season.data$Zone=="Offshore", ]
   #step(dpCO2_seson_in)
   
   plot(dpCO2_seson_in)
+  par(mfrow=c(1,2))
   qqnorm(resid(dpCO2_seson_in))
   acf(resid(dpCO2_seson_in), main="acf(resid(dTA Season))")
-  
+  par(mfrow=c(1,1))
   #summ(dpCO2_seson_in, scale = TRUE)
   plot_summs(dpCO2_seson_in)
   
@@ -3620,7 +3697,7 @@ ofshore.season.data<-season.data[season.data$Zone=="Offshore", ]
 
 ### LMER - all Omega
 
-```{r, fig.height=4, fig.width=4}
+```{r, fig.height=6, fig.width=6}
 # Inshore Omega
   hist(season.data$Aragonite_Sat_W)
   shapiro.test(season.data$Aragonite_Sat_W) # Normality rejected
@@ -3638,9 +3715,10 @@ ofshore.season.data<-season.data[season.data$Zone=="Offshore", ]
   #step(Omega_seson)
   
   plot(Omega_seson)
+  par(mfrow=c(1,2))
   qqnorm(resid(Omega_seson))
   acf(resid(Omega_seson), main="acf(resid(dTA Season))")
-  
+  par(mfrow=c(1,1))
   plot_summs(Omega_seson)  
     
   Ara_ses.emmc<-emmeans(Omega_seson, ~Zone*Sub_region*Season)
@@ -3652,7 +3730,7 @@ ofshore.season.data<-season.data[season.data$Zone=="Offshore", ]
 
 ### LMER - Omega Inshore 
  
-```{r}
+```{r, fig.height=6, fig.width=6}
 # Inshore dDIC
   hist(inshore.season.data$Aragonite_Sat_W)
   shapiro.test(inshore.season.data$Aragonite_Sat_W) # Normality rejected
@@ -3667,9 +3745,10 @@ ofshore.season.data<-season.data[season.data$Zone=="Offshore", ]
       #step(Omega_seson_in)
       
       plot(Omega_seson_in)
+      par(mfrow=c(1,2))
       qqnorm(resid(Omega_seson_in))
       acf(resid(Omega_seson_in), main="acf(resid(dTA Season))")
-      
+      par(mfrow=c(1,1))
       #summ(dDIC_seson_in, scale = TRUE)
   plot_summs(Omega_seson_in)
   
@@ -3683,7 +3762,7 @@ ofshore.season.data<-season.data[season.data$Zone=="Offshore", ]
 
 ### LMER - all pH
 
-```{r, fig.height=4, fig.width=4}
+```{r, fig.height=6, fig.width=6}
 # Inshore Omega
   hist(season.data$pH_calculated)
   shapiro.test(season.data$pH_calculated) # Normality rejected
@@ -3701,9 +3780,10 @@ ofshore.season.data<-season.data[season.data$Zone=="Offshore", ]
         #step(pH_seson)
         
         plot(pH_seson)
+        par(mfrow=c(1,2))
         qqnorm(resid(pH_seson))
         acf(resid(pH_seson), main="acf(resid(dTA Season))")
-      
+        par(mfrow=c(1,1))
   #summ(pH_seson, scale = TRUE)
   plot_summs(pH_seson)  
   
@@ -3716,7 +3796,7 @@ ofshore.season.data<-season.data[season.data$Zone=="Offshore", ]
 
 ### LMER - pH Inshore 
  
-```{r}
+```{r, fig.height=6, fig.width=6}
 # Inshore pH
   hist(inshore.season.data$pH_calculated)
   shapiro.test(inshore.season.data$pH_calculated) # Normality rejected
@@ -3731,9 +3811,10 @@ ofshore.season.data<-season.data[season.data$Zone=="Offshore", ]
     #step(pH_seson_in)
     
     plot(pH_seson_in)
+    par(mfrow=c(1,2))
     qqnorm(resid(pH_seson_in))
     acf(resid(pH_seson_in), main="acf(resid(dTA Season))")
-    
+    par(mfrow=c(1,1))
     #summ(pH_seson_in, scale = TRUE)
     plot_summs(pH_seson_in)
   
@@ -3937,16 +4018,17 @@ Omeaga_all+facet_grid(~Zone) +
   hist(Trends.inshore$Aragonite_Sat_W)
   shapiro.test(Trends.inshore$Aragonite_Sat_W) # Normality rejected
 
-  Omega_in<-lmer(Aragonite_Sat_W~Year * Sub_region + (1|Month)+
+  Omega_in_0<-lmer(Aragonite_Sat_W~Year * Sub_region + (1|Month)+
                                     #(1|Zone)+             
                                     (1|SiteID), data=Trends.inshore)
-  #summary(Omega_in)    
-  anova(Omega_in)
-  ranova(Omega_in)
-  step(Omega_in)
+  #summary(Omega_in_0)    
+  anova(Omega_in_0)
+  ranova(Omega_in_0)
+  step(Omega_in_0)
   
   Omega_in<-lmer(Aragonite_Sat_W ~ Sub_region + (1 | Month),
                  data=Trends.inshore)
+  anova(Omega_in)
   summary(Omega_in)
   
   plot(Omega_in)
@@ -3969,13 +4051,13 @@ Omeaga_all+facet_grid(~Zone) +
 hist(Trends.midchanel$Aragonite_Sat_W)
 shapiro.test(Trends.midchanel$Aragonite_Sat_W)# Normality rejected
 
-Omega_mc<-lmer(Aragonite_Sat_W~Year * Sub_region + (1|Month) + 
+Omega_mc_0<-lmer(Aragonite_Sat_W~Year * Sub_region + (1|Month) + 
                                   #(1|Zone)+             
                                   (1|SiteID), data=Trends.midchanel)
-#summary(Omega_mc)    
-anova(Omega_mc)
-ranova(Omega_mc)
-step(Omega_mc)
+#summary(Omega_mc_0)    
+anova(Omega_mc_0)
+ranova(Omega_mc_0)
+step(Omega_mc_0)
 
 
 Omega_mc<-lmer(Aragonite_Sat_W ~ Year + Sub_region + (1 | Month),
@@ -3998,13 +4080,13 @@ Omega_mc<-lmer(Aragonite_Sat_W ~ Year + Sub_region + (1 | Month),
 hist(Trends.offshore$Aragonite_Sat_W)
 shapiro.test(Trends.offshore$Aragonite_Sat_W)# Normality rejected
 
-Omega_of<-lmer(Aragonite_Sat_W~Year * Sub_region + 
+Omega_of_0<-lmer(Aragonite_Sat_W~Year * Sub_region + 
                (1|Month) + (1|SiteID),
                data=Trends.offshore)
-#summary(Omega_of)    
-anova(Omega_of)
-ranova(Omega_of)
-step(Omega_of)
+#summary(Omega_of_0)    
+anova(Omega_of_0)
+ranova(Omega_of_0)
+step(Omega_of_0)
 
 Omega_of<-lmer(Aragonite_Sat_W ~ Year + Sub_region + (1 | Month), 
                data =Trends.offshore)
@@ -4027,13 +4109,13 @@ Omega_of<-lmer(Aragonite_Sat_W ~ Year + Sub_region + (1 | Month),
 hist(Trends.ocean$Aragonite_Sat_W)
 shapiro.test(Trends.ocean$Aragonite_Sat_W)# Normality NOT rejected
 
-Omega_oc<-lmer(Aragonite_Sat_W ~ Year * Sub_region + 
+Omega_oc_0<-lmer(Aragonite_Sat_W ~ Year * Sub_region + 
                (1 | Month)+ (1|SiteID),
                data=Trends.ocean)
-  #summary(Omega_oc)    
-  anova(Omega_oc)
-  ranova(Omega_oc)
-  step(Omega_oc)
+  #summary(Omega_oc_0)    
+  anova(Omega_oc_0)
+  ranova(Omega_oc_0)
+  step(Omega_oc_0)
 
 Omega_oc<-lmer(Aragonite_Sat_W ~ Year + (1 | Month), data = Trends.ocean)
   summary(Omega_oc)
@@ -4052,6 +4134,66 @@ Omega_oc<-lmer(Aragonite_Sat_W ~ Year + (1 | Month), data = Trends.ocean)
 ## Models summary 
 
 ```{r}
+# ANOVAs
+    # Convert ANOVA results into dataframes allows for easier name manipulation
+    av.Omega_in_0 <- data.frame (anova(Omega_in_0))
+    av.Omega_mc_0 <- data.frame (anova(Omega_mc_0) )
+    av.Omega_of_0 <- data.frame (anova(Omega_of_0))
+    av.Omega_oc_0 <- data.frame (anova(Omega_oc_0))
+    
+    # Putting all into one dataframe/table
+    anova_Omega_In <- data.frame(cbind
+                    (c("Year", "Sub_region", "Year:Sub_region", 
+                       "Year", "Sub_region", "Year:Sub_region",
+                       "Year", "Sub_region", "Year:Sub_region",
+                       "Year", "Sub_region", "Year:Sub_region"), 
+                                      rbind(av.Omega_in_0, av.Omega_mc_0,
+                                            av.Omega_of_0, av.Omega_oc_0))) 
+    colnames(anova_Omega_In) <- c("", "Sum Sq", "Mean Sq", "N Df" , "D Df",
+                                     "F value", "Pr(>F)")
+    row.names(anova_Omega_In) <- NULL
+    
+    # create HTML table using kableExtra
+    anova_Omega_In %>% kable("html", digits=2) %>% 
+      kable_styling(bootstrap_options = "striped", full_width = F) %>% 
+      pack_rows(., "Omega inshore", 1, 3) %>% # groups rows with label
+      pack_rows(., "Omega mid-channel", 4, 6)  %>% # groups rows with label
+      pack_rows(., "Omega offshore", 7, 9) %>% # groups rows with label
+      pack_rows(., "Omega ocean", 10, 12)  
+
+
+```
+
+```{r}
+
+# R-ANOVAs    
+    rav.Omega_in_0 <- data.frame (ranova(Omega_in_0))
+    rav.Omega_mc_0 <- data.frame (ranova(Omega_mc_0) )
+    rav.Omega_of_0 <- data.frame (ranova(Omega_of_0))
+    rav.Omega_oc_0 <- data.frame (ranova(Omega_oc_0))
+    
+    # Putting all into one dataframe/table
+    ranova_Omega_In <- data.frame(cbind
+                    (c("<none>", "(1 | Month)", "(1 | SiteID)",
+                       "<none>", "(1 | Month)", "(1 | SiteID)",
+                       "<none>", "(1 | Month)", "(1 | SiteID)",
+                       "<none>", "(1 | Month)", "(1 | SiteID)"), 
+                      rbind(rav.Omega_in_0, rav.Omega_mc_0,
+                            rav.Omega_of_0, rav.Omega_oc_0))) 
+    colnames(ranova_Omega_In) <- c("", "npar", "logLik", "AIC" , "LRT",
+                                     "DF", "Pr(>Chi Sq)")
+    row.names(ranova_Omega_In) <- NULL
+    
+    # create HTML table using kableExtra
+    ranova_Omega_In %>% kable("html", digits=2) %>% 
+      kable_styling(bootstrap_options = "striped", full_width = F) %>% 
+      pack_rows(., "Omega inshore", 1, 3) %>% # groups rows with label
+      pack_rows(., "Omega mid-channel", 4, 6)  %>% # groups rows with label
+      pack_rows(., "Omega offshore", 7, 9) %>% # groups rows with label
+      pack_rows(., "Omega ocean", 10, 12)  
+
+
+
 Omega_models<-list("Inshore" = Omega_in, 
                    "Mid channel" = Omega_mc, 
                    "Offshore" = Omega_of, 
@@ -4061,6 +4203,10 @@ modelsummary(Omega_models, stars = TRUE,
              title = 'Omega model outputs',
              coef_map=factor_order)
 #modelsummary(Omega_models, estimate = "p.value")
+
+```
+
+```{r}
 
 ```
 
