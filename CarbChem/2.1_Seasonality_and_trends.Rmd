@@ -219,7 +219,7 @@ pal.gen <- colorFactor(palette = "Set1",
 
 ```{r WSmap, echo=FALSE}
 
-leaflet(WS.GPS.Sites, height = '550px') %>%
+leaflet(WS.GPS.Sites, height = '600px') %>%
   addTiles() %>%
   #addProviderTiles(providers$Esri.WorldImagery)%>%
   addProviderTiles(providers$OpenStreetMap) %>%
@@ -1707,7 +1707,7 @@ pCO2_my
 pH_month<- Month_ploth +
     geom_abline(slope = 0, intercept = mean_Op$OpH, color="grey")+
     scale_y_continuous(#limits = c(1,5.5),
-                       name=(expression ("pH")),
+                       name=(expression (pH[calculated])),
                        breaks = seq(0, 9, 0.1),
                        expand = c(0.05, 0.05)
                         ) +
@@ -1723,7 +1723,7 @@ pH_month<- Month_ploth +
 pH_Y<- Year_ploth+
     geom_abline(slope = 0, intercept = mean_Op$OpH, color="grey")+
     scale_y_continuous(#limits = c(1,5.5),
-                       name=(expression ("pH")),
+                       name=(expression (pH[calculated])),
                        breaks = seq(0, 9, 0.1),
                        expand = c(0.05, 0.05)
                         ) +
@@ -2063,7 +2063,7 @@ pCO2_season
 ```{r, echo=FALSE, fig.height=6, fig.width=4}
 pH_season<- Season_plot+
     scale_y_continuous(#limits = c(1,5.5),
-                       name=(expression ("pH")),
+                       name=(expression(pH[calculated])),
                        breaks = seq(0, 9, 0.1),
                        expand = c(0.05, 0.05)
                         ) +
@@ -2227,7 +2227,8 @@ TA_delta_m<- Delta_plot+
                  aes (x=Month, y=dTA_MY))+
     
     geom_point(data=WS.reef, aes (x=Month, y=dTA_MY, 
-                                 fill=Precipitation, shape=Extreme), 
+                                 fill=Precipitation,
+                                 shape=Extreme), 
              alpha=0.8, size=1)
 #TA_delta_m
 
@@ -2510,7 +2511,7 @@ dpCO2_my
 ```{r, echo=FALSE, fig.height=8, fig.width=8}
 pH_delta_m<- Delta_plot+
     scale_y_continuous(#limits = c(1,5.5),
-                       name=(expression (paste(Delta, " pH"))),
+                       name=(expression (paste(Delta~pH[calculated]))),
                        breaks = seq(-5, 5, 0.1),
                        expand = c(0.05, 0.05)
                         ) +
@@ -2524,7 +2525,7 @@ pH_delta_m<- Delta_plot+
 
 pH_delta_y<- DeltaYear_plot+
      scale_y_continuous(#limits = c(1,5.5),
-                       name=(expression (paste(Delta, " pH"))),
+                       name=(expression (paste(Delta~pH[calculated]))),
                        breaks = seq(-5, 5, 0.1),
                        expand = c(0.05, 0.05)
                         ) +
@@ -2751,7 +2752,7 @@ pCO2_delta_S
 ```{r, echo=FALSE, fig.height=6, fig.width=4}
 pH_delta_S<- Delta_S_plot+
     scale_y_continuous(#limits = c(1,5.5),
-                       name=(expression (paste(Delta~"pH"))),
+                       name=(expression (paste(Delta~pH[calculated]))),
                        breaks = seq(-5, 5, 0.1),
                        expand = c(0.05, 0.05)
                         ) +
@@ -3131,7 +3132,7 @@ pCO2_reef
 pH_fig<- Final_plot+
   geom_abline(slope = 0, intercept = mean_Op$OpH, color="grey")+
   scale_y_continuous(#limits = c(1,5.5),
-                       name=(expression ("pH")),
+                       name=(expression (pH[calculated])),
                        breaks = seq(0, 9, 0.1),
                        expand = c(0.05, 0.05)
                         ) +
@@ -3146,7 +3147,7 @@ pH_fig<- Final_plot+
 pH_Y_fig<- Year_reef+
     geom_abline(slope = 0, intercept = mean_Op$OpH, color="grey")+
     scale_y_continuous(#limits = c(1,5.5),
-                       name=(expression ("pH")),
+                       name=(expression (pH[calculated])),
                        breaks = seq(0, 9, 0.1),
                        expand = c(0.05, 0.05)
                         ) +
@@ -3423,7 +3424,7 @@ pCO2_sea_re
 pH_sea_re<- Season_plot+
     geom_abline(slope = 0, intercept = mean_Op$OpH, color="grey")+
     scale_y_continuous(#limits = c(1,5.5),
-                       name=(expression ("pH")),
+                       name=(expression (pH[calculated])),
                        breaks = seq(0, 9, 0.1),
                        expand = c(0.05, 0.05)
                         ) +
@@ -3994,7 +3995,7 @@ Omeaga_all<- Long_plot+
                        name=(expression("Aragonite saturation state" ~(Omega[ar]))),
                        breaks = seq(0, 10, 0.5),  
                        expand = c(0.05, 0.05)) +
-    geom_point(aes (x=Date, y=Aragonite_Sat_W, fill=Precipitation), 
+    geom_point(aes (x=Date, y=Aragonite_Sat_W, fill=Sub_region), 
              alpha=0.8, size=0.8, shape=21)
 
 Omeaga_all+
@@ -4005,10 +4006,11 @@ Omeaga_all+facet_grid(~Zone)+
     geom_smooth(aes (x=Date, y=Aragonite_Sat_W), method = "lm",
               color="black")
 
-Omeaga_all+facet_grid(~Zone) +
+Trends_c<-Omeaga_all+facet_grid(~Zone) +
   geom_smooth(aes (x=Date, y=Aragonite_Sat_W, 
                    colour=Sub_region), 
               method = "lm", alpha=0.3)
+Trends_c
 ```
 
 ## Inshore
@@ -4040,6 +4042,7 @@ Omeaga_all+facet_grid(~Zone) +
     #Arg_in.emmc<-as.data.frame(Arg_in.emmc[complete.cases(Arg_in.emmc),])
     Arg_in.emmc<-Arg_in.emmc[order(Arg_in.emmc$Sub_region),]
     Arg_in.emmc
+    round(Arg_in.emmc$emmean, digits = 2)
   #anova(Omega_in)
   #ranova(Omega_in)
 
@@ -4133,6 +4136,8 @@ Omega_oc<-lmer(Aragonite_Sat_W ~ Year + (1 | Month), data = Trends.ocean)
 
 ## Models summary 
 
+Complete models 
+
 ```{r}
 # ANOVAs
     # Convert ANOVA results into dataframes allows for easier name manipulation
@@ -4160,8 +4165,6 @@ Omega_oc<-lmer(Aragonite_Sat_W ~ Year + (1 | Month), data = Trends.ocean)
       pack_rows(., "Omega mid-channel", 4, 6)  %>% # groups rows with label
       pack_rows(., "Omega offshore", 7, 9) %>% # groups rows with label
       pack_rows(., "Omega ocean", 10, 12)  
-
-
 ```
 
 ```{r}
@@ -4192,22 +4195,32 @@ Omega_oc<-lmer(Aragonite_Sat_W ~ Year + (1 | Month), data = Trends.ocean)
       pack_rows(., "Omega offshore", 7, 9) %>% # groups rows with label
       pack_rows(., "Omega ocean", 10, 12)  
 
+```
 
+```{r}
+Omega_models_0<-list("Inshore" = Omega_in_0, 
+                   "Mid channel" = Omega_mc_0, 
+                   "Offshore" = Omega_of_0, 
+                   "Ocean" = Omega_oc_0)
+modelsummary(Omega_models_0, stars = TRUE, 
+             #statistic = c('std.error', 'p.value', 'conf.int'),
+             title = 'Omega model outputs (all factors)',
+             coef_map=factor_order)
+#modelsummary(Omega_models, estimate = "p.value")
+```
 
+Factors removed models 
+
+```{r}
 Omega_models<-list("Inshore" = Omega_in, 
                    "Mid channel" = Omega_mc, 
                    "Offshore" = Omega_of, 
                    "Ocean" = Omega_oc)
 modelsummary(Omega_models, stars = TRUE, 
              #statistic = c('std.error', 'p.value', 'conf.int'),
-             title = 'Omega model outputs',
+             title = 'Omega model outputs (dropped factors)',
              coef_map=factor_order)
 #modelsummary(Omega_models, estimate = "p.value")
-
-```
-
-```{r}
-
 ```
 
 # pCO2-All
@@ -4219,9 +4232,9 @@ shapiro.test(Trends.data$pCO2_uatm)# Normality rejected
 pCO2_all<- Long_plot+
     scale_y_continuous(#limits = c(15,40),
                        name=expression(paste(pCO[2], " (", mu, " atm)")),
-                       breaks = seq(0, 800, 50),  
+                       breaks = seq(0, 800, 100),  
                        expand = c(0.05, 0.05)) +
-    geom_point(aes (x=Date, y=pCO2_uatm, fill=Precipitation), 
+    geom_point(aes (x=Date, y=pCO2_uatm, fill=Sub_region), 
              alpha=0.8, size=1, shape=21)
 
 pCO2_all+geom_smooth(aes (x=Date, y=pCO2_uatm), 
@@ -4230,9 +4243,10 @@ pCO2_all+geom_smooth(aes (x=Date, y=pCO2_uatm),
 pCO2_all+facet_grid(~Zone)+geom_smooth(aes (x=Date, y=pCO2_uatm), 
                      method = "lm", color="black")
 
-pCO2_all+facet_grid(~Zone) +
+Trends_a<-pCO2_all+facet_grid(~Zone) +
   geom_smooth(aes (x=Date, y=pCO2_uatm, colour=Sub_region),
               method = "lm", alpha=0.3)
+Trends_a
 
 ```
 
@@ -4244,13 +4258,13 @@ pCO2_all+facet_grid(~Zone) +
   hist(Trends.inshore$pCO2_uatm)
   shapiro.test(Trends.inshore$pCO2_uatm)# Normality NOT? rejected
 
-  pCO2_in<-lmer(pCO2_uatm~Year * Sub_region + (1|Month)+
+  pCO2_in_0<-lmer(pCO2_uatm~Year * Sub_region + (1|Month)+
                                   #(1|Zone)+             
                                   (1|SiteID), data=Trends.inshore)
   #summary(pCO2_in)    
-  anova(pCO2_in)
-  ranova(pCO2_in)
-  step(pCO2_in)
+  anova(pCO2_in_0)
+  ranova(pCO2_in_0)
+  step(pCO2_in_0)
 
 pCO2_in<-lmer(pCO2_uatm ~ (1|Month)+(1|SiteID), data=Trends.inshore)
   summary(pCO2_in)    
@@ -4270,13 +4284,13 @@ pCO2_in<-lmer(pCO2_uatm ~ (1|Month)+(1|SiteID), data=Trends.inshore)
 hist(Trends.midchanel$pCO2_uatm)
 shapiro.test(Trends.midchanel$pCO2_uatm)# Normality NOT rejected
 
-pCO2_mc<-lmer(pCO2_uatm~Year * Sub_region + (1|Month) + 
+pCO2_mc_0<-lmer(pCO2_uatm~Year * Sub_region + (1|Month) + 
                                   #(1|Zone)+             
                                   (1|SiteID), data=Trends.midchanel)
-  #summary(pCO2_mc)    
-  anova(pCO2_mc)
-  ranova(pCO2_mc)
-  step(pCO2_mc)
+  #summary(pCO2_mc_0)    
+  anova(pCO2_mc_0)
+  ranova(pCO2_mc_0)
+  step(pCO2_mc_0)
   
 
 pCO2_mc<-lmer(pCO2_uatm ~ Year + Sub_region + (1 | Month), 
@@ -4299,14 +4313,13 @@ pCO2_mc<-lmer(pCO2_uatm ~ Year + Sub_region + (1 | Month),
 hist(Trends.offshore$pCO2_uatm)
 shapiro.test(Trends.offshore$pCO2_uatm)# Normality rejected
 
-pCO2_of<-lmer(pCO2_uatm~Year * Sub_region + 
+pCO2_of_0<-lmer(pCO2_uatm~Year * Sub_region + 
                (1|Month) + (1|SiteID),
                data=Trends.offshore)
-  #summary(pCO2_of)    
-  #anova(pCO2_of_0, pCO2_of_1, pCO2_of_2)
-  anova(pCO2_of)
-  ranova(pCO2_of)
-  step(pCO2_of)
+  #summary(pCO2_of_0)    
+  anova(pCO2_of_0)
+  ranova(pCO2_of_0)
+  step(pCO2_of_0)
 
 pCO2_of<-lmer(pCO2_uatm ~ Year + Sub_region + (1 | Month),
               data =Trends.offshore)
@@ -4327,13 +4340,13 @@ pCO2_of<-lmer(pCO2_uatm ~ Year + Sub_region + (1 | Month),
 hist(Trends.ocean$pCO2_uatm)
 shapiro.test(Trends.ocean$pCO2_uatm)# Normality rejected
 
-pCO2_oc<-lmer(pCO2_uatm ~ Year * Sub_region + 
+pCO2_oc_0<-lmer(pCO2_uatm ~ Year * Sub_region + 
                (1 | Month)+ (1|SiteID),
                data=Trends.ocean)
-  #summary(pCO2_oc)    
-  anova(pCO2_oc)
-  ranova(pCO2_oc)
-  step(pCO2_oc)
+  #summary(pCO2_oc_0)    
+  anova(pCO2_oc_0)
+  ranova(pCO2_oc_0)
+  step(pCO2_oc_0)
 
 pCO2_oc<-lmer(pCO2_uatm ~ Year + (1 | Month), 
               data = Trends.ocean)
@@ -4350,6 +4363,81 @@ pCO2_oc<-lmer(pCO2_uatm ~ Year + (1 | Month),
 
 ## Models summary 
 
+Complete models 
+
+```{r}
+# ANOVAs
+    # Convert ANOVA results into dataframes allows for easier name manipulation
+    
+    av.pCO2_in_0 <- data.frame (anova(pCO2_in_0))
+    av.pCO2_mc_0 <- data.frame (anova(pCO2_mc_0) )
+    av.pCO2_of_0 <- data.frame (anova(pCO2_of_0))
+    av.pCO2_oc_0 <- data.frame (anova(pCO2_oc_0))
+    
+    # Putting all into one dataframe/table
+    anova_pH <- data.frame(cbind
+                    (c("Year", "Sub_region", "Year:Sub_region", 
+                       "Year", "Sub_region", "Year:Sub_region",
+                       "Year", "Sub_region", "Year:Sub_region",
+                       "Year", "Sub_region", "Year:Sub_region"), 
+                      rbind(av.pCO2_in_0, av.pCO2_mc_0,
+                      av.pCO2_of_0, av.pCO2_oc_0))) 
+    colnames(anova_pH) <- c("", "Sum Sq", "Mean Sq", "N Df" , "D Df",
+                                     "F value", "Pr(>F)")
+    row.names(anova_pH) <- NULL
+    
+    # create HTML table using kableExtra
+    anova_pH %>% kable("html", digits=2) %>% 
+      kable_styling(bootstrap_options = "striped", full_width = F) %>% 
+      pack_rows(., "pCO2 inshore", 1, 3) %>% # groups rows with label
+      pack_rows(., "pCO2 mid-channel", 4, 6)  %>% # groups rows with label
+      pack_rows(., "pCO2 offshore", 7, 9) %>% # groups rows with label
+      pack_rows(., "pCO2 ocean", 10, 12)  
+```
+
+```{r}
+
+# R-ANOVAs    
+    rav.pCO2_in_0 <- data.frame (ranova(pCO2_in_0))
+    rav.pCO2_mc_0 <- data.frame (ranova(pCO2_mc_0) )
+    rav.pCO2_of_0 <- data.frame (ranova(pCO2_of_0))
+    rav.pCO2_oc_0 <- data.frame (ranova(pCO2_oc_0))
+    
+    # Putting all into one dataframe/table
+    ranova_pCO2 <- data.frame(cbind
+                    (c("<none>", "(1 | Month)", "(1 | SiteID)",
+                       "<none>", "(1 | Month)", "(1 | SiteID)",
+                       "<none>", "(1 | Month)", "(1 | SiteID)",
+                       "<none>", "(1 | Month)", "(1 | SiteID)"), 
+                      rbind(rav.pCO2_in_0, rav.pCO2_mc_0,
+                            rav.pCO2_of_0, rav.pCO2_oc_0))) 
+    colnames(ranova_pCO2) <- c("", "npar", "logLik", "AIC" , "LRT",
+                                     "DF", "Pr(>Chi Sq)")
+    row.names(ranova_pCO2) <- NULL
+    
+    # create HTML table using kableExtra
+    ranova_pCO2 %>% kable("html", digits=2) %>% 
+      kable_styling(bootstrap_options = "striped", full_width = F) %>% 
+      pack_rows(., "Omega inshore", 1, 3) %>% # groups rows with label
+      pack_rows(., "Omega mid-channel", 4, 6)  %>% # groups rows with label
+      pack_rows(., "Omega offshore", 7, 9) %>% # groups rows with label
+      pack_rows(., "Omega ocean", 10, 12)  
+
+```
+
+```{r}
+pCO2_models_0<-list("Inshore" = pCO2_in_0, 
+                   "Mid channel" = pCO2_mc_0, 
+                   "Offshore" = pCO2_of_0, 
+                   "Ocean" = pCO2_oc_0)
+modelsummary(pCO2_models_0, stars = TRUE, 
+             #statistic = c('std.error', 'p.value', 'conf.int'),
+             title = 'pCO model outputs (all factors)',
+             coef_map=factor_order)
+#modelsummary(Omega_models, estimate = "p.value")
+```
+
+Factors removed models 
 ```{r}
 pCO2_models<-list("Inshore" = pCO2_in, 
                    "Mid channel" = pCO2_mc, 
@@ -4357,7 +4445,7 @@ pCO2_models<-list("Inshore" = pCO2_in,
                    "Ocean" = pCO2_oc)
 modelsummary(pCO2_models, stars = TRUE, 
              #statistic = c('std.error', 'p.value', 'conf.int'),
-             title = 'pCO2 models outputs',
+             title = 'pCO2 models outputs (dropped factors)',
              coef_map=factor_order)
 #modelsummary(pCO2_models, estimate = "p.value")
 
@@ -4371,10 +4459,10 @@ shapiro.test(Trends.data$pH_calculated)# Normality rejected
 
 pH_all<- Long_plot+
     scale_y_continuous(#limits = c(15,40),
-                       name=(expression("pH")),
+                       name=(expression(pH[calculated])),
                        breaks = seq(0, 10, 0.1),  
                        expand = c(0.05, 0.05)) +
-    geom_point(aes (x=Date, y=pH_calculated, fill=Precipitation), 
+    geom_point(aes (x=Date, y=pH_calculated, fill=Sub_region), 
              alpha=0.8, size=1, shape=21)
 
 pH_all+ geom_smooth(aes (x=Date, y=pH_calculated),
@@ -4382,9 +4470,9 @@ pH_all+ geom_smooth(aes (x=Date, y=pH_calculated),
 
 pH_all + facet_grid(~Zone)+ geom_smooth(aes (x=Date, y=pH_calculated),method = "lm", color="black")
 
-pH_all+facet_grid(~Zone) +
+Trends_b<-pH_all+facet_grid(~Zone) +
   geom_smooth(aes (x=Date, y=pH_calculated, colour=Sub_region), method = "lm", alpha=0.3)
-
+Trends_b
 ```
 
 ## Inshore
@@ -4394,14 +4482,14 @@ pH_all+facet_grid(~Zone) +
 hist(Trends.inshore$pH_calculated)
 shapiro.test(Trends.inshore$pH_calculated)# Normality rejected
 
-pH_in<-lmer(pH_calculated~Year * Sub_region + (1|Month)+
+pH_in_0<-lmer(pH_calculated~Year * Sub_region + (1|Month)+
                                   #(1|Zone)+             
                                   (1|SiteID),
             data=Trends.inshore)
-  #summary(pH_in)    
-  anova(pH_in)
-  ranova(pH_in)
-  step(pH_in)
+  #summary(pH_in_0)    
+  anova(pH_in_0)
+  ranova(pH_in_0)
+  step(pH_in_0)
 
 pH_in<-lmer(pH_calculated ~ Sub_region + (1 | Month) + (1 | SiteID),
             data=Trends.inshore)
@@ -4414,7 +4502,6 @@ pH_in<-lmer(pH_calculated ~ Sub_region + (1 | Month) + (1 | SiteID),
         pH_in.emmc<-multcomp::cld(pH_in.emmc)
         pH_in.emmc<-pH_in.emmc[order(pH_in.emmc$Sub_region),]
   pH_in.emmc
-  
 ```
 
 ## Mid channel 
@@ -4423,14 +4510,14 @@ pH_in<-lmer(pH_calculated ~ Sub_region + (1 | Month) + (1 | SiteID),
 hist(Trends.midchanel$pH_calculated)
 shapiro.test(Trends.midchanel$pH_calculated)# Normality rejected
 
-pH_mc<-lmer(pH_calculated~Year * Sub_region + (1|Month) + 
+pH_mc_0<-lmer(pH_calculated~Year * Sub_region + (1|Month) + 
                                   #(1|Zone)+             
                                   (1|SiteID),
             data=Trends.midchanel)
-  #summary(pH_mc)    
-  anova(pH_mc)
-  ranova(pH_mc)
-  step(pH_mc)
+  #summary(pH_mc_0)    
+  anova(pH_mc_0)
+  ranova(pH_mc_0)
+  step(pH_mc_0)
 
 pH_mc<-lmer(pH_calculated ~ Year + Sub_region + (1 | Month),
             data = Trends.midchanel)
@@ -4450,13 +4537,13 @@ pH_mc<-lmer(pH_calculated ~ Year + Sub_region + (1 | Month),
 hist(Trends.offshore$pH_calculated)
 shapiro.test(Trends.offshore$pH_calculated)# Normality rejected
 
-pH_of<-lmer(pH_calculated~Year * Sub_region + 
+pH_of_0<-lmer(pH_calculated~Year * Sub_region + 
                (1|Month) + (1|SiteID),
                data=Trends.offshore)
-  #summary(pH_of)    
-  anova(pH_of)
-  ranova(pH_of)
-  step(pH_of)
+  #summary(pH_of_0)    
+  anova(pH_of_0)
+  ranova(pH_of_0)
+  step(pH_of_0)
 
 pH_of<-lmer(pH_calculated ~ Year + Sub_region + (1 | Month), 
             data =Trends.offshore)
@@ -4477,13 +4564,13 @@ pH_of<-lmer(pH_calculated ~ Year + Sub_region + (1 | Month),
 hist(Trends.ocean$pH_calculated)
 shapiro.test(Trends.ocean$pH_calculated)# Normality rejected
 
-pH_oc<-lmer(pH_calculated ~ Year * Sub_region + 
+pH_oc_0<-lmer(pH_calculated ~ Year * Sub_region + 
                (1 | Month)+ (1|SiteID),
                data=Trends.ocean)
-  #summary(pH_oc)    
-  anova(pH_oc)
-  ranova(pH_oc)
-  step(pH_oc)
+  #summary(pH_oc_0)    
+  anova(pH_oc_0)
+  ranova(pH_oc_0)
+  step(pH_oc_0)
 
 pH_oc<-lmer(pH_calculated ~ Year + (1 | Month),
                data=Trends.ocean)
@@ -4499,6 +4586,81 @@ pH_oc<-lmer(pH_calculated ~ Year + (1 | Month),
 
 ## Models summary 
 
+Complete models 
+
+```{r}
+# ANOVAs
+    # Convert ANOVA results into dataframes allows for easier name manipulation
+    av.pH_in_0 <- data.frame (anova(pH_in_0))
+    av.pH_mc_0 <- data.frame (anova(pH_mc_0) )
+    av.pH_of_0 <- data.frame (anova(pH_of_0))
+    av.pH_oc_0 <- data.frame (anova(pH_oc_0))
+    
+    # Putting all into one dataframe/table
+    anova_pH <- data.frame(cbind
+                    (c("Year", "Sub_region", "Year:Sub_region", 
+                       "Year", "Sub_region", "Year:Sub_region",
+                       "Year", "Sub_region", "Year:Sub_region",
+                       "Year", "Sub_region", "Year:Sub_region"), 
+                         rbind(av.pH_in_0, av.pH_mc_0,
+                         av.pH_of_0, av.pH_oc_0))) 
+    colnames(anova_pH) <- c("", "Sum Sq", "Mean Sq", "N Df" , "D Df",
+                                     "F value", "Pr(>F)")
+    row.names(anova_pH) <- NULL
+  
+  # create HTML table using kableExtra
+  anova_pH %>% kable("html", digits=2) %>% 
+  kable_styling(bootstrap_options = "striped", full_width = F) %>% 
+      pack_rows(., "pH inshore", 1, 3) %>% # groups rows with label
+      pack_rows(., "pH mid-channel", 4, 6)  %>% # groups rows with label
+      pack_rows(., "pH offshore", 7, 9) %>% # groups rows with label
+      pack_rows(., "pH ocean", 10, 12)  
+```
+
+```{r}
+
+# R-ANOVAs    
+    rav.pH_in_0 <- data.frame (ranova(pH_in_0))
+    rav.pH_mc_0 <- data.frame (ranova(pH_mc_0) )
+    rav.pH_of_0 <- data.frame (ranova(pH_of_0))
+    rav.pH_oc_0 <- data.frame (ranova(pH_oc_0))
+    
+    # Putting all into one dataframe/table
+    ranova_pH <- data.frame(cbind
+                    (c("<none>", "(1 | Month)", "(1 | SiteID)",
+                       "<none>", "(1 | Month)", "(1 | SiteID)",
+                       "<none>", "(1 | Month)", "(1 | SiteID)",
+                       "<none>", "(1 | Month)", "(1 | SiteID)"), 
+                      rbind(rav.pH_in_0, rav.pH_mc_0,
+                            rav.pH_of_0, rav.pH_oc_0))) 
+    colnames(ranova_pH) <- c("", "npar", "logLik", "AIC" , "LRT",
+                                     "DF", "Pr(>Chi Sq)")
+    row.names(ranova_pH) <- NULL
+    
+    # create HTML table using kableExtra
+    ranova_pH %>% kable("html", digits=2) %>% 
+      kable_styling(bootstrap_options = "striped", full_width = F) %>% 
+      pack_rows(., "pH inshore", 1, 3) %>% # groups rows with label
+      pack_rows(., "pH mid-channel", 4, 6)  %>% # groups rows with label
+      pack_rows(., "pH offshore", 7, 9) %>% # groups rows with label
+      pack_rows(., "pH ocean", 10, 12)  
+
+```
+
+```{r}
+pH_models_0<-list("Inshore" = pH_in_0, 
+                   "Mid channel" = pH_mc_0, 
+                   "Offshore" = pH_of_0, 
+                   "Ocean" = pH_oc_0)
+modelsummary(pH_models_0, stars = TRUE, 
+             #statistic = c('std.error', 'p.value', 'conf.int'),
+             title = 'pH model outputs (all factors)',
+             coef_map=factor_order)
+#modelsummary(pH_models, estimate = "p.value")
+```
+
+Factors removed models 
+
 ```{r}
 pH_models<-list("Inshore" = pH_in, 
                    "Mid channel" = pH_mc, 
@@ -4506,10 +4668,10 @@ pH_models<-list("Inshore" = pH_in,
                    "Ocean" = pH_oc)
 modelsummary(pH_models, stars = TRUE, 
              #statistic = c('std.error', 'p.value', 'conf.int'),
-             title = 'pH model outputs',
+             title = 'pH model outputs (factors dropped)',
              coef_map=factor_order)
 
-#modelsummary(Omega_models, estimate = "p.value")
+#modelsummary(pH_models, estimate = "p.value")
 
 ```
 
@@ -4547,13 +4709,13 @@ TA_all+facet_grid(~Zone) +
 hist(Trends.inshore$TA_umol_kg)
 shapiro.test(Trends.inshore$TA_umol_kg)# Normality rejected
 
-TA_in<-lmer(TA_umol_kg~Year * Sub_region + (1|Month)+
+TA_in_0<-lmer(TA_umol_kg~Year * Sub_region + (1|Month)+
                                   #(1|Zone)+             
                                   (1|SiteID), data=Trends.inshore)
-  #summary(TA_in)    
-  anova(TA_in)
-  ranova(TA_in)
-  step(TA_in)
+  #summary(TA_in_0)    
+  anova(TA_in_0)
+  ranova(TA_in_0)
+  step(TA_in_0)
 
 TA_in<-lmer(TA_umol_kg ~ Sub_region + (1 | Month), 
             data=Trends.inshore)
@@ -4574,14 +4736,14 @@ TA_in<-lmer(TA_umol_kg ~ Sub_region + (1 | Month),
 hist(Trends.midchanel$TA_umol_kg)
 shapiro.test(Trends.midchanel$TA_umol_kg)# Normality rejected
 
-TA_mc<-lmer(TA_umol_kg~Year * Sub_region + (1|Month) + 
+TA_mc_0<-lmer(TA_umol_kg~Year * Sub_region + (1|Month) + 
                                   #(1|Zone)+             
                                   (1|SiteID),
             data=Trends.midchanel)
-  #summary(TA_mc)    
-  anova(TA_mc)
-  ranova(TA_mc)
-  step(TA_mc)
+  #summary(TA_mc_0)    
+  anova(TA_mc_0)
+  ranova(TA_mc_0)
+  step(TA_mc_0)
 
 TA_mc<-lmer(TA_umol_kg ~ (1 | Month) + (1|SiteID), 
             data = Trends.midchanel)
@@ -4597,13 +4759,13 @@ TA_mc<-lmer(TA_umol_kg ~ (1 | Month) + (1|SiteID),
 hist(Trends.offshore$TA_umol_kg)
 shapiro.test(Trends.offshore$TA_umol_kg)# Normality rejected
 
-TA_of<-lmer(TA_umol_kg~Year * Sub_region + 
+TA_of_0<-lmer(TA_umol_kg~Year * Sub_region + 
                (1|Month) + (1|SiteID),
                data=Trends.offshore)
-  #summary(TA_of)    
-  anova(TA_of)
-  ranova(TA_of)
-  step(TA_of)
+  #summary(TA_of_0)    
+  anova(TA_of_0)
+  ranova(TA_of_0)
+  step(TA_of_0)
 
 TA_of<-lmer(TA_umol_kg ~ Year + Sub_region + (1 | Month), 
             data =Trends.offshore)
@@ -4625,13 +4787,13 @@ TA_of<-lmer(TA_umol_kg ~ Year + Sub_region + (1 | Month),
 hist(Trends.ocean$TA_umol_kg)
 shapiro.test(Trends.ocean$TA_umol_kg)# Normality NOT rejected
 
-TA_oc<-lmer(TA_umol_kg ~ Year * Sub_region + 
+TA_oc_0<-lmer(TA_umol_kg ~ Year * Sub_region + 
                (1 | Month)+ (1|SiteID),
                data=Trends.ocean)
-  #summary(TA_oc)    
-  anova(TA_oc)
-  ranova(TA_oc)
-  step(TA_oc)
+  #summary(TA_oc_0)    
+  anova(TA_oc_0)
+  ranova(TA_oc_0)
+  step(TA_oc_0)
 
 TA_oc<-lmer(TA_umol_kg ~ (1 | Month), 
             data = Trends.ocean)
@@ -4647,6 +4809,80 @@ TA_oc<-lmer(TA_umol_kg ~ (1 | Month),
 ```
 
 ## Models summary 
+
+Complete models 
+
+```{r}
+# ANOVAs
+    # Convert ANOVA results into dataframes allows for easier name manipulation
+    av.TA_in_0 <- data.frame (anova(TA_in_0))
+    av.TA_mc_0 <- data.frame (anova(TA_mc_0) )
+    av.TA_of_0 <- data.frame (anova(TA_of_0))
+    av.TA_oc_0 <- data.frame (anova(TA_oc_0))
+    
+    # Putting all into one dataframe/table
+    anova_TA_0 <- data.frame(cbind
+                    (c("Year", "Sub_region", "Year:Sub_region", 
+                       "Year", "Sub_region", "Year:Sub_region",
+                       "Year", "Sub_region", "Year:Sub_region",
+                       "Year", "Sub_region", "Year:Sub_region"), 
+                                      rbind(av.TA_in_0, av.TA_mc_0,
+                                            av.TA_of_0, av.TA_oc_0))) 
+    colnames(anova_TA_0) <- c("", "Sum Sq", "Mean Sq", "N Df" , "D Df",
+                                     "F value", "Pr(>F)")
+    row.names(anova_TA_0) <- NULL
+    
+    # create HTML table using kableExtra
+    anova_TA_0 %>% kable("html", digits=2) %>% 
+      kable_styling(bootstrap_options = "striped", full_width = F) %>% 
+      pack_rows(., "TA inshore", 1, 3) %>% # groups rows with label
+      pack_rows(., "TA mid-channel", 4, 6)  %>% # groups rows with label
+      pack_rows(., "TA offshore", 7, 9) %>% # groups rows with label
+      pack_rows(., "TA ocean", 10, 12)  
+```
+
+```{r}
+
+# R-ANOVAs    
+    rav.TA_in_0 <- data.frame (ranova(TA_in_0))
+    rav.TA_mc_0 <- data.frame (ranova(TA_mc_0) )
+    rav.TA_of_0 <- data.frame (ranova(TA_of_0))
+    rav.TA_oc_0 <- data.frame (ranova(TA_oc_0))
+    
+# Putting all into one dataframe/table
+  ranova_TA_0 <- data.frame(cbind
+                  (c("<none>", "(1 | Month)", "(1 | SiteID)",
+                     "<none>", "(1 | Month)", "(1 | SiteID)",
+                     "<none>", "(1 | Month)", "(1 | SiteID)",
+                     "<none>", "(1 | Month)", "(1 | SiteID)"), 
+               rbind(rav.TA_in_0, rav.TA_mc_0,
+                            rav.TA_of_0, rav.TA_oc_0))) 
+    colnames(ranova_TA_0) <- c("", "npar", "logLik", "AIC" , "LRT",
+                                     "DF", "Pr(>Chi Sq)")
+    row.names(ranova_TA_0) <- NULL
+    
+    # create HTML table using kableExtra
+    ranova_TA_0 %>% kable("html", digits=2) %>% 
+      kable_styling(bootstrap_options = "striped", full_width = F) %>% 
+      pack_rows(., "TA inshore", 1, 3) %>% # groups rows with label
+      pack_rows(., "TA mid-channel", 4, 6)  %>% # groups rows with label
+      pack_rows(., "TA offshore", 7, 9) %>% # groups rows with label
+      pack_rows(., "TA ocean", 10, 12)
+```
+
+```{r}
+TA_models_0<-list("Inshore" = TA_in_0, 
+                   "Mid channel" = TA_mc_0, 
+                   "Offshore" = TA_of_0, 
+                   "Ocean" = TA_oc_0)
+modelsummary(TA_models_0, stars = TRUE, 
+             #statistic = c('std.error', 'p.value', 'conf.int'),
+             title = 'TA model outputs (all factors)',
+             coef_map=factor_order)
+#modelsummary(TA_models, estimate = "p.value")
+```
+
+Factors removed models 
 ```{r}
 TA_models<-list("Inshore" = TA_in, 
                    "Mid channel" = TA_mc, 
@@ -4654,7 +4890,7 @@ TA_models<-list("Inshore" = TA_in,
                    "Ocean" = TA_oc)
 modelsummary(TA_models, stars = TRUE, 
              #statistic = c('std.error', 'p.value', 'conf.int'),
-             title = 'TA model outputs',
+             title = 'TA model outputs (dropped facators)',
              coef_map=factor_order)
 #modelsummary(TA_models, estimate = "p.value")
 ```
@@ -5059,6 +5295,27 @@ modelsummary(dDIC_models, stars = TRUE,
              title = 'dDIC model outputs',
              coef_map=factor_order)
 #modelsummary(dDIC_models, estimate = "p.value")
+```
+
+# Plot trends 
+```{r}
+Trends<-ggarrange(Trends_a+ theme(axis.title.x=element_blank(),
+                                 axis.text.x=element_blank()),
+                  Trends_b+ theme(legend.position = "none",
+                                 axis.title.x=element_blank(),
+                                 axis.text.x=element_blank(),
+                                 strip.text.x = element_blank()),
+                  Trends_c + theme(legend.position = "none",
+                                 strip.text.x = element_blank()),
+          labels = c("(A)", "(B)", "(C)"),
+          ncol = 1, nrow = 3, heights = c(1, 0.8, 0.9))
+Trends
+
+#ggsave(file="FLK_results/Fig_Trends.svg", plot=Trends, dpi = 300, width=5.5, height=7)
+```
+
+```{r}
+
 ```
 
 # 7. PCA
