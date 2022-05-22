@@ -68,12 +68,12 @@ theme(legend.position="top",
   #guides(fill=guide_legend(nrow=2,byrow=TRUE), shape=guide_legend(nrow=3,byrow=TRUE))
 
 Season_fill<-scale_fill_manual(values =
-                           c("#abdda4", "#d7191c",
-                             "#fdae61", "#2b83ba"))
+                           c("#2b83ba", "#abdda4",
+                             "#d7191c", "#fdae61"))
 
 Season_colour<-scale_colour_manual(values =
-                           c("#abdda4", "#d7191c",
-                             "#fdae61", "#2b83ba"))
+                           c("#2b83ba", "#abdda4",
+                             "#d7191c", "#fdae61"))
 
 ```
 
@@ -1536,9 +1536,9 @@ Temperature_month<- Month_ploth+
                        expand = c(0.05, 0.05)) +
  
     geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
-                 aes (x=Month, y=Temperature_C))+
+                 aes (x=Month2, y=Temperature_C))+
     
-    geom_point(data=FLK.data, aes (x=Month, y=Temperature_C, 
+    geom_point(data=FLK.data, aes (x=Month2, y=Temperature_C, 
                                  shape=Extreme, fill=Precipitation), 
              alpha=0.8, size=1)
 #Temperature_month
@@ -1563,7 +1563,7 @@ Tem_Y<- Year_ploth+
 
 ```
 
-```{r, echo=FALSE, fig.height=8, fig.width=8}
+```{r, echo=FALSE, fig.height=8, fig.width=9}
 Temperature_my<-ggarrange(Temperature_month, Tem_Y,
           labels = c("(A)", "(B)"),
           ncol = 2, nrow = 1, widths = c(4, 1.5))
@@ -1584,13 +1584,13 @@ Sal_month<- Month_ploth+
                        expand = c(0.05, 0.05)) +
   
     geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
-                 aes (x=Month, y=BestSalinity))+
+                 aes (x=Month2, y=BestSalinity))+
   
     # annotate("point",
     #        x = c(1, 4, 7, 10),
     #        y = min(FLK.data$BestSalinity))+ 
 
-    geom_point(data=FLK.data, aes (x=Month, y=BestSalinity, 
+    geom_point(data=FLK.data, aes (x=Month2, y=BestSalinity, 
                                  fill=Precipitation, shape=Extreme), 
              alpha=0.8, size=1)
 #Sal_month
@@ -1610,7 +1610,7 @@ Sal_Y<- Year_ploth+
 ```
 
 
-```{r, echo=FALSE, fig.height=8, fig.width=8}
+```{r, echo=FALSE, fig.height=8, fig.width=9}
 Sal_my<-ggarrange(Sal_month, Sal_Y,
         labels = c("(A)", "(B)"),
         ncol = 2, nrow = 1, widths = c(4, 1.5))
@@ -1621,7 +1621,7 @@ Sal_my
 
 ### TA
 
-```{r, echo=FALSE, fig.height=8, fig.width=8}
+```{r, echo=FALSE, fig.height=8, fig.width=9}
 TA_month<- Month_ploth+
    geom_abline(slope = 0, intercept = mean_Op$OTA, color="grey")+
    scale_y_continuous(#limits = c(1700,2900),
@@ -1630,9 +1630,9 @@ TA_month<- Month_ploth+
                      name=expression(paste("TA (", mu, "mol ", kg^-1, ")")))+
   
     geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
-                 aes (x=Month, y=TA_umol_kg))+
+                 aes (x=Month2, y=TA_umol_kg))+
     
-    geom_point(data=FLK.data, aes (x=Month, y=TA_umol_kg, 
+    geom_point(data=FLK.data, aes (x=Month2, y=TA_umol_kg, 
                                  fill=Precipitation, shape=Extreme), 
              alpha=0.8, size=1)
 #TA_month
@@ -1651,14 +1651,14 @@ TA_Y<- Year_ploth+
 #TA_Y
 ```
 
-```{r, echo=FALSE, fig.height=8, fig.width=8}
+```{r, echo=FALSE, fig.height=8, fig.width=9}
 TA_my<-ggarrange(TA_month, TA_Y,
           labels = c("(A)", "(B)"),
           ncol = 2, nrow = 1, widths = c(4, 1.5))
 TA_my
 ```
 
-**Figure Supp 4:** Total Alkalinity (TA) variation by the region and shelf position by (A) month of the year and (B) season. 
+**Figure Supp XX:** Total Alkalinity (TA) variation by the region and shelf position by (A) month of the year and (B) season. 
 
 
 ```{r}
@@ -1699,20 +1699,20 @@ TA_Y2<- Year_plot_2+
    stat_summary(aes (x=Sub_region, y=TA_mean, fill=Sub_region),
                 fun.data = "mean_cl_boot", geom = "point", 
                 size=2, shape=21)+
-    stat_summary(aes (x=Sub_region, y=TA_mean, colour=Sub_region),
+  stat_summary(aes (x=Sub_region, y=TA_mean, colour=Sub_region),
                 fun.data = "mean_cl_boot", geom = "errorbar",  width = 0.2)
 #TA_Y2
 
 ```
 
-```{r, echo=FALSE, fig.height=8, fig.width=8}
+```{r, echo=FALSE, fig.height=8, fig.width=9}
 TA_my2<-ggarrange(TA_exp, TA_Y2,
           labels = c("(A)", ""),
           ncol = 2, nrow = 1, widths = c(4, 1.5))
 TA_my2
 ```
 
-**Figure 2A:** Total Alkalinity (TA) variation by the region and shelf position by (A) month of the year and (B) season. 
+**Figure 3A:** Total Alkalinity (TA) variation by the region and shelf position by (A) month of the year and (B) season. 
 
 ### nTA
 
@@ -1725,9 +1725,9 @@ nTA_month<- Month_ploth+
                      name=expression(paste("nTA (", mu, "mol ", kg^-1, ")")))+
   
     geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
-                 aes (x=Month, y=n35TA))+
+                 aes (x=Month2, y=n35TA))+
     
-    geom_point(data=FLK.data, aes (x=Month, y=n35TA, 
+    geom_point(data=FLK.data, aes (x=Month2, y=n35TA, 
                                  fill=Precipitation, shape=Extreme), 
              alpha=0.8, size=1)
 #nTA_month
@@ -1747,7 +1747,7 @@ nTA_Y<- Year_ploth+
 ```
 
 
-```{r, echo=FALSE, fig.height=8, fig.width=8}
+```{r, echo=FALSE, fig.height=8, fig.width=9}
 nTA_my<-ggarrange(nTA_month, nTA_Y,
           #labels = c("DIC Friss regresion", "TA Friss regresion"),
           ncol = 2, nrow = 1, widths = c(4, 1.5))
@@ -1765,9 +1765,9 @@ DIC_month<- Month_ploth+
                      name=expression(paste("DIC (", mu, "mol ", kg^-1, ")")))+
   
     geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
-                 aes (x=Month, y=DIC_umol_kg))+
+                 aes (x=Month2, y=DIC_umol_kg))+
     
-    geom_point(data=FLK.data, aes (x=Month, y=DIC_umol_kg, 
+    geom_point(data=FLK.data, aes (x=Month2, y=DIC_umol_kg, 
                                  fill=Precipitation, shape=Extreme), 
              alpha=0.8, size=1)
 #DIC_month
@@ -1787,14 +1787,14 @@ DIC_Y<- Year_ploth+
 ```
 
 
-```{r, echo=FALSE, fig.height=8, fig.width=8}
+```{r, echo=FALSE, fig.height=8, fig.width=9}
 DIC_my<-ggarrange(DIC_month, DIC_Y,
           labels = c("(A)", "(B)"),
           ncol = 2, nrow = 1, widths = c(4, 1.5))
 DIC_my
 ```
 
-**Figure Supp 5:** Disolved Inorganic Carbon (DIC) variation by the region and shelf position by (A) month of the year and (B) season.
+**Figure Supp XX:** Disolved Inorganic Carbon (DIC) variation by the region and shelf position by (A) month of the year and (B) season.
 
 
 ```{r}
@@ -1836,7 +1836,7 @@ DIC_Y2<- Year_plot_2+
 
 ```
 
-```{r, echo=FALSE, fig.height=8, fig.width=8}
+```{r, echo=FALSE, fig.height=8, fig.width=9}
 DIC_my2<-ggarrange(DIC_exp, DIC_Y2,
           labels = c("(B)", ""),
           ncol = 2, nrow = 1, widths = c(4, 1.5))
@@ -1856,9 +1856,9 @@ nDIC_month<- Month_ploth+
                      name=expression(paste("nDIC (", mu, "mol ", kg^-1, ")")))+
   
     geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
-                 aes (x=Month, y=n35DIC))+
+                 aes (x=Month2, y=n35DIC))+
     
-    geom_point(data=FLK.data, aes (x=Month, y=n35DIC, 
+    geom_point(data=FLK.data, aes (x=Month2, y=n35DIC, 
                                  fill=Precipitation, shape=Extreme), 
              alpha=0.8, size=1)
 #nDIC_month
@@ -1878,7 +1878,7 @@ nDIC_Y<- Year_ploth+
 ```
 
 
-```{r, echo=FALSE, fig.height=8, fig.width=8}
+```{r, echo=FALSE, fig.height=8, fig.width=9}
 nDIC_my<-ggarrange(nDIC_month, nDIC_Y,
           #labels = c("DIC Friss regresion", "TA Friss regresion"),
           ncol = 2, nrow = 1, widths = c(4, 1.5))
@@ -1896,9 +1896,9 @@ pCO2_month<- Month_ploth+
                        expand = c(0.05, 0.05)
                         ) +
     geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
-                 aes (x=Month, y=pCO2_uatm))+
+                 aes (x=Month2, y=pCO2_uatm))+
     
-    geom_point(data=FLK.data, aes (x=Month, y=pCO2_uatm, 
+    geom_point(data=FLK.data, aes (x=Month2, y=pCO2_uatm, 
                                  fill=Precipitation, shape=Extreme), 
              alpha=0.8, size=1)
 #pCO2_month
@@ -1919,7 +1919,7 @@ pCO2_Y<- Year_ploth+
 ```
 
 
-```{r, echo=FALSE, fig.height=8, fig.width=8}
+```{r, echo=FALSE, fig.height=8, fig.width=9}
 pCO2_my<-ggarrange(pCO2_month, pCO2_Y,
          labels = c("(A)", "(B)"),
          ncol = 2, nrow = 1, widths = c(4, 1.5))
@@ -1971,7 +1971,7 @@ pCO2_Y2<- Year_plot_2+
 
 ```
 
-```{r, echo=FALSE, fig.height=8, fig.width=8}
+```{r, echo=FALSE, fig.height=8, fig.width=9}
 pCO2_Y2b<-ggarrange(pCO2_exp, pCO2_Y2,
           labels = c("(A)", "(B)"),
           ncol = 2, nrow = 1, widths = c(4, 1.5))
@@ -1990,9 +1990,9 @@ pH_month<- Month_ploth +
                         ) +
   
     geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
-                 aes (x=Month, y=pH_calculated))+
+                 aes (x=Month2, y=pH_calculated))+
     
-    geom_point(data=FLK.data, aes (x=Month, y=pH_calculated, 
+    geom_point(data=FLK.data, aes (x=Month2, y=pH_calculated, 
                                  fill=Precipitation, shape=Extreme), 
              alpha=0.8, size=1)
 #pH_month
@@ -2013,7 +2013,7 @@ pH_Y<- Year_ploth+
 ```
 
 
-```{r, echo=FALSE, fig.height=8, fig.width=8}
+```{r, echo=FALSE, fig.height=8, fig.width=9}
 pH_my<-ggarrange(pH_month, pH_Y,
         labels = c("(A)", "(B)"),
         ncol = 2, nrow = 1, widths = c(4, 1.5))
@@ -2065,7 +2065,7 @@ pH_Y2<- Year_plot_2+
 
 ```
 
-```{r, echo=FALSE, fig.height=8, fig.width=8}
+```{r, echo=FALSE, fig.height=8, fig.width=9}
 pH_Y2b<-ggarrange(pH_exp, pH_Y2,
           labels = c("(A)", "(B)"),
           ncol = 2, nrow = 1, widths = c(4, 1.5))
@@ -2084,8 +2084,8 @@ Omega_month<- Month_ploth+
                         ) +
   
     geom_boxplot(data=FLK.data[FLK.data$Extreme=="Normal", ], 
-                 aes (x=Month, y=Aragonite_Sat_W))+
-    geom_point(data=FLK.data, aes (x=Month, y=Aragonite_Sat_W, 
+                 aes (x=Month2, y=Aragonite_Sat_W))+
+    geom_point(data=FLK.data, aes (x=Month2, y=Aragonite_Sat_W, 
                 fill=Precipitation, shape=Extreme), 
                 alpha=0.8, size=1)
 #Omega_month
@@ -2106,7 +2106,7 @@ Omega_Y<- Year_ploth+
 ```
 
 
-```{r, echo=FALSE, fig.height=8, fig.width=8}
+```{r, echo=FALSE, fig.height=8, fig.width=9}
 Ara_my<-ggarrange(Omega_month, Omega_Y,
           labels = c("(A)", "(B)"),
           ncol = 2, nrow = 1, widths = c(4, 1.5))
@@ -2163,16 +2163,16 @@ Om_Y2<- Year_plot_2+
 
 ```
 
-```{r, echo=FALSE, fig.height=8, fig.width=8}
+```{r, echo=FALSE, fig.height=8, fig.width=9}
 Om_Y2b<-ggarrange(Omega_exp, Om_Y2,
           labels = c("(A)", "(B)"),
           ncol = 2, nrow = 1, widths = c(4, 1.5))
 Om_Y2b
 ```
 
-### Seasonal monthly plot
+### Fig.3: Seasonal monthly plot
 
-```{r, echo=FALSE, fig.height=8, fig.width=8}
+```{r, echo=FALSE, fig.height=8, fig.width=9}
 
 # Seasonality_1<-ggarrange(TA_exp, DIC_exp, lagen,
 #           labels = c("(A)", "(B)",
@@ -2546,7 +2546,7 @@ par(mfrow=c(1,1))
   WS.reef$dOme_MY<-WS.reef$Aragonite_Sat_W-WS.reef$OAra_O
   
  # head(WS.reef)
- #summary(WS.reef, digits=2)
+ #summary(WS.reef$Season, digits=2)
 ```
 
 
@@ -2654,7 +2654,7 @@ DeltaYear_plot2<- ggplot(dMonth_Stats) +
         facet_grid(Zone~., scales = "free_y")+
         geom_hline(yintercept = 0, color="gray")+
         theme(axis.title.x = element_blank(),
-              legend.position = "none",
+              legend.position = "bottom",
               axis.text.x = element_text(angle = 0))
 
 Add_plot<- ggplot(Year_Add) +
@@ -2680,9 +2680,9 @@ TA_delta_m<- Delta_plot+
                      name=expression(paste(Delta, "TA (", mu, "mol ", kg^-1, ")")))+
   
     geom_boxplot(data=WS.reef[WS.reef$Extreme=="Normal", ], 
-                 aes (x=Month, y=dTA_MY))+
+                 aes (x=Month2, y=dTA_MY))+
     
-    geom_point(data=WS.reef, aes (x=Month, y=dTA_MY, 
+    geom_point(data=WS.reef, aes (x=Month2, y=dTA_MY, 
                                  fill=Precipitation,
                                  shape=Extreme), 
              alpha=0.8, size=1)
@@ -2716,12 +2716,14 @@ TA_delta_Y<- DeltaYear_plot+
 ```
 
 
-```{r, echo=FALSE, fig.height=8, fig.width=8}
+```{r, echo=FALSE, fig.height=8, fig.width=9}
 dTA_my<-ggarrange(TA_delta_m, TA_delta_Y,
           #labels = c("dTA by month", "dTA by Year"),
           ncol = 2, nrow = 1, widths = c(4, 1.5))
 dTA_my
 ```
+
+**Figure Supp 4:** Total Alkalinity (TA) variation by the region and shelf position by (A) month of the year and (B) season. 
 
 ```{r}
 DTA_exp<- Delta_plot_month+
@@ -2768,12 +2770,14 @@ TA_delta_Y2<- DeltaYear_plot2+
 #TA_delta_Y2
 ```
 
-```{r, echo=FALSE, fig.height=8, fig.width=8}
+```{r, echo=FALSE, fig.height=8, fig.width=9}
 dTA_my2<-ggarrange(DTA_exp, TA_delta_Y2,
           #labels = c("dTA by month", "dTA by Year"),
           ncol = 2, nrow = 1, widths = c(3,2))
 dTA_my2
 ```
+
+**Figure 4A:** Seasonal delta Total Alkalinity (dTA) variation by the region and shelf position. 
 
 ### dTA density
 
@@ -2833,7 +2837,7 @@ dnTA_delta_Y<- DeltaYear_plot+
 #dnTA_delta_Y
 ```
 
-```{r, echo=FALSE, fig.height=8, fig.width=8}
+```{r, echo=FALSE, fig.height=8, fig.width=9}
 dnTA_my<-ggarrange(nTA_delta_m, dnTA_delta_Y,
           #labels = c("dTA by month", "dTA by Year"),
           ncol = 2, nrow = 1, widths = c(4, 1.5))
@@ -2850,9 +2854,9 @@ DIC_delta_m<- Delta_plot+
                      name=expression(paste(Delta, "DIC (", mu, "mol ", kg^-1, ")")))+
   
     geom_boxplot(data=WS.reef[WS.reef$Extreme=="Normal", ], 
-                 aes (x=Month, y=dDIC_MY))+
+                 aes (x=Month2, y=dDIC_MY))+
     
-    geom_point(data=WS.reef, aes (x=Month, y=dDIC_MY, 
+    geom_point(data=WS.reef, aes (x=Month2, y=dDIC_MY, 
                                  fill=Precipitation, shape=Extreme), 
              alpha=0.8, size=1)
 #DIC_delta_m
@@ -2882,13 +2886,14 @@ DIC_delta_Y<- DeltaYear_plot+
 #DIC_delta_Y
 ```
 
-```{r, echo=FALSE, fig.height=8, fig.width=8}
+```{r, echo=FALSE, fig.height=8, fig.width=9}
 dDIC_my<-ggarrange(DIC_delta_m, DIC_delta_Y,
           #labels = c("dTA by month", "dTA by Year"),
           ncol = 2, nrow = 1, widths = c(4, 1.5))
 dDIC_my
 ```
 
+**Figure Supp 5:** Total Alkalinity (TA) variation by the region and shelf position by (A) month of the year and (B) season. 
 
 ```{r}
 dDIC_exp<- Delta_plot_month+
@@ -2911,7 +2916,7 @@ dDIC_exp<- Delta_plot_month+
                 fun.data = "mean_cl_boot", geom = "point",
                 position=position_dodge(width=0.2))
 
-dDIC_exp
+#dDIC_exp
 
 DIC_delta_Y2<- DeltaYear_plot2+
     scale_y_continuous(#limits = c(-350,340),
@@ -2924,8 +2929,7 @@ DIC_delta_Y2<- DeltaYear_plot2+
     stat_summary(aes (x=Season, y=dDIC_mean, colour=Sub_region),
                 fun.data = "mean_cl_boot", geom = "errorbar", 
                 width = 0.2,
-                position=position_dodge(width=0.8))+
-  theme(legend.position = "bottom")
+                position=position_dodge(width=0.8))
     
     # stat_summary(aes (x=Season, y=dDIC_mean),
     #             fun.data = "mean_cl_boot", geom = "point", size=3)+
@@ -2935,12 +2939,14 @@ DIC_delta_Y2<- DeltaYear_plot2+
 #DIC_delta_Y2
 ```
 
-```{r, echo=FALSE, fig.height=8, fig.width=8}
+```{r, echo=FALSE, fig.height=8, fig.width=9}
 dDIC_my2<-ggarrange(dDIC_exp, DIC_delta_Y2,
           #labels = c("dTA by month", "dTA by Year"),
           ncol = 2, nrow = 1, widths = c(3, 2))
 dDIC_my2
 ```
+
+**Figure 4B:** Seasonal delta Dissolved Inorganic Carbon (dDIC) variation by the region and shelf position. 
 
 ### dDIC density
 
@@ -2956,7 +2962,7 @@ dDIC_freq_pre<- Frequency_plot+
                alpha = 0.4) +
   scale_x_continuous(breaks = seq(-300, 300, 100),
                     expression(paste(Delta, "DIC (", mu, "mol ", kg^-1, ")")))
-dDIC_freq_pre
+#dDIC_freq_pre
 
 # dDIC_freq_sea<- Frequency_plot+
 #   geom_density(aes (dDIC_MY, fill = Season), alpha = 0.4) +
@@ -2966,18 +2972,20 @@ dDIC_freq_pre
 
 ```
 
+## Other seasonal plot options 
 
-
-```{r, echo=FALSE, fig.height=8, fig.width=8}
-TA_DIC_my3<-ggarrange(TA_exp, TA_delta_Y2,
-          #labels = c("dTA by month", "dTA by Year"),
-          ncol = 2, nrow = 1, widths = c(3.5, 1.5))
+```{r, echo=FALSE, fig.height=8, fig.width=9}
+TA_DIC_my3<-ggarrange(TA_exp, DIC_exp, 
+                      TA_delta_Y2, DIC_delta_Y2+
+                        theme(legend.position = "none"),
+          labels = c("A", "B", "C", "D"),
+          ncol = 2, nrow = 2)
 TA_DIC_my3
 ```
 
 ### Summ
 
-```{r}
+```{r, echo=FALSE, fig.height=4, fig.width=4}
 TA_DIC_sum<- Add_plot+
   scale_x_continuous(#limits = c(-350,340),
                      expand = c(0.1, 0.1),
@@ -3000,9 +3008,9 @@ TA_DIC_sum<- Add_plot+
 TA_DIC_sum
 ```
 
-# Figure 4: Deltas and year 
+## Figure 4: Deltas and year 
 
-```{r, echo=FALSE, fig.height=9, fig.width=6}
+```{r, echo=FALSE, fig.height=4, fig.width=8.5}
 # Seasonality_my<-ggarrange(
 #       ggarrange(TA_exp, DIC_exp,
 #           ncol = 2, labels = c("A", "B","")),
@@ -3016,7 +3024,9 @@ TA_DIC_sum
 # Seasonality_my
 
 Seasonality_deltas<-ggarrange(
-          TA_delta_Y2, DIC_delta_Y2, TA_DIC_sum,
+          TA_delta_Y2 +theme(legend.position = "none"),
+          DIC_delta_Y2+theme(legend.position = "none"), 
+          TA_DIC_sum,
           ncol = 3, labels = c("A", "B", "C"),
           widths = c(1, 1, 0.9))
 Seasonality_deltas
