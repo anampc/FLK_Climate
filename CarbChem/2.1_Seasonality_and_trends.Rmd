@@ -231,6 +231,8 @@ pal.gen <- colorFactor(palette = "Set1",
                          domain = WS.GPS.Sites$Zone)
 ```
 
+# - Figure 1: Stations
+
 ```{r WSmap, echo=FALSE}
 
 leaflet(WS.GPS.Sites, height = '600px') %>%
@@ -307,7 +309,7 @@ leaflet(WS.GPS.Sites, height = '600px') %>%
   
 ```
 
-**Figure 1:** Permanent location of WS stations
+**Figure 1: Location of the permanent sampling stations along the Florida Reef Tract.** The black boxes delimitate the biogeographical regions. The color of the stations represents their position along the shelf. 
 
 ## 2.3 Number of samples
 
@@ -2175,7 +2177,7 @@ Om_Y2b
 
 **Figure 3B:** Aragonite saturation state (omega) by the region and shelf position. Left: monthly mean values, Right: Yearly mean values
 
-### Fig.3: Seasonal monthly plot
+# - Fig.3: Seasonal monthly plot
 
 ```{r, echo=FALSE, fig.height=8, fig.width=9}
 
@@ -2206,7 +2208,7 @@ Seasonality_my2
 
 ```
 
-**Figure 3:** Seasonal variation in Total Alkalinity (TA), Dissolved Inorganic Carbon (DIC) and aragonite satoration state (Omega) by region (colors) and shelf position (vertical panels).
+**Figure 3: Monthly seasonal patterns in (A) Total Alkalinity (TA), (B) Dissolved Inorganic Carbon (DIC), and (C) aragonite saturation state (Ωar) in the Florida Reef Tract**. The colors represent the biogeographical regions and the vertical panels separate the locations by shelf zone. The points show the (monthly mean values ± 95 CI) and the lines the smoothed curves for the data (method = 'loess' and formula 'y ~ x', span=0.8). Gray horizontal lines in each panel demarcate the mean values of the parameters in the oceanic samples.
 
 ## 5.2 Season raw values 
 
@@ -2294,7 +2296,7 @@ Seasonal_Stats2<-Seasonal_Stats2 %>%
  mutate_if(is.numeric, round, digits=2)
 Seasonal_Stats2
 
-# write.csv(Seasonal_Stats2, "FLK_results/Table_1_Season.csv", row.names = F)
+# write.csv(Seasonal_Stats2, "FLK_results/Table_S2_Season_A.csv", row.names = F)
 
 ```
 
@@ -2337,6 +2339,8 @@ Yearly_Stats<- ddply (Month_Stats, .(Zone, Sub_region),
 Yearly_Stats<-Yearly_Stats %>% 
  mutate_if(is.numeric, round, digits=2)
 Yearly_Stats
+
+# write.csv(Yearly_Stats, "FLK_results/Table_1_Year_A.csv", row.names = F)
 
 ```
 
@@ -2594,30 +2598,6 @@ dMonth_Stats
 
 #write.csv(dMonth_Stats, "FLK_results/TableS1b.csv", row.names = F)
 
-Year_Add<- ddply (dMonth_Stats, .(Zone, Sub_region),
-           summarise,
-  dTA_Y = sum (dTA_mean, na.rm = T),
-  dnTA_Y = sum (dnTA_mean, na.rm = T),
-  dDIC_Y = sum (dDIC_mean, na.rm = T),
-  dnDIC_Y = sum (dnDIC_mean, na.rm = T),
-  dpCO2_Y = sum (dpCO2_mean, na.rm = T),
-  dpH_Y = sum (dpH_mean, na.rm = T),
-  dAra_Y = sum (dAra_mean, na.rm = T),
-  
-  mTA_Y = mean (dTA_mean, na.rm = T),
-  mdTA_Y = median (dTA_mean, na.rm = T),
-  mnTA_Y = mean (dnTA_mean, na.rm = T),
-  mDIC_Y = mean (dDIC_mean, na.rm = T),
-  mnDIC_Y = mean (dnDIC_mean, na.rm = T),
-  mpCO2_Y = mean (dpCO2_mean, na.rm = T),
-  mpH_Y = mean (dpH_mean, na.rm = T),
-  mAra_Y = mean (dAra_mean, na.rm = T))
-
-
-Year_Add<-Year_Add %>% 
- mutate_if(is.numeric, round, digits=3)
-Year_Add
-
 Spring.data<-WS.reef[WS.reef$Season=="Spring", ]
 Summer.data<-WS.reef[WS.reef$Season=="Summer", ]
 Fall.data<-WS.reef[WS.reef$Season=="Fall", ]
@@ -2663,12 +2643,6 @@ DeltaYear_plot2<- ggplot(dMonth_Stats) +
               legend.position = "bottom",
               axis.text.x = element_text(angle = 0))
 
-Add_plot<- ggplot(Year_Add) +
-        MyTheme +  
-        #facet_grid(Zone~.)+
-        geom_abline(slope = 2,intercept = 0, color="gray")+
-        geom_hline(yintercept = 0, color="gray")+
-        geom_vline(xintercept = 0, color="gray")
 
 Frequency_plot<- ggplot(data = WS.reef) +
       geom_vline(aes(xintercept = 0), linetype = "dashed")+
@@ -2720,7 +2694,6 @@ TA_delta_Y<- DeltaYear_plot+
   
 #TA_delta_Y
 ```
-
 
 ```{r, echo=FALSE, fig.height=8, fig.width=9}
 dTA_my<-ggarrange(TA_delta_m, TA_delta_Y,
@@ -2993,68 +2966,6 @@ dDIC_freq_pre<- Frequency_plot+
 #                      expression(paste(Delta, "DIC (", mu, "mol ", kg^-1, ")")))
 # dDIC_freq_sea
 
-```
-
-## Other seasonal plot options 
-
-```{r, echo=FALSE, fig.height=8, fig.width=9}
-TA_DIC_my3<-ggarrange(TA_exp, DIC_exp, 
-                      TA_delta_Y2, DIC_delta_Y2+
-                        theme(legend.position = "none"),
-          labels = c("A", "B", "C", "D"),
-          ncol = 2, nrow = 2)
-TA_DIC_my3
-```
-
-### Summ
-
-```{r, echo=FALSE, fig.height=4, fig.width=4}
-TA_DIC_sum<- Add_plot+
-  scale_x_continuous(#limits = c(-350,340),
-                     expand = c(0.1, 0.1),
-                     #breaks = seq(-800, 800, 50),
-                     name=expression(paste(Sigma, Delta, " DIC (",
-                               mu, "mol ", kg^-1, Year^-1, ")")))+
-    scale_y_continuous(#limits = c(-350,340),
-                     expand = c(0.1, 0.1),
-                     #breaks = seq(-800, 800, 50),
-                     name=expression(paste(Sigma, Delta, " TA (",
-                             mu, "mol ", kg^-1, Year^-1, ")")))+ 
-  geom_point(aes(dDIC_Y, dTA_Y, fill=Sub_region, shape=Zone) )+
-  scale_shape_manual(values=c(21,23,24))+
-  guides(fill=guide_legend(override.aes=list(shape=21), 
-                           ncol = 1),
-        shape=guide_legend(ncol =1))+
-  theme(legend.position = "bottom",
-         axis.text.x = element_text(angle = 0))
-
-TA_DIC_sum
-```
-
-## Figure 4: Deltas and year 
-
-```{r, echo=FALSE, fig.height=4, fig.width=8.5}
-# Seasonality_my<-ggarrange(
-#       ggarrange(TA_exp, DIC_exp,
-#           ncol = 2, labels = c("A", "B","")),
-#           # First row with line plot
-#       # Second row with box and dot plots
-#       ggarrange(TA_delta_Y2, DIC_delta_Y2,
-#           ncol = 2, labels = c("C", "D")),
-#       ggarrange(TA_DIC_sum, Omega_exp,
-#           ncol = 2, labels = c("E", "F")),
-#       nrow = 3, heights = c(1, 1, 1.6))
-# Seasonality_my
-
-Seasonality_deltas<-ggarrange(
-          TA_delta_Y2 +theme(legend.position = "none"),
-          DIC_delta_Y2+theme(legend.position = "none"), 
-          TA_DIC_sum,
-          ncol = 3, labels = c("A", "B", "C"),
-          widths = c(1, 1, 0.9))
-Seasonality_deltas
-
-#ggsave(file="FLK_results/Fig_4_DELTAS_YEAR.svg", plot=Seasonality_deltas, dpi = 300, width=8.5, height=4)
 ```
 
 ### dnDIC
@@ -3333,6 +3244,17 @@ DOmega_exp
 
 ```
 
+## Other seasonal plot options 
+
+```{r, echo=FALSE, fig.height=8, fig.width=9}
+TA_DIC_my3<-ggarrange(TA_exp, DIC_exp, 
+                      TA_delta_Y2, DIC_delta_Y2+
+                        theme(legend.position = "none"),
+          labels = c("A", "B", "C", "D"),
+          ncol = 2, nrow = 2)
+TA_DIC_my3
+```
+
 
 ## 5.4 Delta season values 
 
@@ -3360,14 +3282,13 @@ DOmega_exp
                   dpH_sd = mean (dpH_MY, na.rm = T),
                   
                   dAra_mean = mean (dOme_MY , na.rm = T),
-                  dAra_sd = mean (dOme_MY , na.rm = T)
-                  )
+                  dAra_sd = mean (dOme_MY , na.rm = T),
+                  n())
 
 dSeason_Stats<-dSeason_Stats %>% 
  mutate_if(is.numeric, round, digits=3)
 dSeason_Stats
 
-#write.csv(dSeason_Stats, "FLK_results/Table1b.csv", row.names = F)
 ```
 
 ## - Delta season stats (monthly mean)
@@ -3408,13 +3329,13 @@ dSeasonal_Stats2<-dSeasonal_Stats2 %>%
  mutate_if(is.numeric, round, digits=2)
 dSeasonal_Stats2
 
-# write.csv(dSeasonal_Stats2, "FLK_results/Table_S2b_dSeason.csv", row.names = F)
+write.csv(dSeason_Stats, "FLK_results/Table_S2_SeasonDelta_B.csv", row.names = F)
 
 ```
 
 **Note:** SD is NA when calculating it based on monthly meand (n=3 per season)
 
-## - dYearly stats (monthly mean)
+## - Delta yearly stats (monthly mean)
 
 ```{r}
 dYearly_Stats<- ddply (dMonth_Stats, .(Zone, Sub_region),
@@ -3451,11 +3372,85 @@ dYearly_Stats<-dYearly_Stats %>%
  mutate_if(is.numeric, round, digits=2)
 dYearly_Stats
 
+#write.csv(dYearly_Stats, "FLK_results/Table1a_delta_year.csv", row.names = F)
+
 ```
+
+## - Yearly summ (monthly mean)
+
+```{r}
+dYear_Add<- ddply (dMonth_Stats, .(Zone, Sub_region),
+           summarise,
+  su_dTA_Y = sum (dTA_mean, na.rm = T),
+  m_TA_Y = mean (dTA_mean, na.rm = T),
+  sd_TA_Y = sd (dTA_mean, na.rm = T),
+  
+  su_dDIC_Y = sum (dDIC_mean, na.rm = T),
+  m_dDIC_Y = mean (dDIC_mean, na.rm = T),
+  sd_dDIC_Y = sd (dDIC_mean, na.rm = T),
+  
+
+  su_dpCO2_Y = sum (dpCO2_mean, na.rm = T),
+  m_pCO2_Y = mean (dpCO2_mean, na.rm = T),
+  sd_pCO2_Y = sd (dpCO2_mean, na.rm = T),
+  
+  su_dpH_Y = sum (dpH_mean, na.rm = T),
+  m_pH_Y = mean (dpH_mean, na.rm = T),
+  sd_pH_Y = sd (dpH_mean, na.rm = T),
+  
+  su_dAra_Y = sum (dAra_mean, na.rm = T),
+  m_Ara_Y = mean (dAra_mean, na.rm = T),
+  sd_Ara_Y = sd (dAra_mean, na.rm = T),
+  n())
+
+
+dYear_Add<-dYear_Add %>% 
+ mutate_if(is.numeric, round, digits=2)
+dYear_Add
+
+write.csv(dYear_Add, "FLK_results/Table_1_year_byMM.csv", row.names = F)
+
+```
+
+<!-- ## - Yearly summ (all by year) -->
+
+<!-- ```{r} -->
+<!-- dYear_Add2<- ddply (WS.reef, .(Zone, Sub_region, Year), -->
+<!--            summarise, -->
+<!--   dTA_Y = sum (dTA_MY, na.rm = T), -->
+<!--   dnTA_Y = sum (dnTA_MY, na.rm = T), -->
+<!--   dDIC_Y = sum (dDIC_MY, na.rm = T), -->
+<!--   dnDIC_Y = sum (dnDIC_MY, na.rm = T), -->
+<!--   dpCO2_Y = sum (dpCO2_MY, na.rm = T), -->
+<!--   dpH_Y = sum (dpH_MY, na.rm = T), -->
+<!--   dAra_Y = sum (dOme_MY, na.rm = T), -->
+
+<!--   mTA_Y = mean (dTA_MY, na.rm = T), -->
+<!--   mnTA_Y = mean (dnTA_MY, na.rm = T), -->
+<!--   mDIC_Y = mean (dDIC_MY, na.rm = T), -->
+<!--   mnDIC_Y = mean (dnDIC_MY, na.rm = T), -->
+<!--   mpCO2_Y = mean (dpCO2_MY, na.rm = T), -->
+<!--   mpH_Y = mean (dpH_MY, na.rm = T), -->
+<!--   mAra_Y = mean (dOme_MY, na.rm = T), -->
+<!--   n()) -->
+
+<!-- dYear_Add2<-dYear_Add2 %>%  -->
+<!--  mutate_if(is.numeric, round, digits=3) -->
+<!-- dYear_Add2 -->
+
+<!-- ``` -->
 
 ## - Delta season plots
 
 ```{r}
+
+Add_plot<- ggplot(dYear_Add) +
+        MyTheme +  
+        #facet_grid(Zone~.)+
+        geom_abline(slope = 2,intercept = 0, color="gray")+
+        geom_hline(yintercept = 0, color="gray")+
+        geom_vline(xintercept = 0, color="gray")
+
 Delta_S_plot<- ggplot(WS.reef) +
         MyTheme +  
         facet_grid(Zone~Season)+
@@ -3466,6 +3461,58 @@ Delta_S_plot<- ggplot(WS.reef) +
 par(mfrow=c(1,2))
         
 ```
+
+
+```{r, echo=FALSE, fig.height=4, fig.width=4}
+TA_DIC_sum<- Add_plot+
+  scale_x_continuous(#limits = c(-350,340),
+                     expand = c(0.1, 0.1),
+                     #breaks = seq(-800, 800, 50),
+                     name=expression(paste(Sigma, Delta, " DIC (",
+                               mu, "mol ", kg^-1, Year^-1, ")")))+
+    scale_y_continuous(#limits = c(-350,340),
+                     expand = c(0.1, 0.1),
+                     #breaks = seq(-800, 800, 50),
+                     name=expression(paste(Sigma, Delta, " TA (",
+                             mu, "mol ", kg^-1, Year^-1, ")")))+ 
+  geom_point(aes(su_dDIC_Y, su_dTA_Y, fill=Sub_region, shape=Zone) )+
+  scale_shape_manual(values=c(21,23,24))+
+  guides(fill=guide_legend(override.aes=list(shape=21), 
+                           ncol = 1),
+        shape=guide_legend(ncol =1))+
+  theme(legend.position = "bottom",
+         axis.text.x = element_text(angle = 0))
+
+TA_DIC_sum
+```
+
+# - Figure 4: Seasonal Δ and yearly sums
+
+```{r, echo=FALSE, fig.height=4, fig.width=8.5}
+# Seasonality_my<-ggarrange(
+#       ggarrange(TA_exp, DIC_exp,
+#           ncol = 2, labels = c("A", "B","")),
+#           # First row with line plot
+#       # Second row with box and dot plots
+#       ggarrange(TA_delta_Y2, DIC_delta_Y2,
+#           ncol = 2, labels = c("C", "D")),
+#       ggarrange(TA_DIC_sum, Omega_exp,
+#           ncol = 2, labels = c("E", "F")),
+#       nrow = 3, heights = c(1, 1, 1.6))
+# Seasonality_my
+
+Seasonality_deltas<-ggarrange(
+          TA_delta_Y2 +theme(legend.position = "none"),
+          DIC_delta_Y2+theme(legend.position = "none"), 
+          TA_DIC_sum,
+          ncol = 3, labels = c("A", "B", "C"),
+          widths = c(1, 1, 0.9))
+Seasonality_deltas
+
+#ggsave(file="FLK_results/Fig_4_DELTAS_YEAR.svg", plot=Seasonality_deltas, dpi = 300, width=8.5, height=4)
+```
+
+**Figure 4: Inshore-ocean gradients for TA and DIC in the Florida Keys. (A) Seasonal ΔTA. (B) Seasonal ΔDIC.** Bars in A-B represent the mean Δ values per season, region, and shelf position (± 95 CI). (C) Scatter plot of yearly accumulated  ΣΔTA versus ΣΔDIC. The colors of the point represent the biogeographical region and the shapes the shelf zone.
 
 ### TA
 
@@ -6272,7 +6319,8 @@ modelsummary(dDIC_models, stars = TRUE,
 #modelsummary(dDIC_models, estimate = "p.value")
 ```
 
-# Plot trends 
+# Figure 2: Trends 
+
 ```{r}
 Trends_H<-ggarrange(Trends_a+ theme(axis.title.x=element_blank(),
                                  axis.text.x=element_blank()),
@@ -6304,9 +6352,7 @@ TrendsV
 #ggsave(file="FLK_results/Fig_2_Trends.svg", plot=TrendsV, dpi = 300, width=7.5, height=7)
 ```
 
-```{r}
-
-```
+**Figure 2: Ocean acidification trends in the Florida Reef Tract.** (A) The partial pressure of the CO2, (B) pH, and (C) Aragonite saturation state (Ωar). The colors represent the biogeographical regions and the panels separate the locations by shelf zone. Text on the top of each panel shows the coefficient of change in the parameter per year (for significant trends) and the significance of the region in the model. Note the different scales between the top and bottom panels.
 
 # 7. PCA
 

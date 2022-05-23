@@ -1,9 +1,0 @@
-,Location,Zone,Slope,std.error,r.squared
-,Biscayne,Inshore,0.748,0.051,0.77
-,Biscayne,MidCha,0.541,0.052,0.62
-,UK,Inshore,0.629,0.030,0.82
-,UK,MidCha,0.448,0.059,0.49
-,MK,Inshore,0.880,0.034,0.86
-,MK,MidCha,0.787,0.044,0.75
-,LK,Inshore,0.858,0.034,0.85
-,LK,MidCha,0.839,0.041,0.79
