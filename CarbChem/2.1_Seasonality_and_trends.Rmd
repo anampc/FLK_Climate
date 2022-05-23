@@ -2778,14 +2778,14 @@ TA_freq_All<- Frequency_plot+
   scale_x_continuous(# limits = c(1600, 2600),
                       breaks = seq(-300, 300, 100),
                       expression(paste(Delta, "TA (", mu, "mol ", kg^-1, ")")))
-TA_freq_All
+#TA_freq_All
 
 
 TA_freq_pre<- Frequency_plot+
   geom_density(aes (dTA_MY, fill = Precipitation), alpha = 0.4) +
   scale_x_continuous(breaks = seq(-300, 300, 100),
                      expression(paste(Delta, "TA (", mu, "mol ", kg^-1, ")")))
-TA_freq_pre
+#TA_freq_pre
 
 # TA_freq_sea<- Frequency_plot+
 #   geom_density(aes (dTA_MY, fill = Season), alpha = 0.4) +
@@ -2951,7 +2951,7 @@ dDIC_freq_All<- Frequency_plot+
   geom_density(aes (dDIC_MY), fill = "lightgray", alpha=0.5) +
   scale_x_continuous(breaks = seq(-300, 300, 100),
                      expression(paste(Delta, "DIC (", mu, "mol ", kg^-1, ")")))
-dDIC_freq_All
+#dDIC_freq_All
 
 dDIC_freq_pre<- Frequency_plot+
   geom_density(aes (dDIC_MY, fill = Precipitation),
@@ -3066,7 +3066,7 @@ dpCO2_my
 ```
 
 ```{r}
-pCO2_exp<- Delta_plot_month+
+pdCO2_exp<- Delta_plot_month+
    scale_y_continuous(#limits = c(1700,2900),
                      expand = c(0.05, 0.05),
                      #breaks = seq(1800, 2800, 100),
@@ -3085,7 +3085,42 @@ pCO2_exp<- Delta_plot_month+
                  shape=21, size=1,
                 fun.data = "mean_cl_boot", geom = "point",
                 position=position_dodge(width=0.2))
-pCO2_exp
+#pdCO2_exp
+
+pCO2_delta_Y2<- DeltaYear_plot2+
+    scale_y_continuous(#limits = c(-350,340),
+                     expand = c(0.1, 0.1),
+                     #breaks = seq(-800, 800, 50),
+                     name=expression(paste(Delta ~ pCO[2] , " (", mu, "atm)")))+
+    stat_summary(aes (x=Season, y=dpCO2_mean, fill=Sub_region),
+                fun.data = "mean_cl_boot", geom = "bar",
+                position=position_dodge(width=0.8))+
+    stat_summary(aes (x=Season, y=dpCO2_mean, colour=Sub_region),
+                fun.data = "mean_cl_boot", geom = "errorbar", 
+                width = 0.2,
+                position=position_dodge(width=0.8))
+#pCO2_delta_Y2
+
+dPCO2_Y3<- DeltaYear_plot2+
+   scale_y_continuous(#limits = c(2150,2550),
+                     expand = c(0.01, 0.01),
+                     #breaks = seq(0, 2500, 50),
+                     name=expression(paste("")))+
+    
+   stat_summary(aes (x=Sub_region, y=dpCO2_mean, fill=Sub_region),
+                fun.data = "mean_cl_boot", geom = "point", 
+                size=1.5, shape=21)+
+    stat_summary(aes (x=Sub_region, y=dpCO2_mean, colour=Sub_region),
+                fun.data = "mean_cl_boot", 
+               geom = "errorbar",  width = 0.2)
+#dPCO2_Y3
+```
+
+```{r, echo=FALSE, fig.height=8, fig.width=8}
+dpCO2_my2<-ggarrange(pdCO2_exp, pCO2_delta_Y2, dPCO2_Y3,
+          labels = c("A", "B", "C"),
+          ncol = 3, nrow = 1, widths = c(3,2,1))
+dpCO2_my2
 ```
 
 ### dpH
@@ -3158,9 +3193,45 @@ DpH_exp<- Delta_plot_month+
                  shape=21, size=1,
                 fun.data = "mean_cl_boot", geom = "point",
                 position=position_dodge(width=0.2))
-DpH_exp
+#DpH_exp
 
+pH_delta_Y2<- DeltaYear_plot2+
+    scale_y_continuous(#limits = c(-350,340),
+                     expand = c(0.1, 0.1),
+                     #breaks = seq(-800, 800, 50),
+                     name=(expression  
+                             (paste(Delta~pH[calculated]))))+
+    stat_summary(aes (x=Season, y=dpH_mean, fill=Sub_region),
+                fun.data = "mean_cl_boot", geom = "bar",
+                position=position_dodge(width=0.8))+
+    stat_summary(aes (x=Season, y=dpH_mean, colour=Sub_region),
+                fun.data = "mean_cl_boot", geom = "errorbar", 
+                width = 0.2,
+                position=position_dodge(width=0.8))
+#pH_delta_Y2
+
+dpH_Y3<- DeltaYear_plot2+
+   scale_y_continuous(#limits = c(2150,2550),
+                     expand = c(0.01, 0.01),
+                     #breaks = seq(0, 2500, 50),
+                     name=expression(paste("")))+
+    
+   stat_summary(aes (x=Sub_region, y=dpH_mean, fill=Sub_region),
+                fun.data = "mean_cl_boot", geom = "point", 
+                size=1.5, shape=21)+
+    stat_summary(aes (x=Sub_region, y=dpH_mean, colour=Sub_region),
+                fun.data = "mean_cl_boot", 
+               geom = "errorbar",  width = 0.2)
+#dpH_Y3
 ```
+
+```{r, echo=FALSE, fig.height=8, fig.width=8}
+dpH_my2<-ggarrange(DpH_exp, pH_delta_Y2, dpH_Y3,
+          labels = c("A", "B", "C"),
+          ncol = 3, nrow = 1, widths = c(3,2,1))
+dpH_my2
+```
+
 
 ### dOmega
 
@@ -3240,9 +3311,48 @@ DOmega_exp<- Delta_plot_month+
                 position=position_dodge(width=0.2))+
   facet_grid(Zone~.)
 
-DOmega_exp
+#DOmega_exp
 
+om_delta_Y2<- DeltaYear_plot2+
+    scale_y_continuous(#limits = c(-350,340),
+                     expand = c(0.1, 0.1),
+                     #breaks = seq(-800, 800, 50),
+                    name=(expression (paste(Delta, 
+                      " Aragonite saturation state "
+                          ~(Omega[ar])))))+
+    stat_summary(aes (x=Season, y=dAra_mean, fill=Sub_region),
+                fun.data = "mean_cl_boot", geom = "bar",
+                position=position_dodge(width=0.8))+
+    stat_summary(aes (x=Season, y=dAra_mean, colour=Sub_region),
+                fun.data = "mean_cl_boot", geom = "errorbar", 
+                width = 0.2,
+                position=position_dodge(width=0.8))
+#om_delta_Y2
+
+dOm_Y3<- DeltaYear_plot2+
+   scale_y_continuous(#limits = c(2150,2550),
+                     expand = c(0.01, 0.01),
+                     #breaks = seq(0, 2500, 50),
+                     name=expression(paste("")))+
+    
+   stat_summary(aes (x=Sub_region, y=dAra_mean, fill=Sub_region),
+                fun.data = "mean_cl_boot", geom = "point", 
+                size=1.5, shape=21)+
+    stat_summary(aes (x=Sub_region, y=dAra_mean, colour=Sub_region),
+                fun.data = "mean_cl_boot", 
+               geom = "errorbar",  width = 0.2)
+#dOm_Y3
 ```
+
+```{r, echo=FALSE, fig.height=8, fig.width=8}
+dOm_my2<-ggarrange(DOmega_exp,
+                   om_delta_Y2 + theme(axis.title.y = element_blank()),
+                   dOm_Y3,
+          labels = c("A", "B", "C"),
+          ncol = 3, nrow = 1, widths = c(2.5,2,1))
+dOm_my2
+```
+
 
 ## Other seasonal plot options 
 
