@@ -58,7 +58,7 @@ theme(legend.position="top",
 
 ```{r, include=FALSE}
 # 1. Get data
-CC.data<-read.csv("Data/ws-mysql-v3.csv", header = T)
+CC.data<-read.csv("Data/ws-mysql-v4.csv", header = T)
   #summary(CC.data)
   str((CC.data))
   summary(CC.data$Location)
@@ -644,7 +644,6 @@ ggMarginal(nTA_dat, groupColour = TRUE)
 ```
 
 ```{r}
-
 nDIC_dat<-All_ToD +geom_point(aes(nDIC, ToD, colour=Sub_region))#+
   #geom_smooth(aes(nDIC, ToD, colour=Sub_region), se=F)
 ggMarginal(nDIC_dat, groupColour = TRUE)
@@ -1415,12 +1414,12 @@ Remove<-rbind(Salinity_Check, Omega_Check, TA_Check, pH_low)
 Remove <-Remove %>% 
         filter(!duplicated(CTDID))
 
-#write.csv(Remove, "FLK_results/ValuesToRemove_V3.csv", row.names = F)
+#write.csv(Remove, "FLK_results/ValuesToRemove_V4.csv", row.names = F)
 
 FLK.data_filtered<-FLK.data[!(FLK.data$CTDID %in% Remove$CTDID),]
 FLK.data_filtered<-FLK.data_filtered%>% select (- (ncrmp_flag: seacarb_id))
 #str(FLK.data_filtered)
-#write.csv(FLK.data_filtered, "FLK_results/FLK_filtered_ve3.csv", row.names = F)
+#write.csv(FLK.data_filtered, "FLK_results/FLK_filtered_ve4.csv", row.names = F)
 ```
 
 ```{r}
