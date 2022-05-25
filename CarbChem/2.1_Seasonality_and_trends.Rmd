@@ -273,6 +273,9 @@ WS.GPS.Sites %>%
 pal.gen <- colorFactor(c(" red", "purple", "navy", "blue"), 
                       domain = c("Inshore", "Mid channel", "Offshore", "Oceanic" ))
 
+pal.gen <- colorFactor(c("azure", "cyan", "navy", "blue2"), 
+                      domain = c("Inshore", "Mid channel", "Offshore", "Oceanic" ))
+
 leaflet(WS.GPS.Sites, height = '800px') %>%
   addTiles() %>%
   #addProviderTiles(providers$Esri.WorldImagery)%>%
@@ -334,8 +337,8 @@ leaflet(WS.GPS.Sites, height = '800px') %>%
   #addAwesomeMarkers(lng = ~ Lon, lat = ~ Lat, icon = ~ my_icons[Zone])
   addCircleMarkers(lng = ~Lon, lat = ~Lat,
                    stroke = FALSE,
-                   radius = 3,
-                   fillOpacity = 1,
+                   radius = 4,
+                   fillOpacity = 10,
                    color = ~pal.gen(Zone),
                    label = ~SiteID,
                    labelOptions = labelOptions(
@@ -2140,7 +2143,8 @@ pH_month<- Month_ploth +
     
     geom_point(data=FLK.data, aes (x=Month2, y=pH_calculated, 
                                  fill=Precipitation, shape=Extreme), 
-             alpha=0.8, size=1)
+             alpha=0.8, size=1)+
+  facet_grid(Sub_region~Zone)
 #pH_month
 
 pH_Y<- Year_ploth+
@@ -3728,7 +3732,48 @@ dYear_Add
 #write.csv(dYear_Add, "FLK_results/Table_1_year_byMM.csv", row.names = F)
 
 
-dYear_Add2<- ddply (dMonth_Stats, .(Zone, Sub_region, Year),
+```
+
+## - Yearly summ (indiviual years)
+
+```{r}
+dYear_Add2<- ddply (WS.reef, .(Zone, Sub_region, MY, Region, Year),
+                            summarise,
+                  dTA_mean = mean (dTA_MY, na.rm = T),
+                  dTA_sd = sd (dTA_MY, na.rm = T),
+                  #dTA_se = std.error (dTA_MY, na.rm = T),
+                  
+                  dnTA_mean = mean (dnTA_MY, na.rm = T),
+                  dnTA_sd = sd (dnTA_MY, na.rm = T),
+                 
+                  dDIC_mean = mean (dDIC_MY, na.rm = T),
+                  dDIC_sd = mean (dDIC_MY, na.rm = T),
+                  #dDIC_se = std.error (dDIC_MY, na.rm = T),
+                  
+                  dnDIC_mean = mean (dnDIC_MY, na.rm = T),
+                  dnDIC_sd = sd (dnDIC_MY, na.rm = T),
+                  
+                  dpCO2_mean = mean (dpCO2_MY , na.rm = T),
+                  dpCO2_sd = sd (dpCO2_MY , na.rm = T),
+                  #dpCO2_se = std.error (dpCO2_MY, na.rm = T),
+                  
+                  dpH_mean = mean (dpH_MY, na.rm = T),
+                  dpH_sd = mean (dpH_MY, na.rm = T),
+                  #dPH_se = std.error (dpH_MY, na.rm = T),
+                  
+                  dAra_mean = mean (dOme_MY , na.rm = T),
+                  dAra_sd = mean (dOme_MY , na.rm = T),
+                  #dAra_se = std.error (dOme_MY, na.rm = T),
+                  n())
+
+dYear_Add2<-dYear_Add2 %>% 
+ mutate_if(is.numeric, round, digits=3)
+dYear_Add2
+
+dYear_Add2<-dYear_Add2[dYear_Add2$Year>2014, ]
+dYear_Add2<-dYear_Add2[dYear_Add2$Year<2022, ]
+
+dYear_Add3<- ddply (dYear_Add2, .(Zone, Sub_region, Year),
            summarise,
   su_dTA_Y = sum (dTA_mean, na.rm = T),
   #m_TA_Y = mean (dTA_mean, na.rm = T),
@@ -3752,9 +3797,9 @@ dYear_Add2<- ddply (dMonth_Stats, .(Zone, Sub_region, Year),
   #sd_Ara_Y = sd (dAra_mean, na.rm = T),
   n())
 
-dYear_Add2<-dYear_Add2 %>% 
+dYear_Add3<-dYear_Add3 %>% 
  mutate_if(is.numeric, round, digits=2)
-dYear_Add2
+dYear_Add3
 ```
 
 <!-- ## - Yearly summ (all by year) -->
@@ -3814,6 +3859,7 @@ par(mfrow=c(1,2))
         
 ```
 
+# - Figure 5: Seasonal Δ and yearly mean
 
 ```{r, echo=FALSE, fig.height=4, fig.width=4}
 TA_DIC_sum<- Add_plot+
@@ -3838,7 +3884,37 @@ TA_DIC_sum<- Add_plot+
 TA_DIC_sum
 ```
 
-# - Figure 5: Seasonal Δ and yearly sums
+
+```{r, echo=FALSE, fig.height=4, fig.width=4}
+TA_DIC_sum<- ggplot(dYear_Add3, aes(x=su_dDIC_Y, y=su_dTA_Y, 
+                                    colour=Sub_region)) +
+        MyTheme +  
+        #facet_grid(Zone~.)+
+        geom_abline(slope = 2,intercept = 0, color="gray")+
+        geom_hline(yintercept = 0, color="gray")+
+        geom_vline(xintercept = 0, color="gray")+
+    scale_x_continuous(#limits = c(-350,340),
+                     expand = c(0.1, 0.1),
+                     #breaks = seq(-800, 800, 50),
+                     name=expression(paste(Sigma, Delta, " DIC (",
+                               mu, "mol ", kg^-1, Year^-1, ")")))+
+    scale_y_continuous(#limits = c(-350,340),
+                     expand = c(0.1, 0.1),
+                     #breaks = seq(-800, 800, 50),
+                     name=expression(paste(Sigma, Delta, " TA (",
+                             mu, "mol ", kg^-1, Year^-1, ")")))+ 
+  geom_point(aes(su_dDIC_Y, su_dTA_Y, fill=Sub_region, shape=Zone) )+
+  scale_shape_manual(values=c(21,23,24))+
+  guides(fill=guide_legend(override.aes=list(shape=21), 
+                           ncol = 1),
+        shape=guide_legend(ncol =1))+
+  theme(legend.position = "bottom",
+         axis.text.x = element_text(angle = 0))+facet_grid(~Zone)
+
+TA_DIC_sum
+```
+
+# - Figure 5: Seasonal Δ and yearly mean
 
 ```{r, echo=FALSE, fig.height=4, fig.width=8}
 
