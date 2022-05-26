@@ -83,7 +83,7 @@ Season_colour<-scale_colour_manual(values =
 
 ```{r, include=FALSE}
 # 1. Get data
-  FLK.data<-read.csv("FLK_results/FLK_filtered_ve4.csv", header = T)
+  FLK.data<-read.csv("FLK_results/FLK_filtered_ve3.csv", header = T)
 
   FLK.data$Location<-NULL
   FLK.data$TA_0<-NULL
@@ -4001,10 +4001,12 @@ pH_Om_Plot<-ggplot(data=dYearly_Stats, aes(x=dAra_M, y=dpH_M))+
   scale_shape_manual(values=c(21, 23, 24))+
         guides(fill=guide_legend(override.aes=list(shape=21)))+
 
+  geom_errorbarh(aes(
+     xmin = (dAra_M - dAra_sd), xmax = (dAra_M + dAra_sd),
+    colour=factor(Sub_region)),
+    height=0)+
   geom_linerange(aes(
-    xmax = dAra_M + dAra_sd, xmin = dAra_M - dAra_sd, colour=factor(Sub_region)))+
-  geom_linerange(aes(
-    ymax = dpH_M + dpH_sd, ymin = dpH_M - dpH_sd, 
+    ymin = dpH_M - dpH_sd, ymax = dpH_M + dpH_sd,
     colour=factor(Sub_region)))+
   geom_point(aes(x=dAra_M, y=dpH_M, 
                    fill=Sub_region, shape=Zone), size=2)+
@@ -4012,6 +4014,8 @@ pH_Om_Plot<-ggplot(data=dYearly_Stats, aes(x=dAra_M, y=dpH_M))+
 #pH_Om_Plot
 
 ```
+
+
 
 ```{r, echo=FALSE, fig.height=4, fig.width=4}
 
@@ -4931,6 +4935,7 @@ ofshore.season.data<-season.data[season.data$Zone=="Offshore", ]
   
   TA_month_0<-lmer(TA_umol_kg~  Zone * Sub_region * Month +
                            (1|SiteID), data=FLK.data_filtered)
+  #anova(TA_month_0)
   
   TA_month<-lmer(TA_umol_kg~  Zone + Sub_region + Month +
                               Zone:Sub_region + Zone:Month + Sub_region:Month +
@@ -4949,7 +4954,7 @@ ofshore.season.data<-season.data[season.data$Zone=="Offshore", ]
   par(mfrow=c(1,1))
   
   #summ(TA_month, scale = TRUE)
- # plot_summs(TA_month)
+  #plot_summs(TA_month)
   
   TA_mo.emmc<-emmeans(TA_month, ~Zone*Month, by="Sub_region")
     TA_mon.emmc<-multcomp::cld(TA_mo.emmc)
@@ -5537,7 +5542,7 @@ Long_plot<- ggplot(Trends.data) +
         #scale_shape_manual(values=c(24, 25, 21))+
         #guides(fill=guide_legend(override.aes=list(shape=21)))+
         theme(axis.title.x = element_blank())+
-        scale_x_date(date_breaks = "1 year",
+        scale_x_date(date_breaks = "2 years",
                      date_labels = "%Y",
                      expand = c(0.02, 0.02))
 
@@ -5557,7 +5562,8 @@ shapiro.test(Trends.data$Aragonite_Sat_W) # Normality rejected
   
 Omeaga_all<- Long_plot+
     scale_y_continuous(#limits = c(15,40),
-                       name=(expression("Aragonite saturation state" ~(Omega[Ar]))),
+                       #name=(expression("Aragonite saturation state" ~(Omega[Ar]))),
+                       name=(expression(~Omega[Ar])),
                        breaks = seq(0, 10, 0.5),  
                        expand = c(0.05, 0.05)) +
     geom_point(aes (x=Date, y=Aragonite_Sat_W, fill=Sub_region), 
@@ -5567,15 +5573,20 @@ Omeaga_all+
     geom_smooth(aes (x=Date, y=Aragonite_Sat_W), method = "lm",
               color="black")
 
-Omeaga_all+facet_grid(~Zone)+
+Omeaga_all+facet_grid(Zone~.)+
     geom_smooth(aes (x=Date, y=Aragonite_Sat_W), method = "lm",
               color="black")
 
-Trends_c<-Omeaga_all+facet_grid(Zone~.) +
+Trends_c<-Omeaga_all+facet_grid(~Zone) +
   geom_smooth(aes (x=Date, y=Aragonite_Sat_W, 
                    colour=Sub_region), 
               method = "lm", alpha=0.3)
 Trends_c
+
+Trends_c2<-Omeaga_all+facet_grid(~Zone) +
+  geom_smooth(aes (x=Date, y=Aragonite_Sat_W), method = "lm",
+              alpha=0.3, colour="black")
+Trends_c2
 ```
 
 ## Inshore
@@ -5612,6 +5623,12 @@ Trends_c
     round(Arg_in.emmc$emmean, digits = 2)
   #anova(Omega_in)
   #ranova(Omega_in)
+    
+p3a <- ggplot(Trends.inshore, aes(
+  y=Aragonite_Sat_W, x=Year, colour = Sub_region)) +
+  geom_point(alpha=0.8, size=0.8, shape=21) +
+  geom_line(aes(y = predict(Omega_in)),size=1) 
+print(p3a)
 
 ```
 
@@ -5814,10 +5831,15 @@ pCO2_all+geom_smooth(aes (x=Date, y=pCO2_uatm),
 pCO2_all+facet_grid(~Zone)+geom_smooth(aes (x=Date, y=pCO2_uatm), 
                      method = "lm", color="black")
 
-Trends_a<-pCO2_all+facet_grid(Zone~.) +
+Trends_a<-pCO2_all+facet_grid(~Zone) +
   geom_smooth(aes (x=Date, y=pCO2_uatm, colour=Sub_region),
               method = "lm", alpha=0.3)
 Trends_a
+
+Trends_a2<-pCO2_all+facet_grid(~Zone) +
+  geom_smooth(aes (x=Date, y=pCO2_uatm),
+              method = "lm", alpha=0.3, colour="black")
+Trends_a2
 
 ```
 
@@ -5832,7 +5854,7 @@ Trends_a
   pCO2_in_0<-lmer(pCO2_uatm~Year * Sub_region + (1|Month)+
                                   #(1|Zone)+             
                                   (1|SiteID), data=Trends.inshore)
-  #summary(pCO2_in)    
+  #summary(pCO2_in_0)    
   anova(pCO2_in_0)
   ranova(pCO2_in_0)
   step(pCO2_in_0)
@@ -6049,9 +6071,14 @@ pH_all+ geom_smooth(aes (x=Date, y=pH_calculated),
 
 pH_all + facet_grid(~Zone)+ geom_smooth(aes (x=Date, y=pH_calculated),method = "lm", color="black")
 
-Trends_b<-pH_all+facet_grid(Zone~.) +
+Trends_b<-pH_all+facet_grid(~Zone) +
   geom_smooth(aes (x=Date, y=pH_calculated, colour=Sub_region), method = "lm", alpha=0.3)
 Trends_b
+
+Trends_b2<-pH_all+facet_grid(~Zone) +
+  geom_smooth(aes (x=Date, y=pH_calculated), method = "lm",
+              alpha=0.3, colour="black")
+Trends_b2
 ```
 
 ## Inshore
@@ -6083,7 +6110,7 @@ pH_in<-lmer(pH_calculated ~ Sub_region + (1 | Month) + (1 | SiteID),
         pH_in.emmc<-pH_in.emmc[order(pH_in.emmc$Sub_region),]
   pH_in.emmc
   
-   #write.csv(pH_in.emmc, "FLK_results/Model_5_LTpH_POST.csv")
+#write.csv(pH_in.emmc, "FLK_results/Model_5_LTpH_POST.csv")
 ```
 
 ## Mid channel 
@@ -6890,16 +6917,30 @@ modelsummary(dDIC_models, stars = TRUE,
 
 ```{r}
 Trends_H<-ggarrange(Trends_a+ theme(axis.title.x=element_blank(),
-                                 axis.text.x=element_blank()),
+                                 axis.text.x=element_blank(),
+                                 legend.position = "none"),
                   Trends_b+ theme(legend.position = "none",
                                  axis.title.x=element_blank(),
                                  axis.text.x=element_blank(),
                                  strip.text.x = element_blank()),
-                  Trends_c + theme(legend.position = "none",
+                  Trends_c + theme(legend.position = "bottom",
                                  strip.text.x = element_blank()),
           labels = c("A", "B", "C"),
-          ncol = 1, nrow = 3, heights = c(1, 0.8, 0.9))
-#Trends_H
+          ncol = 1, nrow = 3, heights = c(0.9, 0.9, 1.2))
+Trends_H
+
+Trends_H2<-ggarrange(Trends_a2+ theme(axis.title.x=element_blank(),
+                                 axis.text.x=element_blank(),
+                                 legend.position = "none"),
+                  Trends_b2+ theme(legend.position = "none",
+                                 axis.title.x=element_blank(),
+                                 axis.text.x=element_blank(),
+                                 strip.text.x = element_blank()),
+                  Trends_c2 + theme(legend.position = "bottom",
+                                 strip.text.x = element_blank()),
+          labels = c("A", "B", "C"),
+          ncol = 1, nrow = 3, heights = c(0.9, 0.9, 1.2))
+Trends_H2
 
 TrendsV<-ggarrange(Trends_a+ 
                      facet_grid(Zone~., scales = "free_y")+
@@ -6915,8 +6956,8 @@ TrendsV<-ggarrange(Trends_a+
                           panel.spacing = unit(0.6, "cm")),
           labels = c("A", "B", "C"),
           ncol = 3, nrow = 1)
-TrendsV
-#ggsave(file="FLK_results/Fig_2_Trends.svg", plot=TrendsV, dpi = 300, width=7.5, height=7)
+#TrendsV
+#ggsave(file="FLK_results/Fig_2_Trends.svg", plot=TrendsH, dpi = 300, width=7.5, height=7)
 ```
 
 **Figure 2: Ocean acidification trends in the Florida Reef Tract.** (A) The partial pressure of the CO2, (B) pH, and (C) Aragonite saturation state (Ωar). The colors represent the biogeographical regions and the panels separate the locations by shelf zone. Text on the top of each panel shows the coefficient of change in the parameter per year (for significant trends) and the significance of the region in the model. Note the different scales between the top and bottom panels.
