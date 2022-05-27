@@ -276,7 +276,7 @@ pal.gen <- colorFactor(c(" red", "purple", "navy", "blue"),
 pal.gen <- colorFactor(c("azure", "cyan", "navy", "blue2"), 
                       domain = c("Inshore", "Mid channel", "Offshore", "Oceanic" ))
 
-leaflet(WS.GPS.Sites, height = '800px') %>%
+leaflet(WS.GPS.Sites, height = '1000px') %>%
   addTiles() %>%
   #addProviderTiles(providers$Esri.WorldImagery)%>%
   #addProviderTiles(providers$OpenStreetMap) %>%
@@ -330,7 +330,7 @@ leaflet(WS.GPS.Sites, height = '800px') %>%
       label = "Lower Keys",
       labelOptions = labelOptions(
                        noHide = T, direction = "right",
-                         offset = c(20, 30),
+                         offset = c(20, 45),
                        textOnly = F)) %>%
   
   #Stations
@@ -694,6 +694,7 @@ nTA_Sal_F<- Normalization_plot+
   geom_smooth(aes(BestSalinity, nTA),
               linetype=2, color="purple", method = "lm")+
   theme(legend.position = "none")
+nTA_Sal_F+facet_wrap(~Reference)
 
  nTA_Sal_F<- ggExtra::ggMarginal(
   p = nTA_Sal_F,
@@ -718,6 +719,8 @@ nTA_Sal_S<-Normalization_plot+
   geom_smooth(aes(BestSalinity, n35TA), 
               linetype=2, color="purple", method = "lm")+
   theme(legend.position = "none")
+nTA_Sal_S+facet_wrap(~Reference)
+
 nTA_Sal_S<-ggExtra::ggMarginal(
   p = nTA_Sal_S,
   type = 'boxplot',
@@ -755,7 +758,7 @@ nDIC_Sal_F<- Normalization_plot+
              alpha=0.5, shape=24, size=1)+
   geom_smooth(aes(BestSalinity, nDIC),
               linetype=2, color="purple", method = "lm")
-#nDIC_Sal_F
+nDIC_Sal_F+facet_wrap(~Reference)
 
 nDIC_Sal_S<- Normalization_plot+
   scale_y_continuous(limits = c(1700, 2400),
@@ -770,7 +773,7 @@ nDIC_Sal_S<- Normalization_plot+
                   fill=Extreme), alpha=0.5, shape=25, size=1)+
   geom_smooth(aes(BestSalinity, n35DIC),
               linetype=2, color="purple", method = "lm")
-#nDIC_Sal_S
+nDIC_Sal_S+facet_wrap(~Reference)
 ```
 
 ```{r,echo=FALSE, fig.height=8, fig.width=8}
@@ -3575,7 +3578,7 @@ Seasonality_deltas
 #ggsave(file="FLK_results/Figures/Fig_4/Fig_4_DELTAS_YEAR.svg", plot=Seasonality_deltas, dpi = 300, width=8, height=7.5)
 ```
 
-**Figure 4: Inshore-ocean gradients for TA and DIC in the Florida Keys. (A) Seasonal ΔTA. (B) Seasonal ΔDIC.** Bars in A-B represent the mean Δ values per season, region, and shelf position (± 95 CI). (C) Scatter plot of yearly accumulated  ΣΔTA versus ΣΔDIC. The colors of the point represent the biogeographical region and the shapes the shelf zone.
+**Figure 4: Seasonal inshore-ocean gradients in the Florida Keys. (A) Seasonal ΔTA. (B) Seasonal ΔDIC.  (C) Seasonal ΩAr.** The bars represent the mean Δ values per season, region, and shelf position (± 95 CI).
 
 
 ## 5.4 Delta season values 
@@ -5546,6 +5549,15 @@ Long_plot<- ggplot(Trends.data) +
                      date_labels = "%Y",
                      expand = c(0.02, 0.02))
 
+Long_plot2<- ggplot() +
+        MyTheme +  
+        #scale_shape_manual(values=c(24, 25, 21))+
+        #guides(fill=guide_legend(override.aes=list(shape=21)))+
+        theme(axis.title.x = element_blank())+
+        scale_x_date(date_breaks = "2 years",
+                     date_labels = "%Y",
+                     expand = c(0.02, 0.02))
+
 factor_order <- c('Year'    = 'Year',
                   '(Intercept)' = 'Intercept',
                   'Sub_regionUK'    = 'Upper Keys',
@@ -5570,10 +5582,6 @@ Omeaga_all<- Long_plot+
              alpha=0.8, size=0.8, shape=21)
 
 Omeaga_all+
-    geom_smooth(aes (x=Date, y=Aragonite_Sat_W), method = "lm",
-              color="black")
-
-Omeaga_all+facet_grid(Zone~.)+
     geom_smooth(aes (x=Date, y=Aragonite_Sat_W), method = "lm",
               color="black")
 
@@ -5623,12 +5631,35 @@ Trends_c2
     round(Arg_in.emmc$emmean, digits = 2)
   #anova(Omega_in)
   #ranova(Omega_in)
+
+```
+
+```{r}
+# Create a new data frame for independent variables  
+  In_Newdata<-expand.grid(Zone=unique(Trends.inshore$Zone),
+                          Sub_region=unique(Trends.inshore$Sub_region),
+                          Year=seq((min(Trends.inshore$Year)-0), (max(Trends.inshore$Year)+1)))
+  In_Omega_Pred <- predict(Omega_in, newdata=In_Newdata, re.form=NA, level=0, asList = FALSE)
+  
+  In_Omega_Pred <-cbind(In_Newdata, In_Omega_Pred)
+  In_Omega_Pred$Date<-as.Date(as.character(In_Omega_Pred$Year), format = "%Y")
+  
+  
+# Plot raw data point and fitted model 
+  
+  In_Omega_Modeled<-Long_plot2+ #facet_grid(~Zone)+
+     scale_y_continuous(#limits = c(0,6),
+                       #name=(expression("Aragonite saturation state" ~(Omega[Ar]))),
+                       name=(expression(~Omega[Ar])),
+                       breaks = seq(0, 10, 0.5),  
+                       expand = c(0.05, 0.05)) +
     
-p3a <- ggplot(Trends.inshore, aes(
-  y=Aragonite_Sat_W, x=Year, colour = Sub_region)) +
-  geom_point(alpha=0.8, size=0.8, shape=21) +
-  geom_line(aes(y = predict(Omega_in)),size=1) 
-print(p3a)
+      geom_point(data=Trends.inshore, 
+                               aes(y=Aragonite_Sat_W, x=Date, fill = Sub_region), 
+                               alpha=0.8, size=0.8, shape=21)+
+      geom_line(data=In_Omega_Pred, aes(y = In_Omega_Pred,
+                                      x=Date, colour = Sub_region), linetype=2, size=1) 
+  In_Omega_Modeled
 
 ```
 
@@ -5663,6 +5694,50 @@ Omega_mc<-lmer(Aragonite_Sat_W ~ Year + Sub_region + (1 | Month),
   #write.csv(Arg_md.emmc, "FLK_results/Model_10_LTpH_POST.csv")
 ```
 
+
+```{r}
+# Create a new data frame for independent variables  
+  Mc_Newdata<-expand.grid(Zone=unique(Trends.midchanel$Zone),
+                                Sub_region=unique(Trends.midchanel$Sub_region),
+                          Year=seq((min(Trends.midchanel$Year)-0), (max(Trends.midchanel$Year)+1)))
+  Mc_Omega_Pred <- predict(Omega_mc, newdata=Mc_Newdata, re.form=NA, level=0, asList = FALSE)
+  
+  Mc_Omega_Pred <-cbind(Mc_Newdata, Mc_Omega_Pred)
+  Mc_Omega_Pred$Date<-as.Date(as.character(Mc_Omega_Pred$Year), format = "%Y")
+  
+  
+# Model summary
+  slope<-round(
+      summary(Omega_mc)$coefficients["Year", "Estimate"], digits = 3)
+  xs <- as.Date(as.character("2018-11-20"))
+  ys <- max(Trends.midchanel$Aragonite_Sat_W, na.rm =T)
+
+# Plot raw data point and fitted model 
+  plot_label <- sprintf("\"\" ~ Omega[Ar] == %0.3f", slope)
+  plot_label2 <- expression("Year^-1")
+  
+  Mc_Omega_Modeled<-Long_plot2+ #facet_grid(~Zone)+
+     scale_y_continuous(#limits = c(15,40),
+                       #name=(expression("Aragonite saturation state" ~(Omega[Ar]))),
+                       name=(expression(~Omega[Ar])),
+                       breaks = seq(0, 10, 0.5),  
+                       expand = c(0.05, 0.05)) +
+    
+      geom_point(data=Trends.midchanel, 
+                               aes(y=Aragonite_Sat_W, x=Date, fill = Sub_region), 
+                               alpha=0.8, size=0.8, shape=23)+
+      geom_line(data=Mc_Omega_Pred, aes(y = Mc_Omega_Pred,
+                                      x=Date, colour = Sub_region), linetype=1, size=1)+
+      # geom_text(data = slope, aes(x = xs, y = ys,
+      #                       label = (paste("~Omega[Ar]", "=", 
+      #                                     slope, "Year ^-1"))), size=10)
+      annotate(geom="text", x = as.Date(xs), y = ys, parse=TRUE,
+               #label = expression("~Omega[Ar] == -0.015** ~Year ^-1"), 
+               label =paste0(as.character(plot_label, plot_label2, sep = " ")),
+               size=4)
+  Mc_Omega_Modeled
+```
+
 ## Offshore
 
 ```{r, fig.height=4, fig.width=4}
@@ -5691,6 +5766,47 @@ Omega_of<-lmer(Aragonite_Sat_W ~ Year + Sub_region + (1 | Month),
     Arg_of.emmc<-Arg_of.emmc[order(Arg_of.emmc$Sub_region),]
     Arg_of.emmc
 #write.csv(Arg_of.emmc, "FLK_results/Model_11_LTpH_POST.csv")
+```
+
+
+```{r}
+# Create a new data frame for independent variables  
+  Of_Newdata<-expand.grid(one=unique(Trends.midchanel$Zone),
+                                Sub_region=unique(Trends.offshore$Sub_region),
+                          Year=seq((min(Trends.offshore$Year)-0), (max(Trends.offshore$Year)+1)))
+  Of_Omega_Pred <- predict(Omega_of, newdata=Of_Newdata, re.form=NA, level=0, asList = FALSE)
+  
+  Of_Omega_Pred <-cbind(Of_Newdata, Of_Omega_Pred)
+  Of_Omega_Pred$Date<-as.Date(as.character(Of_Omega_Pred$Year), format = "%Y")
+  
+# Model summary
+  slope<-round(summary(Omega_of)$coefficients["Year", "Estimate"], digits = 3)
+  ys <- max(Trends.midchanel$Aragonite_Sat_W, na.rm =T)
+  
+# Plot raw data point and fitted model 
+
+  plot_label <- sprintf("\"\" ~ Omega[Ar] == %0.3f", slope)
+  plot_label2 <- expression("Year^-1")
+  
+# Plot raw data point and fitted model 
+  Of_Omega_Modeled<-Long_plot2+ #facet_grid(~Zone)+
+     scale_y_continuous(#limits = c(15,40),
+                       #name=(expression("Aragonite saturation state" ~(Omega[Ar]))),
+                       name=(expression(~Omega[Ar])),
+                       breaks = seq(0, 10, 0.5),  
+                       expand = c(0.05, 0.05)) +
+    
+      geom_point(data=Trends.offshore, 
+                               aes(y=Aragonite_Sat_W, x=Date, fill = Sub_region), 
+                               alpha=0.8, size=0.8, shape=24)+
+      geom_line(data=Of_Omega_Pred, aes(y = Of_Omega_Pred,
+                                      x=Date, colour = Sub_region), linetype=1, size=1)+
+      annotate(geom="text", x = as.Date(xs), y = ys, parse=TRUE,
+               #label = expression("~Omega[Ar] == -0.015** ~Year ^-1"), 
+               label =paste0(as.character(plot_label, plot_label2, sep = " ")),
+               size=4)
+  Of_Omega_Modeled
+  
 ```
 
 ## Oceanic
@@ -5722,11 +5838,52 @@ Omega_oc<-lmer(Aragonite_Sat_W ~ Year + (1 | Month), data = Trends.ocean)
 
 ```
 
+
+```{r}
+# Create a new data frame for independent variables  
+  Oc_Newdata<-expand.grid(one=unique(Trends.midchanel$Zone),
+                                Sub_region=unique(Trends.ocean$Sub_region),
+                          Year=seq((min(Trends.ocean$Year)-0), (max(Trends.ocean$Year)+1)))
+  Oc_Omega_Pred <- predict(Omega_oc, newdata=Oc_Newdata, re.form=NA, level=0, asList = FALSE)
+  
+  Oc_Omega_Pred <-cbind(Oc_Newdata, Oc_Omega_Pred)
+  Oc_Omega_Pred$Date<-as.Date(as.character(Oc_Omega_Pred$Year), format = "%Y")
+  
+# Model summary for labels
+  slope<-round(summary(Omega_oc)$coefficients["Year", "Estimate"], digits = 3)
+  xs <- as.Date(as.character("2018-05-20"))
+  ys <- max(Trends.midchanel$Aragonite_Sat_W, na.rm =T)
+  plot_label <- sprintf("\"\" ~ Omega[Ar] == %0.3f", slope)
+  plot_label2 <- expression("Year^-1")
+  
+# Plot raw data point and fitted model 
+  
+  Oc_Omega_Modeled<-Long_plot2+ #facet_grid(~Zone)+
+     scale_y_continuous(#limits = c(15,40),
+                       #name=(expression("Aragonite saturation state" ~(Omega[Ar]))),
+                       name=(expression(~Omega[Ar])),
+                       breaks = seq(0, 10, 0.5),  
+                       expand = c(0.05, 0.05)) +
+    
+      geom_point(data=Trends.ocean, 
+                               aes(y=Aragonite_Sat_W, x=Date, fill = Sub_region), 
+                               alpha=0.8, size=0.8, shape=25)+
+      geom_line(data=Oc_Omega_Pred, aes(y = Oc_Omega_Pred,
+                                      x=Date), linetype=1, size=1, colour = "black") +
+    
+      annotate(geom="text", x = as.Date(xs), y = ys, parse=TRUE,
+               #label = expression("~Omega[Ar] == -0.015** ~Year ^-1"), 
+               label =paste0(as.character(plot_label, plot_label2, sep = " ")),
+               size=4)
+  Oc_Omega_Modeled
+```
+
+
 ## Models summary 
 
 Complete models 
 
-```{r}
+```{r , all fixed factors summary - Omega}
 # ANOVAs
     # Convert ANOVA results into dataframes allows for easier name manipulation
     av.Omega_in_0 <- data.frame (anova(Omega_in_0))
@@ -5735,19 +5892,20 @@ Complete models
     av.Omega_oc_0 <- data.frame (anova(Omega_oc_0))
     
     # Putting all into one dataframe/table
-    anova_Omega_In <- data.frame(cbind
+    anova_Omega_0 <- data.frame(cbind
                     (c("Year", "Sub_region", "Year:Sub_region", 
                        "Year", "Sub_region", "Year:Sub_region",
                        "Year", "Sub_region", "Year:Sub_region",
                        "Year", "Sub_region", "Year:Sub_region"), 
                                       rbind(av.Omega_in_0, av.Omega_mc_0,
                                             av.Omega_of_0, av.Omega_oc_0))) 
-    colnames(anova_Omega_In) <- c("", "Sum Sq", "Mean Sq", "N Df" , "D Df",
+    colnames(anova_Omega_0) <- c("", "Sum Sq", "Mean Sq", "N Df" , "D Df",
                                      "F value", "Pr(>F)")
-    row.names(anova_Omega_In) <- NULL
+    row.names(anova_Omega_0) <- NULL
     
     # create HTML table using kableExtra
-    anova_Omega_In %>% kable("html", digits=2) %>% 
+    anova_Omega_0 %>% kable("html", digits=2, 
+        caption="Initial omega models fixed factors: Year*Region") %>% 
       kable_styling(bootstrap_options = "striped", full_width = F) %>% 
       pack_rows(., "Omega inshore", 1, 3) %>% # groups rows with label
       pack_rows(., "Omega mid-channel", 4, 6)  %>% # groups rows with label
@@ -5764,19 +5922,20 @@ Complete models
     rav.Omega_oc_0 <- data.frame (ranova(Omega_oc_0))
     
     # Putting all into one dataframe/table
-    ranova_Omega_In <- data.frame(cbind
+    ranova_Omega_0 <- data.frame(cbind
                     (c("<none>", "(1 | Month)", "(1 | SiteID)",
                        "<none>", "(1 | Month)", "(1 | SiteID)",
                        "<none>", "(1 | Month)", "(1 | SiteID)",
                        "<none>", "(1 | Month)", "(1 | SiteID)"), 
                       rbind(rav.Omega_in_0, rav.Omega_mc_0,
                             rav.Omega_of_0, rav.Omega_oc_0))) 
-    colnames(ranova_Omega_In) <- c("", "npar", "logLik", "AIC" , "LRT",
+    colnames(ranova_Omega_0) <- c("", "npar", "logLik", "AIC" , "LRT",
                                      "DF", "Pr(>Chi Sq)")
-    row.names(ranova_Omega_In) <- NULL
+    row.names(ranova_Omega_0) <- NULL
     
     # create HTML table using kableExtra
-    ranova_Omega_In %>% kable("html", digits=2) %>% 
+    ranova_Omega_0 %>% kable("html", digits=2,
+         caption="Initial omega models random factors: Month+Station") %>% 
       kable_styling(bootstrap_options = "striped", full_width = F) %>% 
       pack_rows(., "Omega inshore", 1, 3) %>% # groups rows with label
       pack_rows(., "Omega mid-channel", 4, 6)  %>% # groups rows with label
@@ -5792,23 +5951,49 @@ Omega_models_0<-list("Inshore" = Omega_in_0,
                    "Ocean" = Omega_oc_0)
 modelsummary(Omega_models_0, stars = TRUE, 
              #statistic = c('std.error', 'p.value', 'conf.int'),
-             title = 'Omega model outputs (all factors)',
+             title = 'Initial Omega model outputs (all factors)',
              coef_map=factor_order)
 #modelsummary(Omega_models, estimate = "p.value")
 ```
 
-Factors removed models 
+Models with non-significant factors removed  
 
-```{r}
+```{r omegad dropped models}
 Omega_models<-list("Inshore" = Omega_in, 
                    "Mid channel" = Omega_mc, 
                    "Offshore" = Omega_of, 
                    "Ocean" = Omega_oc)
 modelsummary(Omega_models, stars = TRUE, 
-             #statistic = c('std.error', 'p.value', 'conf.int'),
-             title = 'Omega model outputs (dropped factors)',
+            #statistic = c('std.error', 'p.value', 'conf.int'),
+             title = 'Final Omega model outputs (dropped factors)',
              coef_map=factor_order)
+
+modelsummary(Omega_models, output = "FLK_results/Figures/Fig_2/Trend_Omega.docx")
 #modelsummary(Omega_models, estimate = "p.value")
+
+
+
+```
+
+```{r omega model plot}
+Trends_Omega<-ggarrange(In_Omega_Modeled+ theme(
+                                          #axis.text.x=element_blank(),
+                                          legend.position = "none"),
+                  Mc_Omega_Modeled+ theme(legend.position = "none",
+                                           #axis.text.x=element_blank(),
+                                           axis.title.y=element_blank()),
+                                
+                  Of_Omega_Modeled + theme(legend.position = "none",
+                                           #axis.text.x=element_blank(),
+                                           axis.title.y=element_blank()),
+                                
+                  Oc_Omega_Modeled + theme(legend.position = "none",
+                                           #axis.text.x=element_blank(),
+                                           axis.title.y=element_blank()),
+                                           
+          labels = c("C"),
+          ncol = 4, nrow = 1, widths =c(1.1, 1, 1, 1))
+Trends_Omega
 ```
 
 # pCO2-All
@@ -5872,6 +6057,43 @@ pCO2_in<-lmer(pCO2_uatm ~ (1|Month)+(1|SiteID), data=Trends.inshore)
       #pCO2_in.emmc
 ```
 
+
+```{r}
+# Predict values  
+  In_pCO2_Pred <- predict(pCO2_in, newdata=In_Newdata, re.form=NA, level=0, asList = FALSE)
+  
+  In_pCO2_Pred <-cbind(In_Newdata, In_pCO2_Pred)
+  In_pCO2_Pred$Date<-as.Date(as.character(In_pCO2_Pred$Year), format = "%Y")
+  
+# # Model summary
+#   slope<-round(
+#       summary(pCO2_in)$coefficients["Year", "Estimate"], digits = 3)
+#   xs <- as.Date(as.character("2018-11-20"))
+#   ys <- max(Trends.midchanel$pCO2_uatm, na.rm =T)
+# 
+# # Plot raw data point and fitted model 
+#   plot_label <- sprintf("\"\" ~ pCO[2] == %0.3f", slope)
+#   plot_label2 <- expression("Year^-1")
+  
+  
+# Plot raw data point and fitted model 
+  
+  In_pCO2_Modeled<-Long_plot2+ facet_grid(~Zone)+
+     scale_y_continuous(name=expression(paste(pCO[2], ~" (", mu, " atm)")),
+                       breaks = seq(0, 800, 100),  
+                       expand = c(0.05, 0.05)) +
+    
+      geom_point(data=Trends.inshore, 
+                               aes(y=pCO2_uatm, x=Date, fill = Sub_region), 
+                               alpha=0.8, size=0.8, shape=21)+
+      geom_line(data=In_pCO2_Pred, aes(y = In_pCO2_Pred,
+                                      x=Date), linetype=2, size=1, colour = "black")
+
+  In_pCO2_Modeled
+  
+```
+
+
 ## Mid channel 
 
 ```{r, fig.height=4, fig.width=4}
@@ -5904,6 +6126,45 @@ pCO2_mc<-lmer(pCO2_uatm ~ Year + Sub_region + (1 | Month),
   #write.csv(pCO2_mc.emmc, "FLK_results/Model_2_LTpCO2_POST.csv")
 ```
 
+
+```{r}
+# Predict values  
+  Mc_pCO2_Pred <- predict(pCO2_mc, newdata=Mc_Newdata, re.form=NA, level=0, asList = FALSE)
+  
+  Mc_pCO2_Pred <-cbind(Mc_Newdata, Mc_pCO2_Pred)
+  Mc_pCO2_Pred$Date<-as.Date(as.character(Mc_pCO2_Pred$Year), format = "%Y")
+  
+ # Model summary
+  slope<-round(
+      summary(pCO2_mc)$coefficients["Year", "Estimate"], digits = 3)
+  ys <- max(Trends.midchanel$pCO2_uatm, na.rm =T)
+
+# Plot raw data point and fitted model 
+  plot_label <- sprintf("\"\" ~ pCO[2] == %0.3f", slope)
+  plot_label2 <- expression("Year^-1")
+  
+  
+# Plot raw data point and fitted model 
+  
+  Mc_pCO2_Modeled<-Long_plot2+ facet_grid(~Zone)+
+     scale_y_continuous(name=expression(paste(pCO[2], ~" (", mu, " atm)")),
+                       breaks = seq(0, 800, 100),  
+                       expand = c(0.05, 0.05)) +
+    
+      geom_point(data=Trends.midchanel, 
+                               aes(y=pCO2_uatm, x=Date, fill = Sub_region), 
+                               alpha=0.8, size=0.8, shape=23)+
+      geom_line(data=Mc_pCO2_Pred, aes(y = Mc_pCO2_Pred,
+                                      x=Date, colour = Sub_region),
+                linetype=1, size=1) +
+     annotate(geom="text", x = as.Date(xs), y = ys, parse=TRUE,
+               #label = expression("~Omega[Ar] == -0.015** ~Year ^-1"), 
+               label =paste0(as.character(plot_label, plot_label2, sep = " ")),
+               size=4)
+  Mc_pCO2_Modeled
+  
+```
+
 ## Offshore
 
 ```{r, fig.height=4, fig.width=4}
@@ -5926,12 +6187,48 @@ pCO2_of<-lmer(pCO2_uatm ~ Year + Sub_region + (1 | Month),
   qqnorm(resid(pCO2_of))
   acf(resid(Omega_in), main="acf(resid(pCO2 Offshore))")  
   
-  pCO2_of.emmc<-emmeans(pCO2_of, ~Sub_region+Year)
+  pCO2_of.emmc<-emmeans(pCO2_of, ~Sub_region)
         pCO2_of.emmc<-multcomp::cld(pCO2_of.emmc)
         pCO2_of.emmc<-pCO2_of.emmc[order(pCO2_of.emmc$Sub_region),]
   pCO2_of.emmc
   
   #write.csv(pCO2_of.emmc, "FLK_results/Model_3_LTpCO2_POST.csv")
+```
+
+
+```{r}
+# Predict values  
+  Of_pCO2_Pred <- predict(pCO2_of, newdata=Of_Newdata, re.form=NA, level=0, asList = FALSE)
+  
+  Of_pCO2_Pred <-cbind(Of_Newdata, Of_pCO2_Pred)
+  Of_pCO2_Pred$Date<-as.Date(as.character(Of_pCO2_Pred$Year), format = "%Y")
+  
+# Model summary for slope labels 
+  slope<-round(
+      summary(pCO2_of)$coefficients["Year", "Estimate"], digits = 3)
+  xs <- as.Date(as.character("2018-11-20"))
+  ys <- max(Trends.offshore$pCO2_uatm, na.rm =T)
+  plot_label <- sprintf("\"\" ~ pCO[2] == %0.3f", slope)
+  plot_label2 <- expression("Year^-1")
+  
+# Plot raw data point and fitted model 
+  Of_pCO2_Modeled<-Long_plot2+ facet_grid(~Zone)+
+     scale_y_continuous(name=expression(paste(pCO[2], ~" (", mu, " atm)")),
+                       breaks = seq(0, 800, 100),  
+                       expand = c(0.05, 0.05)) +
+    
+      geom_point(data=Trends.offshore, 
+                               aes(y=pCO2_uatm, x=Date, fill = Sub_region), 
+                               alpha=0.8, size=0.8, shape=24)+
+      geom_line(data=Of_pCO2_Pred, aes(y = Of_pCO2_Pred,
+                                      x=Date, colour = Sub_region),
+                linetype=1, size=1) +
+     annotate(geom="text", x = as.Date(xs), y = ys, parse=TRUE,
+               #label = expression("~Omega[Ar] == -0.015** ~Year ^-1"), 
+               label =paste0(as.character(plot_label, plot_label2, sep = " ")),
+               size=4)
+  Of_pCO2_Modeled
+  
 ```
 
 ## Oceanic
@@ -5962,11 +6259,45 @@ pCO2_oc<-lmer(pCO2_uatm ~ Year + (1 | Month),
   pCO2_oc.emmc
 ```
 
+
+```{r}
+# Predict values  
+  Oc_pCO2_Pred <- predict(pCO2_oc, newdata=Oc_Newdata, 
+                          re.form=NA, level=0, asList = FALSE)
+  Oc_pCO2_Pred <-cbind(Oc_Newdata, Oc_pCO2_Pred)
+  Oc_pCO2_Pred$Date<-as.Date(as.character(Oc_pCO2_Pred$Year), format = "%Y")
+  
+# Model summary for slope labels 
+  slope<-round(
+      summary(pCO2_oc)$coefficients["Year", "Estimate"], digits = 3)
+  xs <- as.Date(as.character("2018-11-20"))
+  ys <- max(Trends.ocean$pCO2_uatm, na.rm =T)
+  plot_label <- sprintf("\"\" ~ pCO[2] == %0.3f", slope)
+  plot_label2 <- expression("Year^-1")
+  
+# Plot raw data point and fitted model 
+  Oc_pCO2_Modeled<-Long_plot2+ facet_grid(~Zone)+
+     scale_y_continuous(name=expression(paste(pCO[2], ~" (", mu, " atm)")),
+                       breaks = seq(0, 800, 100),  
+                       expand = c(0.05, 0.05)) +
+    
+      geom_point(data=Trends.ocean, 
+                               aes(y=pCO2_uatm, x=Date, fill = Sub_region), 
+                               alpha=0.8, size=0.8, shape=25)+
+      geom_line(data=Oc_pCO2_Pred, aes(y = Oc_pCO2_Pred, x=Date), 
+                          colour = "black", linetype=1, size=1) +
+      annotate(geom="text", x = as.Date(xs), y = ys, parse=TRUE,
+              label =paste0(as.character(plot_label, plot_label2, sep = " ")),
+              size=4)
+  Oc_pCO2_Modeled
+  
+```
+
 ## Models summary 
 
 Complete models 
 
-```{r}
+```{r, all fixed factors summary - pCO2}
 # ANOVAs
     # Convert ANOVA results into dataframes allows for easier name manipulation
     
@@ -5996,7 +6327,7 @@ Complete models
       pack_rows(., "pCO2 ocean", 10, 12)  
 ```
 
-```{r}
+```{r, all random factors summary - pCO2}
 
 # R-ANOVAs    
     rav.pCO2_in_0 <- data.frame (ranova(pCO2_in_0))
@@ -6039,7 +6370,7 @@ modelsummary(pCO2_models_0, stars = TRUE,
 ```
 
 Factors removed models 
-```{r}
+```{r, droped fixed factors summary - pCO2 }
 pCO2_models<-list("Inshore" = pCO2_in, 
                    "Mid channel" = pCO2_mc, 
                    "Offshore" = pCO2_of, 
@@ -6050,6 +6381,28 @@ modelsummary(pCO2_models, stars = TRUE,
              coef_map=factor_order)
 #modelsummary(pCO2_models, estimate = "p.value")
 
+```
+
+
+```{r}
+Trends_pCO2<-ggarrange(In_pCO2_Modeled+ theme(axis.title.x=element_blank(),
+                                 axis.text.x=element_blank(),
+                                 legend.position = "none"),
+                  Mc_pCO2_Modeled + theme(legend.position = "none",
+                                 axis.title.y=element_blank(),
+                                 axis.text.x=element_blank()),
+                                
+                  Of_pCO2_Modeled + theme(legend.position = "none",
+                                           axis.title.y=element_blank(),
+                                           axis.text.x=element_blank()),
+                                
+                  Oc_pCO2_Modeled + theme(legend.position = "none",
+                                           axis.title.y=element_blank(),
+                                           axis.text.x=element_blank()),
+                  
+          labels = c("A"),
+          ncol = 4, nrow = 1, widths =c(1.1, 1, 1, 1))
+Trends_pCO2
 ```
 
 # pH-All
@@ -6113,6 +6466,41 @@ pH_in<-lmer(pH_calculated ~ Sub_region + (1 | Month) + (1 | SiteID),
 #write.csv(pH_in.emmc, "FLK_results/Model_5_LTpH_POST.csv")
 ```
 
+
+```{r}
+# Predict values  
+  In_pH_Pred <- predict(pH_in, newdata=In_Newdata, 
+                        re.form=NA, level=0, asList = FALSE)
+    In_pH_Pred <-cbind(In_Newdata, In_pH_Pred)
+  In_pH_Pred$Date<-as.Date(as.character(In_pH_Pred$Year), format = "%Y")
+  
+# Model summary for slope labels 
+  # slope<-round(
+  #     summary(pH_in)$coefficients["Year", "Estimate"], digits = 3)
+  # xs <- as.Date(as.character("2018-11-20"))
+  # ys <- max(Trends.inshore$pH_calculated, na.rm =T)
+  # plot_label <- sprintf("\"\" ~ pH == %0.3f", slope)
+  # plot_label2 <- expression("Year^-1")
+  
+# Plot raw data point and fitted model 
+  In_pH_Modeled<-Long_plot2+ #facet_grid(~Zone)+
+     scale_y_continuous(name=(expression(pH[calculated])),
+                       breaks = seq(0, 10, 0.1),  
+                       expand = c(0.05, 0.05)) +
+    
+      geom_point(data=Trends.inshore, 
+                               aes(y=pH_calculated, x=Date, fill = Sub_region), 
+                               alpha=0.8, size=0.8, shape=21)+
+      geom_line(data=In_pH_Pred, aes(y = In_pH_Pred, x=Date,  colour = Sub_region),
+                                linetype=2, size=1) #+
+      #annotate(geom="text", x = as.Date(xs), y = ys, parse=TRUE,
+      #        label =paste0(as.character(plot_label, plot_label2, sep = " ")),
+      #        size=4)
+  In_pH_Modeled
+  
+```
+
+
 ## Mid channel 
 
 ```{r, fig.height=4, fig.width=4}
@@ -6141,6 +6529,40 @@ pH_mc<-lmer(pH_calculated ~ Year + Sub_region + (1 | Month),
   pH_mc.emmc
   
   #write.csv(pH_mc.emmc, "FLK_results/Model_6_LTpH_POST.csv")
+```
+
+
+```{r}
+# Predict values  
+  Mc_pH_Pred <- predict(pH_mc, newdata=Mc_Newdata, 
+                        re.form=NA, level=0, asList = FALSE)
+  Mc_pH_Pred <-cbind(Mc_Newdata, Mc_pH_Pred)
+  Mc_pH_Pred$Date<-as.Date(as.character(Mc_pH_Pred$Year), format = "%Y")
+  
+# Model summary for slope labels 
+  slope<-round(
+      summary(pH_mc)$coefficients["Year", "Estimate"], digits = 3)
+  xs <- as.Date(as.character("2018-11-20"))
+  ys <- max(Trends.midchanel$pH_calculated, na.rm =T)
+  plot_label <- sprintf("\"\" ~ pH == %0.3f", slope)
+  plot_label2 <- expression("Year^-1")
+  
+# Plot raw data point and fitted model 
+  Mc_pH_Modeled<-Long_plot2+ #facet_grid(~Zone)+
+     scale_y_continuous(name=(expression(pH[calculated])),
+                       breaks = seq(0, 10, 0.1),  
+                       expand = c(0.05, 0.05)) +
+    
+      geom_point(data=Trends.midchanel, 
+                               aes(y=pH_calculated, x=Date, fill = Sub_region), 
+                               alpha=0.8, size=0.8, shape=23)+
+      geom_line(data=Mc_pH_Pred, aes(y = Mc_pH_Pred, x=Date,  colour = Sub_region),
+                                linetype=1, size=1) +
+      annotate(geom="text", x = as.Date(xs), y = ys, parse=TRUE,
+           label =paste0(as.character(plot_label, plot_label2, sep = " ")),
+           size=4)
+  Mc_pH_Modeled
+  
 ```
 
 ## Offshore
@@ -6173,6 +6595,39 @@ pH_of<-lmer(pH_calculated ~ Year + Sub_region + (1 | Month),
  #write.csv(pH_of.emmc, "FLK_results/Model_7_LTpH_POST.csv")
 ```
 
+
+```{r}
+# Predict values  
+  Of_pH_Pred <- predict(pH_of, newdata=Of_Newdata, 
+                        re.form=NA, level=0, asList = FALSE)
+  Of_pH_Pred <-cbind(Of_Newdata, Of_pH_Pred)
+  Of_pH_Pred$Date<-as.Date(as.character(Of_pH_Pred$Year), format = "%Y")
+
+# Model summary for slope labels 
+  slope<-round(
+      summary(pH_of)$coefficients["Year", "Estimate"], digits = 3)
+  ys <- max(Trends.offshore$pH_calculated, na.rm =T)
+  plot_label <- sprintf("\"\" ~ pH == %0.3f", slope)
+  plot_label2 <- expression("Year^-1")  
+  
+# Plot raw data point and fitted model 
+  Of_pH_Modeled<-Long_plot2+ #facet_grid(~Zone)+
+     scale_y_continuous(name=(expression(pH[calculated])),
+                       breaks = seq(0, 10, 0.1),  
+                       expand = c(0.05, 0.05)) +
+    
+      geom_point(data=Trends.offshore, 
+                               aes(y=pH_calculated, x=Date, fill = Sub_region), 
+                               alpha=0.8, size=0.8, shape=24)+
+      geom_line(data=Of_pH_Pred, aes(y = Of_pH_Pred, x=Date,  colour = Sub_region),
+                                linetype=1, size=1) +
+      annotate(geom="text", x = as.Date(xs), y = ys, parse=TRUE,
+           label =paste0(as.character(plot_label, plot_label2, sep = " ")),
+           size=4)
+  Of_pH_Modeled
+  
+```
+
 ## Oceanic
 
 ```{r, fig.height=4, fig.width=4}
@@ -6200,11 +6655,44 @@ pH_oc<-lmer(pH_calculated ~ Year + (1 | Month),
   pH_oc.emmc
 ```
 
+```{r}
+# Predict values  
+  Oc_pH_Pred <- predict(pH_oc, newdata=Oc_Newdata,
+                        re.form=NA, level=0, asList = FALSE)
+  Oc_pH_Pred <-cbind(Oc_Newdata, Oc_pH_Pred)
+  Oc_pH_Pred$Date<-as.Date(as.character(Oc_pH_Pred$Year), format = "%Y")
+
+# Model summary for slope labels 
+  slope<-round(
+      summary(pH_oc)$coefficients["Year", "Estimate"], digits = 3)
+  ys <- max(Trends.offshore$pH_calculated, na.rm =T)
+  plot_label <- sprintf("\"\" ~ pH == %0.3f", slope)
+  plot_label2 <- expression("Year^-1")  
+  
+# Plot raw data point and fitted model 
+  Oc_pH_Modeled<-Long_plot2+ #facet_grid(~Zone)+
+     scale_y_continuous(name=(expression(pH[calculated])),
+                       breaks = seq(0, 10, 0.1),  
+                       expand = c(0.05, 0.05)) +
+    
+      geom_point(data=Trends.ocean, 
+                               aes(y=pH_calculated, x=Date, fill = Sub_region), 
+                               alpha=0.8, size=0.8, shape=25)+
+      geom_line(data=Oc_pH_Pred, aes(y = Oc_pH_Pred, x=Date),
+                                linetype=1, size=1, colour = "black") +
+      annotate(geom="text", x = as.Date(xs), y = ys, parse=TRUE,
+           label =paste0(as.character(plot_label, plot_label2, sep = " ")),
+           size=4)
+  Oc_pH_Modeled
+  
+```
+
+
 ## Models summary 
 
 Complete models 
 
-```{r}
+```{r, , all fixed factors summary - pH}
 # ANOVAs
     # Convert ANOVA results into dataframes allows for easier name manipulation
     av.pH_in_0 <- data.frame (anova(pH_in_0))
@@ -6290,6 +6778,29 @@ modelsummary(pH_models, stars = TRUE,
 #modelsummary(pH_models, estimate = "p.value")
 
 ```
+
+
+```{r}
+Trends_pH<-ggarrange(In_pH_Modeled+ theme(axis.title.x=element_blank(),
+                                 axis.text.x=element_blank(),
+                                 legend.position = "none"),
+                  Mc_pH_Modeled + theme(legend.position = "none",
+                                 axis.text.x=element_blank(),
+                                  axis.title.y=element_blank()),
+                                
+                  Of_pH_Modeled + theme(legend.position = "none",
+                                        axis.text.x=element_blank(),
+                                        axis.title.y=element_blank()),
+                                
+                  Oc_pH_Modeled + theme(legend.position = "none",
+                                        axis.text.x=element_blank(),
+                                        axis.title.y=element_blank()),
+                  
+          labels = c("B"),
+          ncol = 4, nrow = 1, widths =c(1.1, 1, 1, 1))
+Trends_pH
+```
+
 
 # TA-All
 
@@ -6915,6 +7426,8 @@ modelsummary(dDIC_models, stars = TRUE,
 
 # Figure 2: Trends 
 
+Raw data lm
+
 ```{r}
 Trends_H<-ggarrange(Trends_a+ theme(axis.title.x=element_blank(),
                                  axis.text.x=element_blank(),
@@ -6961,6 +7474,17 @@ TrendsV<-ggarrange(Trends_a+
 ```
 
 **Figure 2: Ocean acidification trends in the Florida Reef Tract.** (A) The partial pressure of the CO2, (B) pH, and (C) Aragonite saturation state (Ωar). The colors represent the biogeographical regions and the panels separate the locations by shelf zone. Text on the top of each panel shows the coefficient of change in the parameter per year (for significant trends) and the significance of the region in the model. Note the different scales between the top and bottom panels.
+
+
+```{r}
+Trends_Modeled<-ggarrange(
+                  Trends_pCO2,
+                  Trends_pH,
+                  Trends_Omega,
+          #labels = c("A", "B", "C"),
+          ncol = 1, nrow = 3, heights = c(1.1, 0.9, 1.1))
+Trends_Modeled
+```
 
 # 7. PCA
 
