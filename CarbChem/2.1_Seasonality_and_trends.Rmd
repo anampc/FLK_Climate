@@ -5706,7 +5706,7 @@ Omega_mc<-lmer(Aragonite_Sat_W ~ Year + Sub_region + (1 | Month),
   Mc_Omega_Pred$Date<-as.Date(as.character(Mc_Omega_Pred$Year), format = "%Y")
   
   
-# Model summary
+# Model summary for labels
   slope<-round(
       summary(Omega_mc)$coefficients["Year", "Estimate"], digits = 3)
   xs <- as.Date(as.character("2018-11-20"))
@@ -5779,12 +5779,9 @@ Omega_of<-lmer(Aragonite_Sat_W ~ Year + Sub_region + (1 | Month),
   Of_Omega_Pred <-cbind(Of_Newdata, Of_Omega_Pred)
   Of_Omega_Pred$Date<-as.Date(as.character(Of_Omega_Pred$Year), format = "%Y")
   
-# Model summary
+# Model summary for labels
   slope<-round(summary(Omega_of)$coefficients["Year", "Estimate"], digits = 3)
   ys <- max(Trends.midchanel$Aragonite_Sat_W, na.rm =T)
-  
-# Plot raw data point and fitted model 
-
   plot_label <- sprintf("\"\" ~ Omega[Ar] == %0.3f", slope)
   plot_label2 <- expression("Year^-1")
   
@@ -6384,7 +6381,7 @@ modelsummary(pCO2_models, stars = TRUE,
 ```
 
 
-```{r}
+```{r pCO2 model plot}
 Trends_pCO2<-ggarrange(In_pCO2_Modeled+ theme(axis.title.x=element_blank(),
                                  axis.text.x=element_blank(),
                                  legend.position = "none"),
@@ -6485,6 +6482,7 @@ pH_in<-lmer(pH_calculated ~ Sub_region + (1 | Month) + (1 | SiteID),
 # Plot raw data point and fitted model 
   In_pH_Modeled<-Long_plot2+ #facet_grid(~Zone)+
      scale_y_continuous(name=(expression(pH[calculated])),
+                       limits=c(7.80, 8.28),
                        breaks = seq(0, 10, 0.1),  
                        expand = c(0.05, 0.05)) +
     
@@ -6543,7 +6541,8 @@ pH_mc<-lmer(pH_calculated ~ Year + Sub_region + (1 | Month),
   slope<-round(
       summary(pH_mc)$coefficients["Year", "Estimate"], digits = 3)
   xs <- as.Date(as.character("2018-11-20"))
-  ys <- max(Trends.midchanel$pH_calculated, na.rm =T)
+  ys <- max(Trends.inshore$pH_calculated, na.rm =T)
+  #ys <- max(Trends.midchanel$pH_calculated, na.rm =T)
   plot_label <- sprintf("\"\" ~ pH == %0.3f", slope)
   plot_label2 <- expression("Year^-1")
   
@@ -6551,6 +6550,7 @@ pH_mc<-lmer(pH_calculated ~ Year + Sub_region + (1 | Month),
   Mc_pH_Modeled<-Long_plot2+ #facet_grid(~Zone)+
      scale_y_continuous(name=(expression(pH[calculated])),
                        breaks = seq(0, 10, 0.1),  
+                       limits=c(7.80, 8.28),
                        expand = c(0.05, 0.05)) +
     
       geom_point(data=Trends.midchanel, 
@@ -6606,13 +6606,15 @@ pH_of<-lmer(pH_calculated ~ Year + Sub_region + (1 | Month),
 # Model summary for slope labels 
   slope<-round(
       summary(pH_of)$coefficients["Year", "Estimate"], digits = 3)
-  ys <- max(Trends.offshore$pH_calculated, na.rm =T)
+  ys <- max(Trends.inshore$pH_calculated, na.rm =T)
+  #ys <- max(Trends.offshore$pH_calculated, na.rm =T)
   plot_label <- sprintf("\"\" ~ pH == %0.3f", slope)
   plot_label2 <- expression("Year^-1")  
   
 # Plot raw data point and fitted model 
   Of_pH_Modeled<-Long_plot2+ #facet_grid(~Zone)+
      scale_y_continuous(name=(expression(pH[calculated])),
+                       limits=c(7.80, 8.28),
                        breaks = seq(0, 10, 0.1),  
                        expand = c(0.05, 0.05)) +
     
@@ -6665,7 +6667,8 @@ pH_oc<-lmer(pH_calculated ~ Year + (1 | Month),
 # Model summary for slope labels 
   slope<-round(
       summary(pH_oc)$coefficients["Year", "Estimate"], digits = 3)
-  ys <- max(Trends.offshore$pH_calculated, na.rm =T)
+  ys <- max(Trends.inshore$pH_calculated, na.rm =T)
+  #ys <- max(Trends.offshore$pH_calculated, na.rm =T)
   plot_label <- sprintf("\"\" ~ pH == %0.3f", slope)
   plot_label2 <- expression("Year^-1")  
   
@@ -6673,6 +6676,7 @@ pH_oc<-lmer(pH_calculated ~ Year + (1 | Month),
   Oc_pH_Modeled<-Long_plot2+ #facet_grid(~Zone)+
      scale_y_continuous(name=(expression(pH[calculated])),
                        breaks = seq(0, 10, 0.1),  
+                       limits=c(7.80, 8.28),
                        expand = c(0.05, 0.05)) +
     
       geom_point(data=Trends.ocean, 
@@ -6780,7 +6784,7 @@ modelsummary(pH_models, stars = TRUE,
 ```
 
 
-```{r}
+```{r, pH model plot}
 Trends_pH<-ggarrange(In_pH_Modeled+ theme(axis.title.x=element_blank(),
                                  axis.text.x=element_blank(),
                                  legend.position = "none"),
@@ -7485,6 +7489,8 @@ Trends_Modeled<-ggarrange(
           ncol = 1, nrow = 3, heights = c(1.1, 0.9, 1.1))
 Trends_Modeled
 ```
+
+**Figure 2: Ocean acidification trends in the Florida Reef Tract.** (A) The partial pressure of the CO2, (B) pH, and (C) Aragonite saturation state (Ωar). The colors represent the biogeographical regions and the panels separate the locations by shelf zone. Text on the top of each panel shows the coefficient of change in the parameter per year (for significant trends). Solid lines represnt models with significant trends (year<0.05). Multiple coloured lines are depicted for models where region was significant (region <0.05). Dashed lines represnt the intercepts of models with non significant trends (year>0.05).
 
 # 7. PCA
 
