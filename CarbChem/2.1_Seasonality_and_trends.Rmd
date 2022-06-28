@@ -5557,6 +5557,7 @@ Long_plot2<- ggplot() +
         scale_x_date(date_breaks = "2 years",
                      date_labels = "%Y",
                      expand = c(0.02, 0.02))
+xs <- as.Date(as.character("2018-11-20"))
 
 factor_order <- c('Year'    = 'Year',
                   '(Intercept)' = 'Intercept',
@@ -5607,7 +5608,16 @@ Trends_c2
   Omega_in_0<-lmer(Aragonite_Sat_W~Year * Sub_region + (1|Month)+
                                     #(1|Zone)+             
                                     (1|SiteID), data=Trends.inshore)
-  #summary(Omega_in_0)    
+  
+  Omega_in_1<-lmer(Aragonite_Sat_W~Year * Sub_region * Season +
+                                    #(1|Zone)+             
+                                    (1|SiteID), data=Trends.inshore)
+  
+  #summary(Omega_in_0)
+  #summary(Omega_in_1)    
+  #anova(Omega_in_0, Omega_in_1)
+  #step(Omega_in_1)
+  
   anova(Omega_in_0)
   ranova(Omega_in_0)
   step(Omega_in_0)
@@ -5672,8 +5682,17 @@ shapiro.test(Trends.midchanel$Aragonite_Sat_W)# Normality rejected
 Omega_mc_0<-lmer(Aragonite_Sat_W~Year * Sub_region + (1|Month) + 
                                   #(1|Zone)+             
                                   (1|SiteID), data=Trends.midchanel)
+
+# Omega_mc_1<-lmer(Aragonite_Sat_W~Year * Sub_region * Season +
+#                                     #(1|Zone)+             
+#                                     (1|SiteID), data=Trends.midchanel)
+
 #summary(Omega_mc_0)    
+#summary(Omega_mc_1)  
+
 anova(Omega_mc_0)
+#anova(Omega_mc_1)
+#anova(Omega_mc_0, Omega_mc_1)
 ranova(Omega_mc_0)
 step(Omega_mc_0)
 
@@ -5709,7 +5728,6 @@ Omega_mc<-lmer(Aragonite_Sat_W ~ Year + Sub_region + (1 | Month),
 # Model summary for labels
   slope<-round(
       summary(Omega_mc)$coefficients["Year", "Estimate"], digits = 3)
-  xs <- as.Date(as.character("2018-11-20"))
   ys <- max(Trends.midchanel$Aragonite_Sat_W, na.rm =T)
 
 # Plot raw data point and fitted model 
@@ -5723,7 +5741,7 @@ Omega_mc<-lmer(Aragonite_Sat_W ~ Year + Sub_region + (1 | Month),
                        breaks = seq(0, 10, 0.5),  
                        expand = c(0.05, 0.05)) +
     
-      geom_point(data=Trends.midchanel, 
+      geom_jitter(data=Trends.midchanel, 
                                aes(y=Aragonite_Sat_W, x=Date, fill = Sub_region), 
                                alpha=0.8, size=0.8, shape=23)+
       geom_line(data=Mc_Omega_Pred, aes(y = Mc_Omega_Pred,
@@ -5771,7 +5789,7 @@ Omega_of<-lmer(Aragonite_Sat_W ~ Year + Sub_region + (1 | Month),
 
 ```{r}
 # Create a new data frame for independent variables  
-  Of_Newdata<-expand.grid(one=unique(Trends.midchanel$Zone),
+  Of_Newdata<-expand.grid(one=unique(Trends.offshore$Zone),
                                 Sub_region=unique(Trends.offshore$Sub_region),
                           Year=seq((min(Trends.offshore$Year)-0), (max(Trends.offshore$Year)+1)))
   Of_Omega_Pred <- predict(Omega_of, newdata=Of_Newdata, re.form=NA, level=0, asList = FALSE)
@@ -5781,7 +5799,7 @@ Omega_of<-lmer(Aragonite_Sat_W ~ Year + Sub_region + (1 | Month),
   
 # Model summary for labels
   slope<-round(summary(Omega_of)$coefficients["Year", "Estimate"], digits = 3)
-  ys <- max(Trends.midchanel$Aragonite_Sat_W, na.rm =T)
+  ys <- max(Trends.offshore$Aragonite_Sat_W, na.rm =T)
   plot_label <- sprintf("\"\" ~ Omega[Ar] == %0.3f", slope)
   plot_label2 <- expression("Year^-1")
   
@@ -5815,7 +5833,12 @@ shapiro.test(Trends.ocean$Aragonite_Sat_W)# Normality NOT rejected
 Omega_oc_0<-lmer(Aragonite_Sat_W ~ Year * Sub_region + 
                (1 | Month)+ (1|SiteID),
                data=Trends.ocean)
-  #summary(Omega_oc_0)    
+
+Omega_oc_1<-lmer(Aragonite_Sat_W ~ Year * Sub_region * Season++ (1|SiteID),
+               data=Trends.ocean)
+  #summary(Omega_oc_0)
+  #summary(Omega_oc_1)    
+  #anova(Omega_oc_1) 
   anova(Omega_oc_0)
   ranova(Omega_oc_0)
   step(Omega_oc_0)
@@ -5848,8 +5871,9 @@ Omega_oc<-lmer(Aragonite_Sat_W ~ Year + (1 | Month), data = Trends.ocean)
   
 # Model summary for labels
   slope<-round(summary(Omega_oc)$coefficients["Year", "Estimate"], digits = 3)
-  xs <- as.Date(as.character("2018-05-20"))
-  ys <- max(Trends.midchanel$Aragonite_Sat_W, na.rm =T)
+  #xs <- as.Date(as.character("2018-11-20"))
+  #ys <- max(Trends.inshore$Aragonite_Sat_W, na.rm =T)
+  ys <- max(Trends.ocean$Aragonite_Sat_W, na.rm =T)
   plot_label <- sprintf("\"\" ~ Omega[Ar] == %0.3f", slope)
   plot_label2 <- expression("Year^-1")
   
@@ -6134,6 +6158,7 @@ pCO2_mc<-lmer(pCO2_uatm ~ Year + Sub_region + (1 | Month),
  # Model summary
   slope<-round(
       summary(pCO2_mc)$coefficients["Year", "Estimate"], digits = 3)
+  #ys <- max(Trends.inshore$pCO2_uatm, na.rm =T)
   ys <- max(Trends.midchanel$pCO2_uatm, na.rm =T)
 
 # Plot raw data point and fitted model 
@@ -6203,7 +6228,7 @@ pCO2_of<-lmer(pCO2_uatm ~ Year + Sub_region + (1 | Month),
 # Model summary for slope labels 
   slope<-round(
       summary(pCO2_of)$coefficients["Year", "Estimate"], digits = 3)
-  xs <- as.Date(as.character("2018-11-20"))
+  #xs <- as.Date(as.character("2018-11-20"))
   ys <- max(Trends.offshore$pCO2_uatm, na.rm =T)
   plot_label <- sprintf("\"\" ~ pCO[2] == %0.3f", slope)
   plot_label2 <- expression("Year^-1")
@@ -6267,7 +6292,7 @@ pCO2_oc<-lmer(pCO2_uatm ~ Year + (1 | Month),
 # Model summary for slope labels 
   slope<-round(
       summary(pCO2_oc)$coefficients["Year", "Estimate"], digits = 3)
-  xs <- as.Date(as.character("2018-11-20"))
+  #xs <- as.Date(as.character("2018-11-20"))
   ys <- max(Trends.ocean$pCO2_uatm, na.rm =T)
   plot_label <- sprintf("\"\" ~ pCO[2] == %0.3f", slope)
   plot_label2 <- expression("Year^-1")
@@ -6540,9 +6565,9 @@ pH_mc<-lmer(pH_calculated ~ Year + Sub_region + (1 | Month),
 # Model summary for slope labels 
   slope<-round(
       summary(pH_mc)$coefficients["Year", "Estimate"], digits = 3)
-  xs <- as.Date(as.character("2018-11-20"))
-  ys <- max(Trends.inshore$pH_calculated, na.rm =T)
-  #ys <- max(Trends.midchanel$pH_calculated, na.rm =T)
+  #xs <- as.Date(as.character("2018-11-20"))
+  #ys <- max(Trends.inshore$pH_calculated, na.rm =T)
+  ys <- max(Trends.midchanel$pH_calculated, na.rm =T)
   plot_label <- sprintf("\"\" ~ pH == %0.3f", slope)
   plot_label2 <- expression("Year^-1")
   

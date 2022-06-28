@@ -1,0 +1,305 @@
+---
+title: "Analysis: seasonality and long trends"
+author: "Ana Palacio-Castro"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: hide
+    fig_height: 8
+    fig_width: 8
+    df_print: paged
+    toc: yes
+    toc_float: true
+bibliography: packages.bib
+nocite: '@*'
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, 
+                      options(knitr.kable.NA = '',
+                      rows.print=48))
+```
+
+# Libraries and settings
+
+```{r, include=FALSE}
+# Libraries
+    library(plyr)
+    library(tidyverse)
+    library(reshape2)
+    library(lubridate)
+    library(knitr)
+    library(dplyr)
+    library(broom)
+
+#Plots
+    library(ggpubr)
+    library(ggthemes)
+    library(gridExtra)
+    library(ggExtra)
+    
+#Models     
+    library(plotrix)
+    library(lmodel2)    
+    library(lmerTest)
+    library(emmeans)
+    library(modelsummary) # model results in table
+    # library(lsmeans) #cld functon 
+    #library(jtools) # Plot modesl
+    library(kableExtra) # ANOVA tables
+
+
+# Interactive Maps
+    library(leaflet)
+
+# Plots
+MyTheme_dumm<-theme_bw() +  
+theme(plot.background=element_blank(),
+          axis.title.x=element_blank(),
+          axis.title.y=element_blank(),
+          axis.text.y=element_blank(),
+          axis.text.x=element_blank(),
+          panel.grid.major.y = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          legend.box.background = element_rect(),
+          legend.title = element_blank(),
+          legend.position = "none",
+          panel.background =element_rect(fill = NA, 
+                                         color = "black"))#+
+  #guides(fill=guide_legend(nrow=2,byrow=TRUE), shape=guide_legend(nrow=3,byrow=TRUE))
+
+Season_fill<-scale_fill_manual(values =
+                           c("#2b83ba", "#abdda4",
+                             "#d7191c", "#fdae61"))
+
+Season_colour<-scale_colour_manual(values =
+                           c("#2b83ba", "#abdda4",
+                             "#d7191c", "#fdae61"))
+
+Zone_shapes4<- scale_shape_manual(values=c(21,23,24, 25))
+
+```
+
+# basic
+
+```{r}
+# BASIC DATA
+
+  Data<-read.csv("Data/Dummy2.csv", header = T)
+  Data$Sea<-factor(Data$Sea, levels = c("win", "spr", "sum", "fall"))
+
+  head(Data)
+
+  Dummy_plot<- ggplot(Data) +
+        MyTheme_dumm +  
+        #scale_shape_manual(values=c(24, 25, 21))+
+        #guides(fill=guide_legend(override.aes=list(shape=21)))+
+        theme(axis.title.x = element_blank())+
+        
+    geom_point(aes (x=X, y=y), 
+             shape=21, alpha=0.5, fill="black")
+    #geom_smooth(aes (x=X, y=y), method = "lm", se=F)
+  Dummy_plot
+  
+  Dummy_plot2<-Dummy_plot + geom_smooth(aes (x=X, y=y), method = "lm", se=F,
+              color="red")
+  
+  Dummy_TRENDS<- ggplot(Data) +
+        MyTheme_dumm +  
+        #scale_shape_manual(values=c(24, 25, 21))+
+        #guides(fill=guide_legend(override.aes=list(shape=21)))+
+        theme(axis.title.x = element_blank())+
+        geom_smooth(aes (x=X, y=y), method = "lm", se=F,
+              color="black")
+  Dummy_TRENDS
+  
+  Dummy_SEASONAL<- ggplot(Data, aes (x=x_ses_2, y=y)) +
+        MyTheme_dumm +  
+    #scale_x_continuous(limits = c(0,6.5))+
+    geom_jitter(aes (x=x_ses_2, y=y), shape=21, alpha=0.5, 
+                size=0.2, fill="black")+
+    stat_summary(fun.data = "mean_cl_boot", geom = "point", color="red")+
+    stat_summary(fun.data = "mean_cl_boot", geom = "errorbar", color="red")
+  Dummy_SEASONAL
+  
+  Dummy_sea<- ggplot(Data) +
+        MyTheme_dumm +
+        geom_boxplot(aes(x=Sea, y=y))+
+        geom_jitter(aes (x=Sea, y=y),
+             alpha=0.2, shape=21,
+             size=0.5, fill="black")
+  Dummy_sea
+  
+  Dummy_y<- ggplot(Data) +
+        MyTheme_dumm +
+        geom_boxplot(aes(x=1, y=y))+
+        geom_jitter(aes (x=1, y=y),
+             alpha=0.2, shape=21,
+             size=0.5, fill="black")
+  Dummy_y
+  
+  MethodsTop<-ggarrange(Dummy_plot,
+                        Dummy_SEASONAL,
+                        #Dummy_y,
+                        ncol = 2, nrow = 1,
+              widths=c(1.5, 0.5, 0.2))
+  MethodsTop
+  
+  Bottom<-ggarrange(Dummy_TRENDS,
+                  Dummy_SEASONAL,
+                  Dummy_y,
+                  ncol = 3, nrow = 1,
+              widths=c(1, 0.5, 0.2))
+  Bottom
+  
+  Bottom2<-ggarrange(Dummy_TRENDS,
+                  Dummy_SEASONAL,
+                  Dummy_sea,
+                  Dummy_y,
+                  ncol = 4, nrow = 1,
+              widths=c(1, 0.5, 0.5, 0.2))
+  Bottom2
+  
+  Methods2<-ggarrange(MethodsTop,
+                  Bottom,
+                  nrow = 2, ncol = 1)
+  Methods2
+  
+  
+  Methods3<-ggarrange(Dummy_plot,
+                  Bottom2,
+                  nrow = 2, ncol = 1)
+  Methods3
+#ggsave(file="FLK_results/Methods1B.svg", plot=Methods3, dpi = 300, width=5, height=3)
+  
+  
+```
+
+# Region
+```{r, include=FALSE}
+
+  Data2<-read.csv("Data/Dummy3.csv", header = T)
+  summary(Data2)
+  Data_R<-Data2[Data2$Case=="Region", ]
+  
+  Dummy_plot_Reg<- ggplot(Data_R) +
+        MyTheme_dumm +  
+        geom_jitter(aes(x=X, y=y, fill=Value), 
+            width = 0.1, height = 0.5,
+            shape=21, alpha=0.5)
+    #geom_smooth(aes (x=X, y=y), method = "lm", se=F)
+  Dummy_plot_Reg
+  
+  Dummy_TRENDS_Re<- ggplot(Data_R, aes (x=X, y=y, colour=Value)) +
+        MyTheme_dumm +  
+        theme(axis.title.x = element_blank())+
+        geom_smooth(method = "lm", se=F)
+  Dummy_TRENDS_Re
+  
+  # Dummy_SEASONAL_R<- ggplot(Data_R, aes (x=x_ses_2, y=y, colour=Value)) +
+  #       MyTheme_dumm +  
+  #   #scale_x_continuous(limits = c(0,6.5))+
+  #   geom_jitter(aes (x=x_ses_2, y=y, fill=Value),
+  #               shape=21, alpha=0.5, 
+  #               size=0.2)+
+  #   stat_summary(fun.data = "mean_cl_boot", geom = "point")+
+  #   stat_summary(fun.data = "mean_cl_boot", geom = "errorbar")
+  # Dummy_SEASONAL_R
+  
+ Dummy_Year_R<- ggplot(Data_R, aes(x=Value, y=y, fill=Value)) +
+         MyTheme_dumm +
+         geom_boxplot()+
+         geom_jitter(alpha=0.2, shape=21,
+              size=0.5)
+Dummy_Year_R
+  
+  
+  RegionTop<-ggarrange(Dummy_plot_Reg, Dummy_Year_R,
+                        ncol = 2, nrow = 1,
+              widths=c(1, 0.5))
+  RegionTop
+  
+  RegionBottom<-ggarrange(Dummy_TRENDS_Re,
+                  Dummy_Year_R,
+                  ncol = 2, nrow = 1,
+              widths=c(1, 0.5))
+  RegionBottom
+  
+  Region_all<-ggarrange(RegionTop,
+                  RegionBottom,
+                  nrow = 2, ncol = 1)
+  Region_all
+  
+  Region_all2<-ggarrange(Dummy_plot_Reg,
+                  RegionBottom,
+                  nrow = 2, ncol = 1)
+  Region_all2
+
+
+#ggsave(file="FLK_results/Methods2.svg", plot=Region_all2, dpi = 300, width=5, height=3)
+```
+
+
+
+# Zone
+```{r, include=FALSE}
+
+  Data_S<-Data2[Data2$Case=="Zone", ]
+  
+  Dummy_plot_S<- ggplot(Data_S) +
+        MyTheme_dumm +  
+        geom_jitter(aes(x=X, y=y, shape=Value), 
+            width = 0.1, height = 0.5, alpha=1, fill="grey")+
+    Zone_shapes4
+    #geom_smooth(aes (x=X, y=y), method = "lm", se=F)
+  Dummy_plot_S
+  
+  Dummy_TRENDS_S<- ggplot(Data_S, aes (x=X, y=y, shape=Value)) +
+        MyTheme_dumm +  
+        theme(axis.title.x = element_blank())+
+        geom_smooth(method = "lm", se=F, colour="black")
+  Dummy_TRENDS_S
+  
+  Dummy_SEASONAL_S<- ggplot(Data_S, aes (x=x_ses_2, y=y, shape=Value)) +
+        MyTheme_dumm + Zone_shapes4+
+    geom_jitter(alpha=1, fill="grey", size=0.5, alpha=0.5)+
+    stat_summary(fun.data = "mean_cl_boot", geom = "point", fill="gray", size=3)+
+    stat_summary(fun.data = "mean_cl_boot", geom = "errorbar", width=0.1)
+  Dummy_SEASONAL_S
+  
+  Dummy_Year_S<- ggplot(Data_S, aes(x=Value, y=y, shape=Value)) +
+         MyTheme_dumm +  Zone_shapes4+
+         geom_boxplot()+
+         stat_summary(fun.data = "mean_cl_boot", 
+                      geom = "point", fill="gray", size=3)+
+         geom_jitter(alpha=0.2, size=0.5)
+  Dummy_Year_S
+  
+  
+  SeasonTop<-ggarrange(Dummy_plot_S, Dummy_Year_S,
+                        ncol = 2, nrow = 1,
+              widths=c(1, 0.5))
+  SeasonTop
+  
+  SeasonBottom<-ggarrange(Dummy_TRENDS_S,
+                  Dummy_Year_S,
+                  ncol = 2, nrow = 1,
+              widths=c(1, 0.5))
+  SeasonBottom
+  
+  # Season_all<-ggarrange(SeasonTop,
+  #                 SeasonBottom,
+  #                 nrow = 2, ncol = 1)
+  # Season_all
+
+  Season_all<-ggarrange(Dummy_plot_S,
+                  SeasonBottom,
+                  nrow = 2, ncol = 1)
+  Season_all
+
+#ggsave(file="FLK_results/Methods3.svg", plot=Season_all, dpi = 300, width=5, height=3)
+```

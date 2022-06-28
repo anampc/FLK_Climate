@@ -1,0 +1,604 @@
+---
+title: "LongTrends_bouy - "
+author: "Ana Palacio-Castro"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: hide
+    fig_height: 8
+    fig_width: 8
+    df_print: paged
+    toc: yes
+    toc_float: true
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, options(knitr.kable.NA = ''))
+```
+
+# Libraries and settings
+
+```{r, include=FALSE}
+# Libraries
+    library(plyr)
+    library(tidyverse)
+    library(reshape2)
+    library(lubridate)
+    library(knitr)
+    library(dplyr)
+    library(broom)
+
+    library(ggpubr)
+    library(ggthemes)
+    library(gridExtra)
+    library(ggExtra)
+    
+#Models     
+    library(lmerTest)
+    library(emmeans)
+
+# Interactive Maps
+    library(leaflet)
+
+# Plots
+MyTheme<-theme_bw() +  
+theme(legend.position="top",
+          plot.background=element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5),
+          panel.grid.major.y = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          legend.box.background = element_rect(),
+          panel.background =element_rect(fill = NA, 
+                                         color = "black")
+          )
+
+```
+
+# 1. Import and format carbon chemistry data
+
+```{r, include=FALSE}
+# 1. Get data
+Bouy.data<-read.csv("Data/MAPCO2ALL.csv", header = T)
+str(Bouy.data)
+#Bouy.data$Region<-NULL
+
+
+# 2. Format variables
+  # Date/times
+   
+  # UTC Date
+    Bouy.data <- Bouy.data %>% mutate(Date_Time = mdy_hms(Date_Time)) 
+    Bouy.data <- Bouy.data %>% mutate(
+                    Date = date(Date_Time), 
+                    Year = year(Date_Time), 
+                    month = month(Date_Time), 
+                    #Day = day(Date_Time),
+                    hour = hour(Date_Time)
+                    #minute = minute(Date_Time),
+                    #second = second(Date_Time)
+                    )
+    str(Bouy.data)
+    
+    Bouy.data$Month<- month.abb[Bouy.data$month]
+    Bouy.data$Month<-factor(Bouy.data$Month, 
+                          levels = c("Jan", "Feb", "Mar",
+                                     "Apr", "May","Jun",
+                                    "Jul", "Aug", "Sep",
+                                    "Oct","Nov","Dec"
+                                    ))
+    
+    
+# # Define seasons (rougly by month)
+ metseasons <- c(
+    "01" = "Winter", "02" = "Winter", "03" = "Winter",
+    "04" = "Spring", "05" = "Spring", "06" = "Spring",
+    "07" = "Summer", "08" = "Summer", "09" = "Summer",
+    "10" = "Fall", "11" = "Fall", "12" = "Fall"
+  )
+Seasons<-as.data.frame(metseasons[format(Bouy.data$Date, "%m")])
+colnames(Seasons)<-"Season"
+Bouy.data<-cbind(Bouy.data, Seasons)
+      
+Bouy.data$Season<-factor(Bouy.data$Season, levels = c(
+                       "Winter", "Spring", 
+                       "Summer", "Fall"))
+
+summary(Bouy.data)
+
+```
+
+
+
+
+## 2 Number of samples
+
+### By zone and location
+
+```{r, echo=FALSE}
+Cases_Year_Month<-Bouy.data %>% count(Year, Month,
+                                  sort = F)
+
+Cases_Year_Month<-as.data.frame(Cases_Year_Month %>%
+                   pivot_wider(names_from = Year,
+                   values_from = n))
+# Organize table
+ #Cases_Year_Month<-Cases_Year_Month %>% 
+ #   select(sort(names(.)))
+
+kable(as.data.frame(Cases_Year_Month, format = "html"), caption="Samples collected by year-month")
+#write.csv(Cases_Year_Month, "FLK_results/SampleS_Month_Year.csv")
+```
+
+# 5. Basic plots and stats summary - Seasonality
+
+## 5.1 Temperature
+
+### Season stats 
+
+```{r, echo=FALSE}
+Temp.Season <- ddply (Bouy.data, .(Season),summarise,
+                Tmin = min (Temperature_C, na.rm = T), 
+                Tmax = max (Temperature_C, na.rm = T),
+                Tmean = mean (Temperature_C, na.rm = T), 
+                Tsd = sd (Temperature_C, na.rm = T))
+
+kable(as.data.frame(Temp.Season, format = "markdown"),
+      caption = "Temperature by season", digits = 2)
+
+```
+
+### Overview
+
+```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
+Temperature_All<- ggplot(Bouy.data) +
+  scale_y_continuous(#limits = c(15,40),
+                       name=(expression("Temperature"~(degree*C))),
+                       breaks = seq(16, 40, 2),  
+                       expand = c(0.1, 0.1)) +
+  scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+               #expand = c(0, 0),
+               breaks ="6 months")+
+  MyTheme 
+Temperature_All +
+  geom_point(aes (Date, Temperature_C, fill=Season), shape=21, alpha=0.8)
+
+# Temperature_All +
+#   geom_point(aes (Date, Temperature_C, fill=Extreme), shape=21, alpha=0.8) + facet_grid(Zone~.)
+
+```
+
+### Monthly 
+
+```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
+Temperature_month<- ggplot(Bouy.data) +
+  scale_y_continuous(#limits = c(15,40),
+                       name=(expression("Temperature"~(degree*C))),
+                       breaks = seq(16, 40, 4),  
+                       expand = c(0.1, 0.1)) +
+  MyTheme+
+    geom_boxplot(data=Bouy.data, 
+                 aes (x=Month, y=Temperature_C))+
+    scale_shape_manual(values=c(24, 25, 21))+
+    geom_point(data=Bouy.data, aes (x=Month, y=Temperature_C, fill=Season), 
+             alpha=0.8, size=1, shape=21)
+Temperature_month
+
+```
+
+# **Figure S1:** Seasonality_temperature
+
+## 5.2 Salinity 
+
+### Season stats 
+
+```{r, echo=FALSE}
+Sal.Season <- ddply (Bouy.data, .(Season),summarise,
+                Sal_min = min (Salinity_CTD, na.rm = T), 
+                Sal_max = max (Salinity_CTD, na.rm = T),
+                Sal_mean = mean (Salinity_CTD, na.rm = T), 
+                Sal_sd = sd (Salinity_CTD, na.rm = T))
+
+kable(as.data.frame(Sal.Season, format = "markdown"), caption = "Salinity by season")
+
+```
+
+### Overview
+
+```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
+SAl_All<- ggplot(Bouy.data) +
+  scale_y_continuous(#limits = c(15,40),
+                       name=(expression("Salinity")),
+                       breaks = seq(15, 40, 2),  
+                       expand = c(0.1, 0.1)) +
+  scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+               #expand = c(0, 0),
+               breaks ="6 months")+
+  MyTheme 
+SAl_All +
+  geom_point(aes (Date, Salinity_CTD, fill=Season), shape=21, alpha=0.8)
+
+```
+
+### Monthly 
+
+```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
+Sal_month<- ggplot(Bouy.data) + 
+   scale_y_continuous(#limits = c(15,40),
+                       #expand = c(0, 0),
+                        name="Salinity",
+                        breaks = seq(20, 40, 2)
+                        ) +
+  MyTheme +
+    geom_boxplot(aes (x=Month, y=Salinity_CTD))+
+    geom_point(data=Bouy.data, aes (x=Month, y=Salinity_CTD, 
+                                 fill=Season), shape=21, 
+             alpha=0.8, size=1)
+Sal_month
+```
+
+### Salinity - Temperature correlations and outliers
+
+```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
+Sal_Temp<- ggplot(Bouy.data) + MyTheme+
+  scale_x_continuous(limits = c(15,40),
+                       name=(expression("Temperature"~(degree*C))),
+                       breaks = seq(16, 36, 2),
+                       expand = c(0, 0)) +
+  scale_y_continuous(name="Salinity",
+                 #limits = c(0.5,6),
+                 #expand = c(0, 0),
+                 breaks = seq(1,40,2))+
+  geom_abline(slope = 0, intercept = 30, color="red", linetype=2)+
+  geom_abline(slope = 0, intercept = 39, color="red", linetype=2)+
+  geom_vline(xintercept = 33, color="red", linetype=2)
+
+```
+
+```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
+Sal_Temp +
+  geom_point(aes (Temperature_C, Salinity_CTD),
+             alpha=0.5, shape=21)
+```
+
+## 5.6 pCO2 
+
+### Season stats 
+
+```{r, echo=FALSE}
+pCO2.Season <- ddply (Bouy.data, .(Season),summarise,
+                pH_min = min (pCO2_uatm, na.rm = T), 
+                pCO2_uatm_max = max (pCO2_uatm, na.rm = T),
+                pCO2_uatm_mean = mean (pCO2_uatm, na.rm = T), 
+                pCO2_uatm_sd = sd (pCO2_uatm, na.rm = T))
+kable(as.data.frame(pCO2.Season, format = "markdown"), caption = "pCO2 by season")
+```
+
+### Overview - outliers
+
+```{r,  echo=FALSE, fig.height=8.0, fig.width=8.8}
+pCO2_all<- ggplot(Bouy.data) +
+    scale_y_continuous(#limits = c(0,5.5),
+                       name=("pCO2") ,
+                       #breaks = seq(0, 5, 1),  
+                       expand = c(0.01, 0.01)) +
+    scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+               expand = c(0.02, 0.02),
+               breaks ="6 months")+
+    geom_point(aes (Date, pCO2_uatm, fill=Season), shape=21, alpha=0.8)+
+    MyTheme
+pCO2_all  
+
+pCO2_all + facet_wrap(~Season)
+ 
+
+```
+
+### Monthly 
+
+```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
+pCO2_month<- ggplot(Bouy.data) + 
+   scale_y_continuous(#limits = c(1,5.5),
+                       name=(expression ("pCO2")),
+                       breaks = seq(200, 600, 100),
+                       expand = c(0.03, 0.03)
+                        ) +
+  MyTheme 
+
+pCO2_month +
+  geom_boxplot(aes (x=Month, y=pCO2_uatm))+
+  geom_point(aes (x=Month, y=pCO2_uatm, fill=Season), 
+             shape=21, size = 1, alpha=0.8)+
+  facet_wrap(~Year)
+```
+
+```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
+pCO2_month +
+  geom_boxplot(data=Bouy.data[Bouy.data$Extreme=="Normal", ], 
+               aes (x=Month, y=pCO2_uatm))+
+  geom_point(aes (x=Month, y=pCO2_uatm), 
+             shape=21, size = 1, alpha=0.5)
+```
+
+## 5.7 pH 
+
+### Season stats 
+
+```{r, echo=FALSE}
+pH.Season <- ddply (Bouy.data, .(Season),summarise,
+                pH_min = min (pH_measured, na.rm = T), 
+                pCO2_uatm_max = max (pH_measured, na.rm = T),
+                pCO2_uatm_mean = mean (pH_measured, na.rm = T), 
+                pCO2_uatm_sd = sd (pH_measured, na.rm = T))
+kable(as.data.frame(pH.Season, format = "markdown"), caption = "pH  (calculated) by season")
+
+```
+
+### Overview - outliers
+
+```{r,  echo=FALSE, fig.height=8.0, fig.width=8.8}
+pH_all<- ggplot(Bouy.data) +
+    scale_y_continuous(#limits = c(0,5.5),
+                       name=("pH") ,
+                       #breaks = seq(0, 5, 1),  
+                       expand = c(0.01, 0.01)) +
+    scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+               expand = c(0.02, 0.02),
+               breaks ="6 months")+
+    MyTheme
+  
+pH_all + 
+  geom_point(aes (Date, pH_measured, fill=Season), shape=21, alpha=0.8)
+
+```
+
+```{r.  echo=FALSE, fig.height=8.8, fig.width=8.8}
+pH_all + 
+  geom_point(aes (Date, pH_measured, fill=Season), shape=21, alpha=0.8)+
+  #geom_abline(slope = 0, intercept = 2100, color="gray", linetype=2)+
+  geom_abline(slope = 0, intercept = 7.95, color="red", linetype=1)
+```
+
+### Monthly 
+
+```{r, echo=FALSE, fig.height=8.8, fig.width=8.8}
+pH_month<- ggplot(Bouy.data) + 
+   scale_y_continuous(#limits = c(1,5.5),
+                       name=(expression ("pH")),
+                       breaks = seq(0, 9, 0.1),
+                       expand = c(0.03, 0.03)
+                        ) +
+  MyTheme+
+  geom_boxplot(aes (x=Month, y=pH_measured))+
+  geom_point(aes (x=Month, y=pH_measured, fill=Season), 
+             shape=21, size = 1, alpha=0.8)
+pH_month
+```
+
+**Notes from Dereks' paper: **
+
+* January 2010: High inshore TCO2 and TA in the UK after the cold-water mass mortality of reef-building corals that occurred at inshore patch reefs 
+* August 2010: persistent winds at 5 to 7.5 m s21 and overcast skies during sampling. -> lower than normal nTA -> spike in pCO2 and depression in arag at both sites, erasing any inshore-to-offshore gradient for these two parameters
+* October 2011:  high rainfall -> low salinity at all sites, with salinities inshore and offshore ranging from 32.04– 32.685 and 34.035–34.835, respectively. At the inshore sites, low salinity was coincident with a spike in pCO2 and depression in arag. All sites showed net respiration during this time
+
+# 8. Long Term trends in FLK (Al zones) using linear models
+
+This approach is not optimum because of strong seasonality. Especially in the reef. However it is useful to compare the long term predictions with the ones from gam models. 
+
+To deal with seasonality, include Season in the model. Month gets noisy since some month have been sampled very few times
+
+## 8.5 pCO2 - all data
+
+```{r}
+pCO2_all<- ggplot(Bouy.data,
+                          aes(x=Date, y=pCO2_uatm)) +
+  
+  MyTheme+
+  scale_y_continuous(#limits = c(0,5.5),
+                       name=("pCO2") ,
+                       #breaks = seq(0, 5, 1),  
+                       expand = c(0.01, 0.01)) +
+  scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+               expand = c(0.01, 0.01),
+               breaks ="2 year")+
+
+  geom_smooth(method = "lm", color="black")+  
+  geom_point(aes(fill=factor(Season)), shape=21, alpha=0.5, size=1)
+pCO2_all
+
+```
+
+## 8.6 pH - - all data
+
+```{r}
+pH_all<- ggplot(Bouy.data,
+                          aes(x=Date, y=pH_measured)) +
+  MyTheme+
+  scale_y_continuous(#limits = c(0,5.5),
+                       name=("pH") ,
+                       #breaks = seq(0, 5, 1),  
+                       expand = c(0.01, 0.01)) +
+  scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+               expand = c(0.01, 0.01),
+               breaks ="2 year")+
+
+  geom_smooth(method = "lm", color="black")+  
+  geom_point(aes(fill=factor(Season)), shape=21, alpha=0.5, size=1)
+pH_all
+```
+
+
+# 9 pCO2 LMERs
+
+## 9.1 pCO2 - Cheeka
+
+### Raw data
+
+```{r}
+pCO2_data_o<- ggplot(Bouy.data,
+                          aes(x=Date, y=pCO2_uatm)) +
+  
+  MyTheme +
+  scale_y_continuous(#limits = c(0,5.5),
+                       name=("pCO2 -Cheeka") ,
+                       #breaks = seq(0, 5, 1),  
+                       expand = c(0.03, 0.03)) +
+  scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+               expand = c(0.01, 0.01),
+               breaks ="1 year")+
+  
+  geom_smooth(method = "lm", aes(colour=Season))+  
+  geom_point(aes(fill=factor(Month)), shape=21, alpha=0.5)
+pCO2_data_o
+```
+
+### Model
+
+```{r}
+pCO2_mod<-lmer(pCO2_uatm~Year * Season +
+                                 (1|Month), 
+                                 data=Bouy.data)
+# Subregion and zone are not significant
+
+summary(pCO2_mod)    
+anova(pCO2_mod)
+ranova(pCO2_mod)
+#step(pCO2_mod)
+
+par(mfrow=c(2,3))
+plot(pCO2_mod)
+acf(resid(pCO2_mod), main="acf(resid(pCO2 Cheeka))")
+par(mfrow=c(1,1))
+```
+
+### Predicted values
+
+```{r}
+# Create a new data frame for independent variables  
+  NewData <- expand.grid(Month=unique(Bouy.data$Month) ,
+                      Season=unique(Bouy.data$Season) ,
+                      Year=seq(min(Bouy.data$Year), 
+                               max(Bouy.data$Year), by=1) )
+  
+  pCO2_Pred <- predict(pCO2_mod, newdata=NewData, 
+                       re.form=NA, level=0, asList = FALSE)
+  
+  pCO2_Pred <-cbind(NewData, pCO2_Pred)
+  pCO2_Pred$Date<-as.Date(as.character(pCO2_Pred$Year), format = "%Y")
+  
+  
+# Plot raw data point and fitted model 
+  
+  pCO2_Modeled<-ggplot(Bouy.data) + MyTheme+
+     scale_y_continuous(#limits = c(0,6),
+                       name=expression(paste(pCO[2], ~" (", mu, " atm)")),
+                       #limits = c(2.3, 5.2),
+                       #breaks = seq(0, 10, 0.5),  
+                       expand = c(0.02, 0.02)) +
+    
+      geom_point(data=Bouy.data, 
+                               aes(y=pCO2_uatm, x=Date, 
+                                  #fill = Season), 
+                                  colour = Season), 
+                               alpha=0.5, size=0.5, shape=21)+
+      geom_line(data=pCO2_Pred, aes(y = pCO2_Pred,
+                                    x=Date, colour = Season),
+                linetype=1, size=1) 
+  pCO2_Modeled
+```
+
+## 9.2 pH - Cheeka
+
+### Raw data
+
+```{r}
+pH_plot<- ggplot(Bouy.data,
+                          aes(x=Date, y=pH_measured)) +
+  
+  MyTheme +
+  scale_y_continuous(#limits = c(0,5.5),
+                       name=("pH -Cheeka") ,
+                       #breaks = seq(0, 5, 1),  
+                       expand = c(0.03, 0.03)) +
+  scale_x_date(name="Date",
+               #labels = date_format("%M/%Y"),
+               #limits = c(-1,114),
+               expand = c(0.01, 0.01),
+               breaks ="1 year")+
+  
+  geom_smooth(method = "lm", aes(colour=Season))+  
+  geom_point(aes(fill=factor(Month)), shape=21, alpha=0.5)
+pH_plot
+```
+
+### Model
+
+```{r}
+pH_mod<-lmer(pH_measured~Year * Season +
+                                 (1|Month), 
+                                 data=Bouy.data)
+# Subregion and zone are not significant
+
+summary(pH_mod)    
+anova(pH_mod)
+ranova(pH_mod)
+#step(pCO2_mod)
+
+par(mfrow=c(2,3))
+plot(pH_mod)
+acf(resid(pH_mod), main="acf(resid(pCO2 Cheeka))")
+par(mfrow=c(1,1))
+```
+
+### Predicted values
+
+```{r}
+# Create a new data frame for independent variables  
+  NewData <- expand.grid(Month=unique(Bouy.data$Month) ,
+                      Season=unique(Bouy.data$Season) ,
+                      Year=seq(min(Bouy.data$Year), 
+                               max(Bouy.data$Year), by=1) )
+  
+  pH_Pred <- predict(pH_mod, newdata=NewData, 
+                       re.form=NA, level=0, asList = FALSE)
+  
+  pH_Pred <-cbind(NewData, pH_Pred)
+  pH_Pred$Date<-as.Date(as.character(pH_Pred$Year), format = "%Y")
+  
+  
+# Plot raw data point and fitted model 
+  
+  pH_Modeled<-ggplot(Bouy.data) + MyTheme+
+     scale_y_continuous(#limits = c(0,6),
+                       #name=(expression(~Omega[Ar])),
+                       #limits = c(2.3, 5.2),
+                       #breaks = seq(0, 10, 0.5),  
+                       expand = c(0.02, 0.02)) +
+    
+      geom_point(data=Bouy.data, 
+                               aes(y=pH_measured, x=Date, 
+                                  #fill = Season), 
+                                  colour = Season), 
+                               alpha=0.5, size=0.5, shape=21)+
+      geom_line(data=pH_Pred, aes(y = pH_Pred,
+                                    x=Date, colour = Season),
+                linetype=2, size=1) 
+  pH_Modeled
+```
